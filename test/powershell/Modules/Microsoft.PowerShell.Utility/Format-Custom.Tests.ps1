@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
 Describe "Format-Custom" -Tags "CI" {
 
     Context "Check Format-Custom aliases" {
@@ -5,7 +7,7 @@ Describe "Format-Custom" -Tags "CI" {
         It "Should have the same output between the alias and the unaliased function" {
             $nonaliased = Get-FormatData | Format-Custom
             $aliased    = Get-FormatData | fc
-            $($nonaliased | Out-String).CompareTo($($aliased | Out-String)) | Should Be 0
+            $($nonaliased | Out-String).CompareTo($($aliased | Out-String)) | Should -Be 0
         }
     }
 
@@ -13,17 +15,15 @@ Describe "Format-Custom" -Tags "CI" {
 
         It "Should be able to specify the depth in output" {
             $getprocesspester =  Get-FormatData | Format-Custom -depth 1
-            ($getprocesspester).Count                   | Should BeGreaterThan 0
+            ($getprocesspester).Count | Should -BeGreaterThan 0
         }
 
         It "Should be able to use the Property flag to select properties" {
-            $CommandName = Get-Command | Format-Custom -Property "Name"
-            $CommandName               | Should Not Match "Source"
+            Get-Command | Format-Custom -Property "Name" | Should -Not -Match "Source"
         }
 
     }
 }
-
 
 Describe "Format-Custom DRT basic functionality" -Tags "CI" {
 	Add-Type -TypeDefinition @"
@@ -68,10 +68,10 @@ Describe "Format-Custom DRT basic functionality" -Tags "CI" {
         $testObject.subObjectValue.array = (0..63)
         $testObject.subObjectValue.stringarray = @("one","two")
         $result = $testObject | Format-Custom | Out-String
-        $result | Should Match $expectResult1
-        $result | Should Match $expectResult2
-        $result | Should Match "one"
-        $result | Should Match "two"
+        $result | Should -Match $expectResult1
+        $result | Should -Match $expectResult2
+        $result | Should -Match "one"
+        $result | Should -Match "two"
     }
 
 	It "Format-Custom with Tree Object should work" {
@@ -200,7 +200,7 @@ class MyContainer1
 		$result = $objectList | Format-Custom | Out-String
 		$result = $result -replace "[{} `n\r]",""
 		$expectedResult = $expectedResult -replace "[{} `n\r]",""
-		$result | Should Be $expectedResult
+		$result | Should -Be $expectedResult
 	}
 
 	It "Format-Custom with Empty Data Tree Object should work" {
@@ -222,7 +222,7 @@ class MyContainer1
 		$result = $objectList | Format-Custom | Out-String
 		$result = $result -replace "[{} `n\r]",""
 		$expectedResult = $expectedResult -replace "[{} `n\r]",""
-		$result | Should Be $expectedResult
+		$result | Should -Be $expectedResult
 	}
 
 	It "Format-Custom with Back Pointers Tree Object should work" {
@@ -265,7 +265,7 @@ class MyContainer1
 		$result = $objectList | Format-Custom | Out-String
 		$result = $result -replace "[{} `n\r]",""
 		$expectedResult = $expectedResult -replace "[{} `n\r]",""
-		$result | Should Be $expectedResult
+		$result | Should -Be $expectedResult
 	}
 
 	It "Format-Custom with Leaf Only Data should work" {
@@ -295,6 +295,144 @@ class MyLeaf2
 		$result = $objectList | Format-Custom | Out-String
 		$result = $result -replace "[{} `n\r]",""
 		$expectedResult = $expectedResult -replace "[{} `n\r]",""
-		$result | Should Be $expectedResult
+		$result | Should -Be $expectedResult
 	}
+}
+
+Describe "Format-Custom with expression based EntrySelectedBy in a CustomControl" -Tags "CI" {
+    BeforeAll {
+        $formatFilePath = Join-Path $TestDrive 'UpdateFormatDataTests.format.ps1xml'
+        $xmlContent = @'
+<?xml version="1.0" encoding="UTF-8" ?>
+<Configuration>
+    <Controls>
+        <Control>
+            <Name>MyTestControl</Name>
+            <CustomControl>
+                <CustomEntries>
+                    <CustomEntry>
+                        <EntrySelectedBy>
+                            <SelectionCondition>
+                                <TypeName>MyTestObject</TypeName>
+                                <ScriptBlock>$_.Name -eq 'SelectScriptBlock'</ScriptBlock>
+                            </SelectionCondition>
+                        </EntrySelectedBy>
+                        <CustomItem>
+                            <Text>Entry selected by ScriptBlock</Text>
+                        </CustomItem>
+                    </CustomEntry>
+                    <CustomEntry>
+                        <EntrySelectedBy>
+                            <SelectionCondition>
+                                <TypeName>MyTestObject</TypeName>
+                                <PropertyName>SelectProperty</PropertyName>
+                            </SelectionCondition>
+                        </EntrySelectedBy>
+                        <CustomItem>
+                            <Text>Entry selected by property</Text>
+                        </CustomItem>
+                    </CustomEntry>
+                    <CustomEntry>
+                        <CustomItem>
+                            <Text>Default was picked</Text>
+                        </CustomItem>
+                    </CustomEntry>
+                </CustomEntries>
+            </CustomControl>
+        </Control>
+    </Controls>
+    <ViewDefinitions>
+        <View>
+            <Name>DefaultView</Name>
+            <ViewSelectedBy>
+                <TypeName>MyTestObject</TypeName>
+            </ViewSelectedBy>
+            <GroupBy>
+                <PropertyName>Name</PropertyName>
+                <CustomControlName>MyTestControl</CustomControlName>
+            </GroupBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader />
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>Name</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+    </ViewDefinitions>
+</Configuration>
+'@
+
+        Set-Content -Path $formatFilePath -Value $xmlContent
+        $ps = [powershell]::Create()
+        $iss = [initialsessionstate]::CreateDefault2()
+        $iss.Formats.Add($formatFilePath)
+        $rs = [runspacefactory]::CreateRunspace($iss)
+        $rs.Open()
+        $ps.Runspace = $rs
+    }
+
+    AfterAll {
+        $rs.Close()
+        $ps.Dispose()
+    }
+
+    It 'Property expression binding should be able to access the current object' {
+        $script = {
+            [PSCustomObject]@{
+                PSTypeName = 'MyTestObject'
+                SelectProperty = $true
+                Name = 'testing'
+            }
+        }
+
+        $null = $ps.AddScript($script).AddCommand('Out-String')
+        $ps.Streams.Error.Clear()
+        $expectedOutput = @'
+
+
+Entry selected by property
+Name
+----
+testing
+
+
+'@ -replace '\r?\n', "^"
+
+        $ps.Invoke() -replace '\r?\n', "^" | Should -BeExactly $expectedOutput
+        $ps.Streams.Error | Should -BeNullOrEmpty
+    }
+
+    It 'ScriptBlock expression binding should be able to access the current object' {
+        $script = {
+            [PSCustomObject]@{
+                PSTypeName = 'MyTestObject'
+                SelectProperty = $false
+                Name = 'SelectScriptBlock'
+            }
+        }
+
+        $null = $ps.AddScript($script).AddCommand('Out-String')
+        $ps.Streams.Error.Clear()
+        $expectedOutput = @'
+
+
+Entry selected by ScriptBlock
+Name
+----
+SelectScriptBlock
+
+
+'@ -replace '\r?\n', "^"
+
+        $ps.Invoke() -replace '\r?\n', "^" | Should -BeExactly $expectedOutput
+        $ps.Streams.Error | Should -BeNullOrEmpty
+    }
 }

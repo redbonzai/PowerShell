@@ -1,11 +1,10 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 namespace System.Management.Automation
 {
     /// <summary>
-    /// A variable that represents $PSCulture
+    /// A variable that represents $PSCulture.
     /// </summary>
     internal class PSCultureVariable : PSVariable
     {
@@ -21,7 +20,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets or sets the value of the variable.
         /// </summary>
-        ///
         public override object Value
         {
             get
@@ -33,7 +31,7 @@ namespace System.Management.Automation
     }
 
     /// <summary>
-    /// A variable that represents $PSUICulture
+    /// A variable that represents $PSUICulture.
     /// </summary>
     internal class PSUICultureVariable : PSVariable
     {
@@ -49,7 +47,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets or sets the value of the variable.
         /// </summary>
-        ///
         public override object Value
         {
             get

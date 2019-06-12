@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Concurrent;
@@ -13,6 +12,7 @@ using System.Management.Automation.Remoting;
 using System.Management.Automation.Runspaces;
 using System.Management.Automation.Tracing;
 using System.Threading;
+
 using Dbg = System.Management.Automation.Diagnostics;
 
 // Stops compiler from warning about unknown warnings
@@ -27,16 +27,16 @@ namespace System.Management.Automation
     /// workflows in PowerShell. This class will have a behavior
     /// similar to how the Runspace and PowerShell APIs behave in
     /// the remoting scenario. The objects on the client side act
-    /// as proxies to the real objects on the server
+    /// as proxies to the real objects on the server.
     /// </summary>
     public sealed class PSJobProxy : Job2
     {
         #region Constructors
 
         /// <summary>
-        /// Internal constructor
+        /// Internal constructor.
         /// </summary>
-        /// <param name="command">the command to execute</param>
+        /// <param name="command">The command to execute.</param>
         internal PSJobProxy(string command)
             : base(command)
         {
@@ -100,8 +100,8 @@ namespace System.Management.Automation
         #region Overrides of Job2
 
         /// <summary>
-        /// start a job. The job will be started with the parameters
-        /// specified in StartParameters
+        /// Start a job. The job will be started with the parameters
+        /// specified in StartParameters.
         /// </summary>
         /// <exception cref="InvalidJobStateException">Thrown if the job
         ///  is already running, if there is no runspace or runspace pool
@@ -116,7 +116,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Start a job asynchronously
+        /// Start a job asynchronously.
         /// </summary>
         /// <remarks>When a job is started all the data in the
         /// job streams from a previous invocation will be cleared</remarks>
@@ -128,7 +128,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Stop a job synchronously. In order to be consistent, this method
         /// should be used in place of StopJob which was introduced in the
-        /// v2 Job API
+        /// v2 Job API.
         /// </summary>
         /// <exception cref="InvalidJobStateException">Thrown if job is blocked.</exception>
         /// <exception cref="ObjectDisposedException">Thrown if job is disposed.</exception>
@@ -156,7 +156,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Stop a job asynchronously
+        /// Stop a job asynchronously.
         /// </summary>
         public override void StopJobAsync()
         {
@@ -179,7 +179,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// StopJob
+        /// StopJob.
         /// </summary>
         /// <param name="force"></param>
         /// <param name="reason"></param>
@@ -189,7 +189,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// StopJobAsync
+        /// StopJobAsync.
         /// </summary>
         /// <param name="force"></param>
         /// <param name="reason"></param>
@@ -199,7 +199,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Suspend a job
+        /// Suspend a job.
         /// </summary>
         /// <exception cref="InvalidJobStateException">Throws if the job is not in
         /// a running or suspended state.</exception>
@@ -229,7 +229,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Asynchronously suspend a job
+        /// Asynchronously suspend a job.
         /// </summary>
         public override void SuspendJobAsync()
         {
@@ -252,7 +252,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// SuspendJob
+        /// SuspendJob.
         /// </summary>
         /// <param name="force"></param>
         /// <param name="reason"></param>
@@ -262,7 +262,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// SuspendJobAsync
+        /// SuspendJobAsync.
         /// </summary>
         /// <param name="force"></param>
         /// <param name="reason"></param>
@@ -272,7 +272,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Resume a suspended job
+        /// Resume a suspended job.
         /// </summary>
         /// <exception cref="InvalidJobStateException">Throws if the job
         /// is not in a suspended or running state.</exception>
@@ -325,7 +325,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Unblock a blocked job
+        /// Unblock a blocked job.
         /// </summary>
         /// <exception cref="NotSupportedException">Unblock job is not supported on PSJobProxy.</exception>
         public override void UnblockJob()
@@ -334,7 +334,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Unblock a blocked job asynchronously
+        /// Unblock a blocked job asynchronously.
         /// </summary>
         public override void UnblockJobAsync()
         {
@@ -348,7 +348,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Start execution of the workflow with the
         /// specified input. This input will serve as
-        /// input to the underlying pipeline
+        /// input to the underlying pipeline.
         /// </summary>
         /// <param name="input">collection of input
         /// objects</param>
@@ -360,7 +360,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Start execution of the job with the
         /// specified input. This input will serve as
-        /// input to the underlying pipeline
+        /// input to the underlying pipeline.
         /// </summary>
         /// <param name="input"></param>
         /// <remarks>Not sure if this method is needed. This has
@@ -379,8 +379,8 @@ namespace System.Management.Automation
         /// the job, delegates may be indicated to ensure that no events will be missed
         /// after the child job is created if data begins streaming back immediately.
         /// </summary>
-        /// <param name="dataAdded">delegate used to subscribe to data added events on the child jobs</param>
-        /// <param name="stateChanged">delegate used to subscribe to state changed events on the child jobs</param>
+        /// <param name="dataAdded">Delegate used to subscribe to data added events on the child jobs.</param>
+        /// <param name="stateChanged">Delegate used to subscribe to state changed events on the child jobs.</param>
         /// <param name="input">collection of input
         /// objects</param>
         public void StartJob(EventHandler<JobDataAddedEventArgs> dataAdded, EventHandler<JobStateEventArgs> stateChanged, PSDataCollection<object> input)
@@ -409,8 +409,8 @@ namespace System.Management.Automation
         /// the job, delegates may be indicated to ensure that no events will be missed
         /// after the child job is created if data begins streaming back immediately.
         /// </summary>
-        /// <param name="dataAdded">delegate used to subscribe to data added events on the child jobs</param>
-        /// <param name="stateChanged">delegate used to subscribe to state changed events on the child jobs</param>
+        /// <param name="dataAdded">Delegate used to subscribe to data added events on the child jobs.</param>
+        /// <param name="stateChanged">Delegate used to subscribe to state changed events on the child jobs.</param>
         /// <param name="input">collection of input
         /// objects</param>
         public void StartJobAsync(EventHandler<JobDataAddedEventArgs> dataAdded, EventHandler<JobStateEventArgs> stateChanged, PSDataCollection<object> input)
@@ -453,6 +453,7 @@ namespace System.Management.Automation
             {
                 AssertNotDisposed();
             }
+
             try
             {
                 DoRemove(force);
@@ -467,6 +468,7 @@ namespace System.Management.Automation
                         return;
                     }
                 }
+
                 RemoveComplete.WaitOne();
             }
             catch (Exception error)
@@ -534,7 +536,7 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Method to raise the event when removing a
-        /// server side job is completed
+        /// server side job is completed.
         /// </summary>
         /// <param name="eventArgs">argument describing
         /// an exception that is associated with the event</param>
@@ -576,12 +578,14 @@ namespace System.Management.Automation
             {
                 return _removeRemoteJobOnCompletion;
             }
+
             set
             {
                 AssertChangesCanBeAccepted();
                 _removeRemoteJobOnCompletion = value;
             }
         }
+
         private bool _removeRemoteJobOnCompletion;
 
         /// <summary>
@@ -593,7 +597,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Runspace in which this job will be executed
+        /// Runspace in which this job will be executed.
         /// </summary>
         /// <remarks>At any point of time only a runspace or a
         /// runspacepool may be specified</remarks>
@@ -603,6 +607,7 @@ namespace System.Management.Automation
             {
                 return _runspace;
             }
+
             set
             {
                 if (value == null)
@@ -620,7 +625,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// RunspacePool in which this job will be executed
+        /// RunspacePool in which this job will be executed.
         /// </summary>
         public RunspacePool RunspacePool
         {
@@ -628,6 +633,7 @@ namespace System.Management.Automation
             {
                 return _runspacePool;
             }
+
             set
             {
                 if (value == null)
@@ -674,7 +680,6 @@ namespace System.Management.Automation
         {
             return Create(runspace, filter, null, null, receiveImmediately);
         }
-
 
         /// <summary>
         /// Queries the runspace for jobs and constructs a collection of job proxies to interact with them.
@@ -769,8 +774,7 @@ namespace System.Management.Automation
 
             using (PowerShell ps = PowerShell.Create())
             {
-                Dbg.Assert(runspacePool == null && runspace != null ||
-                    runspace == null && runspacePool != null, "Either a runspace or a runspacepool should be used, not both.");
+                Dbg.Assert(runspacePool == null ^ runspace == null, "Either a runspace or a runspacepool should be used, not both.");
 
                 if (runspacePool == null)
                 {
@@ -796,11 +800,12 @@ namespace System.Management.Automation
                     continue;
                 }
 
-                string command = String.Empty;
+                string command = string.Empty;
                 if (!TryGetJobPropertyValue(deserializedJob, "Command", out command))
                 {
                     Dbg.Assert(false, "Job object did not contain command when creating proxy.");
                 }
+
                 PSJobProxy job = new PSJobProxy(command);
 
                 job.InitializeExistingJobProxy(deserializedJob, runspace, runspacePool);
@@ -838,8 +843,8 @@ namespace System.Management.Automation
         /// <summary>
         /// Will begin streaming data for a job object created by the "create" method that is in a not started state.
         /// </summary>
-        /// <param name="dataAdded">delegate used to subscribe to data added events on the child jobs</param>
-        /// <param name="stateChanged">delegate used to subscribe to state changed events on the child jobs</param>
+        /// <param name="dataAdded">Delegate used to subscribe to data added events on the child jobs.</param>
+        /// <param name="stateChanged">Delegate used to subscribe to state changed events on the child jobs.</param>
         public void ReceiveJob(EventHandler<JobDataAddedEventArgs> dataAdded, EventHandler<JobStateEventArgs> stateChanged)
         {
             lock (SyncRoot)
@@ -934,8 +939,10 @@ namespace System.Management.Automation
                     {
                         psPrivateMetadata = p.Value;
                     }
+
                     childJobCol.Add(p.Name, p.Value);
                 }
+
                 psParamCollection.Add(childJobCol);
             }
 
@@ -945,6 +952,7 @@ namespace System.Management.Automation
             {
                 newStartParameters.Add(new CommandParameter("PSPrivateMetadata", psPrivateMetadata));
             }
+
             StartParameters.Add(newStartParameters);
         }
 
@@ -1121,6 +1129,7 @@ namespace System.Management.Automation
                             // Transfer exception via event arguments.
                             OnStopJobCompleted(new AsyncCompletedEventArgs(e, false, null));
                         }
+
                         break;
                     case QueueOperation.Suspend:
                         try
@@ -1133,6 +1142,7 @@ namespace System.Management.Automation
                             // Transfer exception via event arguments.
                             OnSuspendJobCompleted(new AsyncCompletedEventArgs(e, false, null));
                         }
+
                         break;
                     case QueueOperation.Resume:
                         try
@@ -1152,18 +1162,18 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Checks if there is more data in the specified collection
+        /// Checks if there is more data in the specified collection.
         /// </summary>
         /// <typeparam name="T">Type of the collection</typeparam>
-        /// <param name="collection">collection to check</param>
-        /// <returns>true if the collection has more data</returns>
+        /// <param name="collection">Collection to check.</param>
+        /// <returns>True if the collection has more data.</returns>
         private static bool CollectionHasMoreData<T>(PSDataCollection<T> collection)
         {
             return (collection.IsOpen || collection.Count > 0);
         }
 
         /// <summary>
-        /// Worker method which starts the job
+        /// Worker method which starts the job.
         /// </summary>
         private void DoStartAsync(EventHandler<JobDataAddedEventArgs> dataAdded, EventHandler<JobStateEventArgs> stateChanged, PSDataCollection<object> input)
         {
@@ -1214,9 +1224,10 @@ namespace System.Management.Automation
                         if (!(parameter.Value is bool) || !(bool)parameter.Value)
                         {
                             // If the AsJob Parameter has been passed and explicitly set to false, we should
-                            // not proceed  with the operation. This is an error.
+                            // not proceed with the operation. This is an error.
                             throw PSTraceSource.NewInvalidOperationException(PowerShellStrings.JobProxyAsJobMustBeTrue);
                         }
+
                         found = true;
                     }
                 }
@@ -1239,7 +1250,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Worker method which stops the job
+        /// Worker method which stops the job.
         /// </summary>
         private void DoStopAsync()
         {
@@ -1258,7 +1269,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Worker method which suspends the job
+        /// Worker method which suspends the job.
         /// </summary>
         private void DoSuspendAsync()
         {
@@ -1277,7 +1288,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Worker method to resume the job
+        /// Worker method to resume the job.
         /// </summary>
         private void DoResumeAsync()
         {
@@ -1299,9 +1310,9 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Worker method to remove the remote job object
+        /// Worker method to remove the remote job object.
         /// </summary>
-        /// <param name="state">state information indicates the "force" parameter</param>
+        /// <param name="state">State information indicates the "force" parameter.</param>
         private void DoRemove(object state)
         {
             AssertNotDisposed();
@@ -1360,7 +1371,6 @@ namespace System.Management.Automation
 
                     AssignRunspaceOrRunspacePool(powershell);
 
-
                     // set the commands for the powershell
                     powershell.Commands.AddCommand("Remove-Job").AddParameter("InstanceId", _remoteJobInstanceId);
 
@@ -1396,6 +1406,7 @@ namespace System.Management.Automation
                 {
                     _remoteJobRemoved = true;
                 }
+
                 if (!IsFinishedState(JobStateInfo.State))
                 {
                     DoSetJobState(JobState.Stopped);
@@ -1487,15 +1498,13 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Assigns either a runspace or runspacepool to the specified powershell
-        /// instance
+        /// instance.
         /// </summary>
         /// <param name="powershell">powershell instance to which the set has to
         /// happen</param>
         private void AssignRunspaceOrRunspacePool(PowerShell powershell)
         {
-            Dbg.Assert(_runspacePool == null && _runspace != null ||
-                       _runspace == null && _runspacePool != null,
-                       "Either a runspace or a runspacepool should be assigned to the proxy job");
+            Dbg.Assert(_runspacePool == null ^ _runspace == null, "Either a runspace or a runspacepool should be assigned to the proxy job");
 
             if (_runspacePool == null)
             {
@@ -1525,6 +1534,7 @@ namespace System.Management.Automation
                             OnResumeJobCompleted(new AsyncCompletedEventArgs(null, false, null));
                         }
                     }
+
                     break;
 
                 case JobState.Suspended:
@@ -1538,6 +1548,7 @@ namespace System.Management.Automation
                             OnSuspendJobCompleted(new AsyncCompletedEventArgs(null, false, null));
                         }
                     }
+
                     break;
                 case JobState.Failed:
                 case JobState.Completed:
@@ -1561,6 +1572,7 @@ namespace System.Management.Automation
                             OnStopJobCompleted(new AsyncCompletedEventArgs(e.JobStateInfo.Reason, false, null));
                         }
                     }
+
                     break;
             }
 
@@ -1569,10 +1581,10 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Event handler for InvocationStateChanged on the powershell
-        /// object running receive-job
+        /// object running receive-job.
         /// </summary>
-        /// <param name="sender">sender of this event</param>
-        /// <param name="e">argument describing this event</param>
+        /// <param name="sender">Sender of this event.</param>
+        /// <param name="e">Argument describing this event.</param>
         private void ReceivePowerShellInvocationStateChanged(object sender, PSInvocationStateChangedEventArgs e)
         {
             _tracer.WriteMessage(ClassNameTrace, "ReceivePowerShellInvocationStateChanged", _remoteJobInstanceId, this,
@@ -1593,12 +1605,13 @@ namespace System.Management.Automation
                     {
                         var newState = JobState.Failed;
                         var reason = e.InvocationStateInfo.Reason == null
-                                         ? String.Empty
+                                         ? string.Empty
                                          : e.InvocationStateInfo.Reason.ToString();
                         _tracer.WriteMessage(ClassNameTrace, "ReceivePowerShellInvocationStateChanged", _remoteJobInstanceId, this,
                             "Setting job state to {0} old state was {1} and reason is {2}.", newState.ToString(), JobStateInfo.State.ToString(), reason);
                         DoSetJobState(newState, e.InvocationStateInfo.Reason);
                     }
+
                     break;
 
                 case PSInvocationState.Stopped:
@@ -1640,6 +1653,7 @@ namespace System.Management.Automation
                     Dbg.Assert(false, "ChildJobs should be serialized to include InstanceID, cannot interact with them otherwise.");
                     continue;
                 }
+
                 var childProxyJob = new PSChildJobProxy(Command, job); // All have the same workflow name.
                 _childJobsMapping.Add(childJobInstanceId, childProxyJob);
 
@@ -1659,6 +1673,7 @@ namespace System.Management.Automation
                 {
                     PopulateStartParametersOnChild(childJobStartParametersObject, childProxyJob);
                 }
+
                 ChildJobs.Add(childProxyJob);
             }
         }
@@ -1686,9 +1701,11 @@ namespace System.Management.Automation
                                 newComParCol.Add(cp);
                             }
                         }
+
                         listComParCol.Add(newComParCol);
                     }
                 }
+
                 childProxyJob.StartParameters = listComParCol;
             }
         }
@@ -1792,7 +1809,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Check if changes to the jobs properties can be accepted
+        /// Check if changes to the jobs properties can be accepted.
         /// </summary>
         private void AssertChangesCanBeAccepted()
         {
@@ -1905,7 +1922,7 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Assert if the object is not yet disposed and if so
-        /// throw an ObjectDisposedException
+        /// throw an ObjectDisposedException.
         /// </summary>
         /// <exception cref="ObjectDisposedException">Thrown if
         /// the object has already been disposed</exception>
@@ -2095,6 +2112,7 @@ namespace System.Management.Automation
                         Diagnostics.Assert(false,
                                            "We should not get an unidentified source job id in non interop scenarios");
                     }
+
                     return;
                 }
 
@@ -2115,6 +2133,7 @@ namespace System.Management.Automation
                                          "Finished updating child job {0} state to {1} ", sourceJobId.ToString(),
                                          jobStateEventArgs.JobStateInfo.State.ToString());
                 }
+
                 return;
             }
 
@@ -2322,6 +2341,7 @@ namespace System.Management.Automation
                     return parts[2];
                 }
             }
+
             return message;
         }
 
@@ -2330,9 +2350,9 @@ namespace System.Management.Automation
         #region IDisposable Overrides
 
         /// <summary>
-        /// Dispose all managed resources
+        /// Dispose all managed resources.
         /// </summary>
-        /// <param name="disposing">true when being disposed</param>
+        /// <param name="disposing">True when being disposed.</param>
         protected override void Dispose(bool disposing)
         {
             if (!disposing) return;
@@ -2344,6 +2364,7 @@ namespace System.Management.Automation
 
                 _isDisposed = true;
             }
+
             if (_receivePowerShell != null)
             {
                 _receivePowerShell.Stop();
@@ -2386,6 +2407,7 @@ namespace System.Management.Automation
 
         private enum QueueOperation
         { Stop, Suspend, Resume }
+
         private ConcurrentQueue<QueueOperation> _pendingOperations = new ConcurrentQueue<QueueOperation>();
 
         private ManualResetEvent _removeComplete;
@@ -2457,6 +2479,7 @@ namespace System.Management.Automation
                         }
                     }
                 }
+
                 return _jobSuspendedOrFinished;
             }
         }
@@ -2466,10 +2489,10 @@ namespace System.Management.Automation
         private RunspacePool _runspacePool;
         private EventHandler<JobDataAddedEventArgs> _dataAddedHandler;
         private EventHandler<JobStateEventArgs> _stateChangedHandler;
-        private const String ResBaseName = "PowerShellStrings";
+        private const string ResBaseName = "PowerShellStrings";
         private Guid _remoteJobInstanceId = Guid.Empty;
-        private string _remoteJobStatusMessage = String.Empty;
-        private string _remoteJobLocation = String.Empty;
+        private string _remoteJobStatusMessage = string.Empty;
+        private string _remoteJobLocation = string.Empty;
         private readonly Hashtable _childJobsMapping = new Hashtable();
         private readonly PowerShell _receivePowerShell = PowerShell.Create();
         private readonly PSDataCollection<PSObject> _receivePowerShellOutput = new PSDataCollection<PSObject>();
@@ -2567,26 +2590,32 @@ namespace System.Management.Automation
         {
             OnJobDataAdded(new JobDataAddedEventArgs(this, PowerShellStreamType.Output, e.Index));
         }
+
         private void ErrorAdded(object sender, DataAddedEventArgs e)
         {
             OnJobDataAdded(new JobDataAddedEventArgs(this, PowerShellStreamType.Error, e.Index));
         }
+
         private void WarningAdded(object sender, DataAddedEventArgs e)
         {
             OnJobDataAdded(new JobDataAddedEventArgs(this, PowerShellStreamType.Warning, e.Index));
         }
+
         private void VerboseAdded(object sender, DataAddedEventArgs e)
         {
             OnJobDataAdded(new JobDataAddedEventArgs(this, PowerShellStreamType.Verbose, e.Index));
         }
+
         private void ProgressAdded(object sender, DataAddedEventArgs e)
         {
             OnJobDataAdded(new JobDataAddedEventArgs(this, PowerShellStreamType.Progress, e.Index));
         }
+
         private void DebugAdded(object sender, DataAddedEventArgs e)
         {
             OnJobDataAdded(new JobDataAddedEventArgs(this, PowerShellStreamType.Debug, e.Index));
         }
+
         private void InformationAdded(object sender, DataAddedEventArgs e)
         {
             OnJobDataAdded(new JobDataAddedEventArgs(this, PowerShellStreamType.Information, e.Index));
@@ -2659,7 +2688,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Dispose
+        /// Dispose.
         /// </summary>
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
@@ -2678,13 +2707,14 @@ namespace System.Management.Automation
                 Debug.DataAdded -= DebugAdded;
                 Information.DataAdded -= InformationAdded;
             }
+
             base.Dispose(disposing);
         }
 
         #region Control method overrides
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void StartJob()
         {
@@ -2692,7 +2722,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void StartJobAsync()
         {
@@ -2700,7 +2730,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// StopJob
+        /// StopJob.
         /// </summary>
         /// <param name="force"></param>
         /// <param name="reason"></param>
@@ -2710,7 +2740,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void StopJobAsync()
         {
@@ -2718,7 +2748,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// StopJobAsync
+        /// StopJobAsync.
         /// </summary>
         /// <param name="force"></param>
         /// <param name="reason"></param>
@@ -2728,7 +2758,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void SuspendJob()
         {
@@ -2736,7 +2766,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void SuspendJobAsync()
         {
@@ -2744,7 +2774,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// SuspendJob
+        /// SuspendJob.
         /// </summary>
         /// <param name="force"></param>
         /// <param name="reason"></param>
@@ -2754,7 +2784,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// SuspendJobAsync
+        /// SuspendJobAsync.
         /// </summary>
         /// <param name="force"></param>
         /// <param name="reason"></param>
@@ -2764,7 +2794,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void ResumeJob()
         {
@@ -2772,7 +2802,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void ResumeJobAsync()
         {
@@ -2780,7 +2810,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void UnblockJob()
         {
@@ -2788,7 +2818,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void UnblockJobAsync()
         {
@@ -2796,7 +2826,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         public override void StopJob()
         {
@@ -2815,7 +2845,7 @@ namespace System.Management.Automation
         public event EventHandler<JobDataAddedEventArgs> JobDataAdded;
 
         /// <summary>
-        /// Status message
+        /// Status message.
         /// </summary>
         public override string StatusMessage
         {
@@ -2823,7 +2853,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Indicates the job has or can have more data on one or more data collection
+        /// Indicates the job has or can have more data on one or more data collection.
         /// </summary>
         public override bool HasMoreData
         {
@@ -2841,7 +2871,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// The location of the job
+        /// The location of the job.
         /// </summary>
         public override string Location
         {
@@ -2868,7 +2898,7 @@ namespace System.Management.Automation
     public sealed class JobDataAddedEventArgs : EventArgs
     {
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         /// <param name="job">The job that contains the data that is added.</param>
         /// <param name="dataType">The type of data that this event is raised for.</param>
@@ -2907,42 +2937,42 @@ namespace System.Management.Automation
     public enum PowerShellStreamType
     {
         /// <summary>
-        /// PSObject
+        /// PSObject.
         /// </summary>
         Input = 0,
 
         /// <summary>
-        /// PSObject
+        /// PSObject.
         /// </summary>
         Output = 1,
 
         /// <summary>
-        /// ErrorRecord
+        /// ErrorRecord.
         /// </summary>
         Error = 2,
 
         /// <summary>
-        /// WarningRecord
+        /// WarningRecord.
         /// </summary>
         Warning = 3,
 
         /// <summary>
-        /// VerboseRecord
+        /// VerboseRecord.
         /// </summary>
         Verbose = 4,
 
         /// <summary>
-        /// DebugRecord
+        /// DebugRecord.
         /// </summary>
         Debug = 5,
 
         /// <summary>
-        /// ProgressRecord
+        /// ProgressRecord.
         /// </summary>
         Progress = 6,
 
         /// <summary>
-        /// InformationRecord
+        /// InformationRecord.
         /// </summary>
         Information = 7
     }

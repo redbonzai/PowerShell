@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 /*============================================================
 **
@@ -14,7 +16,7 @@ using System.Collections.Generic;
 namespace System.Diagnostics.Eventing.Reader
 {
     /// <summary>
-    /// Log Type
+    /// Log Type.
     /// </summary>
     public enum EventLogType
     {
@@ -25,7 +27,7 @@ namespace System.Diagnostics.Eventing.Reader
     }
 
     /// <summary>
-    /// Log Isolation
+    /// Log Isolation.
     /// </summary>
     public enum EventLogIsolation
     {
@@ -35,7 +37,7 @@ namespace System.Diagnostics.Eventing.Reader
     }
 
     /// <summary>
-    /// Log Mode
+    /// Log Mode.
     /// </summary>
     public enum EventLogMode
     {
@@ -105,6 +107,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return (bool)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigEnabled);
             }
+
             set
             {
                 NativeWrapper.EvtSetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigEnabled, (object)value);
@@ -125,6 +128,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return (string)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigAccess);
             }
+
             set
             {
                 NativeWrapper.EvtSetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelConfigAccess, (object)value);
@@ -137,6 +141,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return (string)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigLogFilePath);
             }
+
             set
             {
                 NativeWrapper.EvtSetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigLogFilePath, (object)value);
@@ -149,6 +154,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return (long)((ulong)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigMaxSize));
             }
+
             set
             {
                 NativeWrapper.EvtSetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelLoggingConfigMaxSize, (object)value);
@@ -173,6 +179,7 @@ namespace System.Diagnostics.Eventing.Reader
 
                 return EventLogMode.Circular;
             }
+
             set
             {
                 switch (value)
@@ -215,6 +222,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return (int?)((uint?)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelPublishingConfigLevel));
             }
+
             set
             {
                 NativeWrapper.EvtSetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelPublishingConfigLevel, (object)value);
@@ -227,6 +235,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return (long?)((ulong?)NativeWrapper.EvtGetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelPublishingConfigKeywords));
             }
+
             set
             {
                 NativeWrapper.EvtSetChannelConfigProperty(_handle, UnsafeNativeMethods.EvtChannelConfigPropertyId.EvtChannelPublishingConfigKeywords, (object)value);
@@ -283,7 +292,6 @@ namespace System.Diagnostics.Eventing.Reader
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
 
         [System.Security.SecuritySafeCritical]
         protected virtual void Dispose(bool disposing)

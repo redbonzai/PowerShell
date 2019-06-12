@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation;
 
@@ -14,7 +13,7 @@ namespace Microsoft.PowerShell.Commands
     public class GetPSCallStackCommand : PSCmdlet
     {
         /// <summary>
-        /// Get the call stack
+        /// Get the call stack.
         /// </summary>
         protected override void ProcessRecord()
         {

@@ -1,13 +1,11 @@
-//
-// Copyright (c) 2007 Microsoft Corporation. All rights reserved.
-//
-
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Management.Automation;
 using System.ComponentModel;
+using System.Management.Automation;
+using System.Text;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -92,6 +90,7 @@ namespace Microsoft.PowerShell.Commands
                 return _types;
             }
         }
+
         private string[] _types = new string[] { "getevent.types.ps1xml" };
 
         /// <summary>

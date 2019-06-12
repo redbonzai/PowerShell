@@ -1,8 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 // ----------------------------------------------------------------------
-//
-//  Microsoft Windows NT
-//  Copyright (C) Microsoft Corporation, 2007.
-//
 //  Contents:  Entry points for managed PowerShell plugin worker used to
 //  host powershell in a WSMan service.
 // ----------------------------------------------------------------------
@@ -65,7 +63,6 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="isShuttingDown">true if the method is called from RegisterWaitForSingleObject
         /// callback. This boolean is used to decide whether to UnregisterWait or
@@ -109,9 +106,10 @@ namespace System.Management.Automation.Remoting
                 {
                     cmdTransportKvp.Value.Close(reasonForClose);
                 }
+
                 _activeCmdTransportManagers.Clear();
 
-                if (null != _registeredShutDownWaitHandle)
+                if (_registeredShutDownWaitHandle != null)
                 {
                     // This will not wait for the callback to complete.
                     _registeredShutDownWaitHandle.Unregister(null);
@@ -121,14 +119,14 @@ namespace System.Management.Automation.Remoting
                 // Delete the context only if isShuttingDown != true. isShuttingDown will
                 // be true only when the method is called from RegisterWaitForSingleObject
                 // handler..in which case the context will be freed from the callback.
-                if (null != _shutDownContext)
+                if (_shutDownContext != null)
                 {
                     _shutDownContext = null;
                 }
 
                 // This might happen when client did not send a receive request
                 // but the server is closing
-                if (null != _requestDetails)
+                if (_requestDetails != null)
                 {
                     // Notify that no more data is being sent on this transport.
                     WSManNativeApi.WSManPluginReceiveResult(
@@ -154,8 +152,8 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// used by powershell DS handler. notifies transport that powershell is back to running state
-        /// no payload
+        /// Used by powershell DS handler. notifies transport that powershell is back to running state
+        /// no payload.
         /// </summary>
         internal override void ReportExecutionStatusAsRunning()
         {
@@ -166,7 +164,7 @@ namespace System.Management.Automation.Remoting
 
             int result = (int)WSManPluginErrorCodes.NoError;
 
-            //there should have been a receive request in place already
+            // there should have been a receive request in place already
 
             lock (_syncObject)
             {
@@ -189,7 +187,7 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// if flush is true, data will be sent immediately to the client. This is accomplished
+        /// If flush is true, data will be sent immediately to the client. This is accomplished
         /// by using WSMAN_FLAG_RECEIVE_FLUSH flag provided by WSMan API.
         /// </summary>
         /// <param name="data"></param>
@@ -233,7 +231,7 @@ namespace System.Management.Automation.Remoting
                         if (flush)
                             flags |= (int)WSManNativeApi.WSManFlagReceive.WSMAN_FLAG_RECEIVE_FLUSH;
                         if (reportAsDataBoundary)
-                            //currently assigning hardcoded value for this flag, this is a new change in wsman.h and needs to be replaced with the actual definition once
+                            // currently assigning hardcoded value for this flag, this is a new change in wsman.h and needs to be replaced with the actual definition once
                             // modified wsman.h is in public headers
                             flags |= (int)WSManNativeApi.WSManFlagReceive.WSMAN_FLAG_RECEIVE_RESULT_DATA_BOUNDARY;
 
@@ -247,6 +245,7 @@ namespace System.Management.Automation.Remoting
                     }
                 }
             }
+
             if ((int)WSManPluginErrorCodes.NoError != result)
             {
                 ReportError(result, "WSManPluginReceiveResult");
@@ -263,7 +262,6 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="powerShellCmdId"></param>
         /// <returns></returns>
@@ -337,7 +335,7 @@ namespace System.Management.Automation.Remoting
                     // Wrap the provided handle so it can be passed to the registration function
                     SafeWaitHandle safeWaitHandle = new SafeWaitHandle(requestDetails.shutdownNotificationHandle, false); // Owned by WinRM
                     EventWaitHandle eventWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
-                    ClrFacade.SetSafeWaitHandle(eventWaitHandle, safeWaitHandle);
+                    eventWaitHandle.SafeWaitHandle = safeWaitHandle;
 
                     _registeredShutDownWaitHandle = ThreadPool.RegisterWaitForSingleObject(
                             eventWaitHandle,
@@ -345,7 +343,7 @@ namespace System.Management.Automation.Remoting
                             _shutDownContext,
                             -1, // INFINITE
                             true); // TODO: Do I need to worry not being able to set missing WT_TRANSFER_IMPERSONATION?
-                    if (null == _registeredShutDownWaitHandle)
+                    if (_registeredShutDownWaitHandle == null)
                     {
                         isRegisterWaitForSingleObjectSucceeded = false;
                     }
@@ -412,4 +410,4 @@ namespace System.Management.Automation.Remoting
             this.PowerShellGuidObserver -= new System.EventHandler(this.OnPowershellGuidReported);
         }
     }
-} // namespace System.Management.Automation.Remoting
+}

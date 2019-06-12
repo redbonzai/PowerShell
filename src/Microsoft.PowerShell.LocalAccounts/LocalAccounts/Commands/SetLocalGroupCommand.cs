@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #region Using directives
 using System;
 using System.Management.Automation;
@@ -7,7 +10,6 @@ using System.Management.Automation.SecurityAccountsManager.Extensions;
 
 using Microsoft.PowerShell.LocalAccounts;
 #endregion
-
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -35,8 +37,10 @@ namespace Microsoft.PowerShell.Commands
         public string Description
         {
             get { return this.description;}
+
             set { this.description = value; }
         }
+
         private string description;
 
         /// <summary>
@@ -53,8 +57,10 @@ namespace Microsoft.PowerShell.Commands
         public Microsoft.PowerShell.Commands.LocalGroup InputObject
         {
             get { return this.inputobject;}
+
             set { this.inputobject = value; }
         }
+
         private Microsoft.PowerShell.Commands.LocalGroup inputobject;
 
         /// <summary>
@@ -71,8 +77,10 @@ namespace Microsoft.PowerShell.Commands
         public string Name
         {
             get { return this.name;}
+
             set { this.name = value; }
         }
+
         private string name;
 
         /// <summary>
@@ -88,12 +96,12 @@ namespace Microsoft.PowerShell.Commands
         public System.Security.Principal.SecurityIdentifier SID
         {
             get { return this.sid;}
+
             set { this.sid = value; }
         }
+
         private System.Security.Principal.SecurityIdentifier sid;
         #endregion Parameter Properties
-
-
 
         #region Cmdlet Overrides
         /// <summary>
@@ -103,7 +111,6 @@ namespace Microsoft.PowerShell.Commands
         {
             sam = new Sam();
         }
-
 
         /// <summary>
         /// ProcessRecord method.
@@ -148,7 +155,6 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-
         /// <summary>
         /// EndProcessing method.
         /// </summary>
@@ -168,7 +174,7 @@ namespace Microsoft.PowerShell.Commands
             return ShouldProcess(target, Strings.ActionSetGroup);
         }
         #endregion Private Methods
-    }//End Class
+    }
 
-}//End namespace
+}
 

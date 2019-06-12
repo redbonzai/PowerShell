@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 /*============================================================
 **
@@ -28,7 +30,7 @@ namespace System.Diagnostics.Eventing.Reader
         private EventLogHandle _handle;
 
         /// <summary>
-        /// events buffer holds batched event (handles).
+        /// Events buffer holds batched event (handles).
         /// </summary>
         private IntPtr[] _eventsBuffer;
         /// <summary>
@@ -36,7 +38,7 @@ namespace System.Diagnostics.Eventing.Reader
         /// </summary>
         private int _currentIndex;
         /// <summary>
-        /// The number of events read from the batch into the eventsBuffer
+        /// The number of events read from the batch into the eventsBuffer.
         /// </summary>
         private int _eventCount;
 
@@ -79,10 +81,10 @@ namespace System.Diagnostics.Eventing.Reader
 
             _cachedMetadataInformation = new ProviderMetadataCachedInformation(eventQuery.Session, logfile, 50);
 
-            //explicit data
+            // explicit data
             _eventQuery = eventQuery;
 
-            //implicit
+            // implicit
             _batchSize = 64;
             _eventsBuffer = new IntPtr[_batchSize];
 
@@ -123,6 +125,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return _batchSize;
             }
+
             set
             {
                 if (value < 1)
@@ -150,7 +153,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 _eventCount = 0;
                 _currentIndex = 0;
-                return false; //no more events in the result set
+                return false; // no more events in the result set
             }
 
             _currentIndex = 0;
@@ -211,7 +214,7 @@ namespace System.Diagnostics.Eventing.Reader
         internal void SeekReset()
         {
             //
-            //close all unread event handles in the buffer
+            // close all unread event handles in the buffer
             //
             while (_currentIndex < _eventCount)
             {
@@ -219,7 +222,7 @@ namespace System.Diagnostics.Eventing.Reader
                 _currentIndex++;
             }
 
-            //reset the indexes used by Next
+            // reset the indexes used by Next
             _currentIndex = 0;
             _eventCount = 0;
             _isEof = false;
@@ -279,7 +282,7 @@ namespace System.Diagnostics.Eventing.Reader
                 case SeekOrigin.Current:
                     if (offset >= 0)
                     {
-                        //we can reuse elements in the batch.
+                        // we can reuse elements in the batch.
                         if (_currentIndex + offset < _eventCount)
                         {
                             //
@@ -295,8 +298,8 @@ namespace System.Diagnostics.Eventing.Reader
                             }
 
                             _currentIndex = (int)(_currentIndex + offset);
-                            //leave the eventCount unchanged
-                            //leave the same Eof
+                            // leave the eventCount unchanged
+                            // leave the same Eof
                         }
                         else
                         {
@@ -305,17 +308,9 @@ namespace System.Diagnostics.Eventing.Reader
                     }
                     else
                     {
-                        //if inside the current buffer, we still cannot read the events, as the handles.
-                        //may have already been closed.
-                        if (_currentIndex + offset >= 0)
-                        {
-                            SeekCommon(offset);
-                        }
-                        else  //outside the current buffer
-                        {
-                            SeekCommon(offset);
-                        }
+                        SeekCommon(offset);
                     }
+
                     return;
             }
         }
@@ -350,6 +345,7 @@ namespace System.Diagnostics.Eventing.Reader
                     EventLogStatus cs = new EventLogStatus(channelNames[i], errorStatuses[i]);
                     list.Add(cs);
                 }
+
                 return list.AsReadOnly();
             }
         }

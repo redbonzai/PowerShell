@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis; // for fxcop
 
@@ -14,7 +13,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Initializes a new instance of the AliasHelpInfo class.
         /// </summary>
-        ///
         /// <remarks>
         /// The constructor is private. The only way to create an
         /// AliasHelpInfo object is through static method <see cref="GetHelpInfo"/>
@@ -31,12 +29,12 @@ namespace System.Management.Automation
             this.ForwardHelpCategory = HelpCategory.Cmdlet |
                 HelpCategory.Function | HelpCategory.ExternalScript | HelpCategory.ScriptCommand | HelpCategory.Filter | HelpCategory.Workflow;
 
-            if (!String.IsNullOrEmpty(aliasInfo.Name))
+            if (!string.IsNullOrEmpty(aliasInfo.Name))
             {
                 Name = aliasInfo.Name.Trim();
             }
 
-            if (!String.IsNullOrEmpty(name))
+            if (!string.IsNullOrEmpty(name))
             {
                 Synopsis = name.Trim();
             }
@@ -52,16 +50,16 @@ namespace System.Management.Automation
         /// Returns the name of alias help.
         /// </summary>
         /// <value>Name of alias help.</value>
-        internal override string Name { get; } = "";
+        internal override string Name { get; } = string.Empty;
 
         /// <summary>
         /// Returns synopsis of alias help.
         /// </summary>
         /// <value>Synopsis of alias help.</value>
-        internal override string Synopsis { get; } = "";
+        internal override string Synopsis { get; } = string.Empty;
 
         /// <summary>
-        /// Help category for alias help. This is always HelpCategory.Alias
+        /// Help category for alias help. This is always HelpCategory.Alias.
         /// </summary>
         /// <value>Help category for alias help</value>
         internal override HelpCategory HelpCategory
@@ -102,7 +100,7 @@ namespace System.Management.Automation
 
             AliasHelpInfo aliasHelpInfo = new AliasHelpInfo(aliasInfo);
 
-            if (String.IsNullOrEmpty(aliasHelpInfo.Name))
+            if (string.IsNullOrEmpty(aliasHelpInfo.Name))
                 return null;
 
             aliasHelpInfo.AddCommonHelpProperties();

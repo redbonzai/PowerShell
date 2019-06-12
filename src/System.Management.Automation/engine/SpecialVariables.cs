@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
 
@@ -92,6 +91,7 @@ namespace System.Management.Automation
         internal static readonly VariablePath LastTokenVarPath = new VariablePath("global:" + LastToken);
 
         internal static bool IsUnderbar(string name) { return name.Length == 1 && name[0] == '_'; }
+
         internal const string PSItem = "PSItem";  // simple alias for $_
         internal const string Underbar = "_";
         internal static readonly VariablePath UnderbarVarPath = new VariablePath(Underbar);
@@ -116,10 +116,10 @@ namespace System.Management.Automation
 
         internal const string EventError = "error";
         internal static readonly VariablePath EventErrorVarPath = new VariablePath("script:" + EventError);
-
+#if !UNIX
         internal const string PathExt = "env:PATHEXT";
         internal static readonly VariablePath PathExtVarPath = new VariablePath(PathExt);
-
+#endif
         internal const string PSEmailServer = "PSEmailServer";
         internal static readonly VariablePath PSEmailServerVarPath = new VariablePath(PSEmailServer);
 
@@ -160,8 +160,8 @@ namespace System.Management.Automation
         internal const string IsLinux = "IsLinux";
         internal static VariablePath IsLinuxPath = new VariablePath("IsLinux");
 
-        internal const string IsOSX = "IsOSX";
-        internal static VariablePath IsOSXPath = new VariablePath("IsOSX");
+        internal const string IsMacOS = "IsMacOS";
+        internal static VariablePath IsMacOSPath = new VariablePath("IsMacOS");
 
         internal const string IsWindows = "IsWindows";
         internal static VariablePath IsWindowsPath = new VariablePath("IsWindows");
@@ -202,22 +202,20 @@ namespace System.Management.Automation
         internal static readonly VariablePath ErrorViewVarPath = new VariablePath(ErrorView);
 
         /// <summary>
-        /// shell environment variable
+        /// Shell environment variable.
         /// </summary>
         internal const string PSSessionConfigurationName = "PSSessionConfigurationName";
         internal static readonly VariablePath PSSessionConfigurationNameVarPath = new VariablePath("global:" + PSSessionConfigurationName);
 
         /// <summary>
-        /// environment variable that will define the default
-        /// application name for the connection uri
+        /// Environment variable that will define the default
+        /// application name for the connection uri.
         /// </summary>
         internal const string PSSessionApplicationName = "PSSessionApplicationName";
         internal static readonly VariablePath PSSessionApplicationNameVarPath = new VariablePath("global:" + PSSessionApplicationName);
 
-
         #region AllScope variables created in every session
 
-        internal const string ConsoleFileName = "ConsoleFileName";
         internal const string ExecutionContext = "ExecutionContext";
         internal const string Home = "HOME";
         internal const string Host = "Host";
@@ -228,22 +226,7 @@ namespace System.Management.Automation
         internal const string PSVersionTable = "PSVersionTable";
         internal const string PSEdition = "PSEdition";
         internal const string ShellId = "ShellId";
-
-
-        internal static List<string> AllScopeSessionVariables = new List<string>
-        {
-            ConsoleFileName,
-            ExecutionContext,
-            Home,
-            Host,
-            PID,
-            PSCulture,
-            PSHome,
-            PSUICulture,
-            PSVersionTable,
-            PSEdition,
-            ShellId
-        };
+        internal const string EnabledExperimentalFeatures = "EnabledExperimentalFeatures";
 
         #endregion AllScope variables created in every session
 
@@ -297,7 +280,6 @@ namespace System.Management.Automation
         // also exists.
         internal static readonly string[] AllScopeVariables = {
                                                                   SpecialVariables.Question,
-                                                                  SpecialVariables.ConsoleFileName,
                                                                   SpecialVariables.ExecutionContext,
                                                                   SpecialVariables.False,
                                                                   SpecialVariables.Home,
@@ -310,6 +292,7 @@ namespace System.Management.Automation
                                                                   SpecialVariables.PSEdition,
                                                                   SpecialVariables.ShellId,
                                                                   SpecialVariables.True,
+                                                                  SpecialVariables.EnabledExperimentalFeatures,
                                                               };
 
         private static readonly HashSet<string> s_classMethodsAccessibleVariables = new HashSet<string>

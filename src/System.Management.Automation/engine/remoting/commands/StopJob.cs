@@ -1,6 +1,5 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -24,7 +23,7 @@ namespace Microsoft.PowerShell.Commands
         #region Parameters
         /// <summary>
         /// Specifies the Jobs objects which need to be
-        /// removed
+        /// removed.
         /// </summary>
         [Parameter(Mandatory = true,
                    Position = 0,
@@ -39,11 +38,13 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _jobs;
             }
+
             set
             {
                 _jobs = value;
             }
         }
+
         private Job[] _jobs;
 
         /// <summary>
@@ -56,17 +57,18 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _passThru;
             }
+
             set
             {
                 _passThru = value;
             }
         }
+
         private bool _passThru;
 
         /// <summary>
-        ///
         /// </summary>
-        public override String[] Command
+        public override string[] Command
         {
             get
             {
@@ -83,7 +85,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            //List of jobs to stop
+            // List of jobs to stop
             List<Job> jobsToStop = null;
 
             switch (ParameterSetName)
@@ -92,36 +94,42 @@ namespace Microsoft.PowerShell.Commands
                     {
                         jobsToStop = FindJobsMatchingByName(true, false, true, false);
                     }
+
                     break;
 
                 case InstanceIdParameterSet:
                     {
                         jobsToStop = FindJobsMatchingByInstanceId(true, false, true, false);
                     }
+
                     break;
 
                 case SessionIdParameterSet:
                     {
                         jobsToStop = FindJobsMatchingBySessionId(true, false, true, false);
                     }
+
                     break;
 
                 case StateParameterSet:
                     {
                         jobsToStop = FindJobsMatchingByState(false);
                     }
+
                     break;
 
                 case FilterParameterSet:
                     {
                         jobsToStop = FindJobsMatchingByFilter(false);
                     }
+
                     break;
 
                 default:
                     {
                         jobsToStop = CopyJobsToList(_jobs, false, false);
                     }
+
                     break;
             }
 
@@ -134,6 +142,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     continue;
                 }
+
                 string targetString =
                     PSRemotingErrorInvariants.FormatResourceString(RemotingErrorIdStrings.RemovePSJobWhatIfTarget,
                                                                    job.Command, job.Id);
@@ -161,24 +170,13 @@ namespace Microsoft.PowerShell.Commands
                     else
                     {
                         job.StopJob();
-                        var parentJob = job as ContainerParentJob;
-                        if (parentJob != null && parentJob.ExecutionError.Count > 0)
-                        {
-                            foreach (
-                                var e in
-                                    parentJob.ExecutionError.Where(
-                                        e => e.FullyQualifiedErrorId == "ContainerParentJobStopError"))
-                            {
-                                WriteError(e);
-                            }
-                        }
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Wait for all the stop jobs to be completed
+        /// Wait for all the stop jobs to be completed.
         /// </summary>
         protected override void EndProcessing()
         {
@@ -201,7 +199,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        ///
         /// </summary>
         protected override void StopProcessing()
         {
@@ -240,6 +237,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     _pendingJobs.Remove(job.InstanceId);
                 }
+
                 if (_needToCheckForWaitingJobs && _pendingJobs.Count == 0)
                     releaseWait = true;
             }
@@ -269,7 +267,6 @@ namespace Microsoft.PowerShell.Commands
         #region Dispose
 
         /// <summary>
-        ///
         /// </summary>
         public void Dispose()
         {
@@ -278,7 +275,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="disposing"></param>
         protected void Dispose(bool disposing)
@@ -288,6 +284,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 pair.Key.StopJobCompleted -= pair.Value;
             }
+
             _waitForJobs.Dispose();
         }
         #endregion Dispose

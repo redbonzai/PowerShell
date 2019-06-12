@@ -1,4 +1,7 @@
-﻿using System;
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -247,11 +250,11 @@ namespace Extensions
         /// <summary>
         /// An "overload" of the
         /// <see cref="Microsoft.Management.Infrastructure.CimSession"/>.QueryInstances
-        /// method that takes only the namespace and query string as a parameters
+        /// method that takes only the namespace and query string as a parameters.
         /// </summary>
-        /// <param name="session">The CimSession to be queried</param>
-        /// <param name="nameSpace">A string containing the namespace to run the query against</param>
-        /// <param name="query">A string containing the query to be run</param>
+        /// <param name="session">The CimSession to be queried.</param>
+        /// <param name="nameSpace">A string containing the namespace to run the query against.</param>
+        /// <param name="query">A string containing the query to be run.</param>
         /// <returns>
         /// An IEnumerable interface that can be used to enumerate the instances
         /// </returns>
@@ -263,9 +266,9 @@ namespace Extensions
         /// <summary>
         /// Execute a CIM query and return only the first instance in the result.
         /// </summary>
-        /// <param name="session">The CimSession to be queried</param>
-        /// <param name="nameSpace">A string containing the namespace to run the query against</param>
-        /// <param name="query">A string containing the query to be run</param>
+        /// <param name="session">The CimSession to be queried.</param>
+        /// <param name="nameSpace">A string containing the namespace to run the query against.</param>
+        /// <param name="query">A string containing the query to be run.</param>
         /// <returns>
         /// A <see cref="Microsoft.Management.Infrastructure.CimInstance"/> object
         /// representing the first instance in a query result if successful, null
@@ -292,8 +295,8 @@ namespace Extensions
         /// <summary>
         /// Execute a CIM query and return only the first instance in the result.
         /// </summary>
-        /// <param name="session">The CimSession to be queried</param>
-        /// <param name="query">A string containing the query to be run</param>
+        /// <param name="session">The CimSession to be queried.</param>
+        /// <param name="query">A string containing the query to be run.</param>
         /// <returns>
         /// A <see cref="Microsoft.Management.Infrastructure.CimInstance"/> object
         /// representing the first instance in a query result if successful, null

@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
 #pragma warning disable 56506
@@ -17,12 +16,10 @@ namespace System.Management.Automation
         /// <summary>
         /// Transforms the input data to an PSCredential.
         /// </summary>
-        ///
         /// <param name="engineIntrinsics">
         /// The engine APIs for the context under which the transformation is being
         /// made.
         /// </param>
-        ///
         /// <param name="inputData">
         /// If Null, the transformation prompts for both Username and Password
         /// If a string, the transformation uses the input for a username, and prompts
@@ -72,7 +69,6 @@ namespace System.Management.Automation
                 string caption = null;
                 string prompt = null;
 
-
                 caption = CredentialAttributeStrings.CredentialAttribute_Prompt_Caption;
 
                 prompt = CredentialAttributeStrings.CredentialAttribute_Prompt;
@@ -81,7 +77,7 @@ namespace System.Management.Automation
                            caption,
                            prompt,
                            userName,
-                           "");
+                           string.Empty);
             }
 
             return cred;

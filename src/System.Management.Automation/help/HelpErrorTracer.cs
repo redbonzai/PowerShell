@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.ObjectModel;
@@ -34,7 +33,6 @@ namespace System.Management.Automation
     ///
     /// When the TraceFrame instance is disposed, all errorRecords stored will be
     /// dumped into HelpSystem.LastErrors with context information attached.
-    ///
     /// </summary>
     internal class HelpErrorTracer
     {
@@ -55,7 +53,7 @@ namespace System.Management.Automation
         internal sealed class TraceFrame : IDisposable
         {
             // Following are help context information
-            private string _helpFile = "";
+            private string _helpFile = string.Empty;
 
             // ErrorRecords accumulated during the help content loading.
             private Collection<ErrorRecord> _errors = new Collection<ErrorRecord>();
@@ -108,7 +106,7 @@ namespace System.Management.Automation
                 if (_helpTracer.HelpSystem.VerboseHelpErrors && _errors.Count > 0)
                 {
                     ErrorRecord errorRecord = new ErrorRecord(new ParentContainsErrorRecordException("Help Load Error"), "HelpLoadError", ErrorCategory.SyntaxError, null);
-                    errorRecord.ErrorDetails = new ErrorDetails(typeof(HelpErrorTracer).GetTypeInfo().Assembly, "HelpErrors", "HelpLoadError", _helpFile, _errors.Count);
+                    errorRecord.ErrorDetails = new ErrorDetails(typeof(HelpErrorTracer).Assembly, "HelpErrors", "HelpLoadError", _helpFile, _errors.Count);
                     _helpTracer.HelpSystem.LastErrors.Add(errorRecord);
 
                     foreach (ErrorRecord error in _errors)
@@ -139,7 +137,7 @@ namespace System.Management.Automation
         private ArrayList _traceFrames = new ArrayList();
 
         /// <summary>
-        /// This is the API to use for starting a help trace scope
+        /// This is the API to use for starting a help trace scope.
         /// </summary>
         /// <param name="helpFile"></param>
         /// <returns></returns>

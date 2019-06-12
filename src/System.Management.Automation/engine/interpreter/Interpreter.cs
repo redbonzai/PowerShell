@@ -4,7 +4,7 @@
  *
  * This source code is subject to terms and conditions of the Apache License, Version 2.0. A
  * copy of the license can be found in the License.html file at the root of this distribution. If
- * you cannot locate the  Apache License, Version 2.0, please send an email to
+ * you cannot locate the Apache License, Version 2.0, please send an email to
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
  * by the terms of the Apache License, Version 2.0.
  *
@@ -19,10 +19,6 @@ using System.Linq.Expressions;
 using Microsoft.Scripting.Ast;
 #endif
 
-#if CORECLR
-// Use stub for SpecialNameAttribute
-using Microsoft.PowerShell.CoreClr.Stubs;
-#endif
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -79,6 +75,7 @@ namespace System.Management.Automation.Interpreter
                 {
                     return 0;
                 }
+
                 return ClosureVariables.Count;
             }
         }
@@ -117,7 +114,6 @@ namespace System.Management.Automation.Interpreter
             }
         }
 
-#if !CORECLR // Thread.Abort and ThreadAbortException are not in CoreCLR.
         /// <summary>
         /// To get to the current AbortReason object on Thread.CurrentThread
         /// we need to use ExceptionState property of any ThreadAbortException instance.
@@ -127,7 +123,7 @@ namespace System.Management.Automation.Interpreter
 
         /// <summary>
         /// If the target that 'Goto' jumps to is inside the current catch block or the subsequent finally block,
-        /// we delay the call to 'Abort' method, because we want to finish the catch/finally blocks
+        /// we delay the call to 'Abort' method, because we want to finish the catch/finally blocks.
         /// </summary>
         internal static void AbortThreadIfRequested(InterpretedFrame frame, int targetLabelIndex)
         {
@@ -153,14 +149,6 @@ namespace System.Management.Automation.Interpreter
                 }
             }
         }
-#else
-        /// <summary>
-        /// A thread cannot be aborted in CoreCLR, as Thread.Abort() is not available in CoreCLR (neither is ThreadAbortException).
-        /// So this method doesn't need to do anything when running with CoreCLR
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void AbortThreadIfRequested(InterpretedFrame frame, int targetLabelIndex) { }
-#endif
 
         internal int ReturnAndRethrowLabelIndex
         {

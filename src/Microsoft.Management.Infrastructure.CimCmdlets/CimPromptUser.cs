@@ -1,7 +1,5 @@
-/*============================================================================
- * Copyright (C) Microsoft Corporation, All rights reserved.
- *============================================================================
- */
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #region Using directives
 using Microsoft.Management.Infrastructure.Options;
@@ -24,7 +22,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
     internal sealed class CimPromptUser : CimSyncAction
     {
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         public CimPromptUser(string message,
             CimPromptType prompt)
@@ -84,6 +82,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                         // unblocking the waiting thread
                         this.OnComplete();
                     }
+
                     break;
                 case CimPromptType.Normal:
                     try
@@ -108,32 +107,35 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                         // unblocking the waiting thread
                         this.OnComplete();
                     }
+
                     break;
                 default:
                     break;
             }
+
             this.OnComplete();
         }
 
         #region members
 
         /// <summary>
-        /// prompt message
+        /// Prompt message.
         /// </summary>
         public string Message
-	{
+        {
             get
             {
                 return message;
             }
         }
+
         private string message;
 
         /// <summary>
-        /// prompt type -Normal or Critical
+        /// Prompt type -Normal or Critical.
         /// </summary>
         private CimPromptType prompt;
 
         #endregion
-    }//End Class
-}//End namespace
+    }
+}

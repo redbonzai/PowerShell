@@ -1,13 +1,13 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
-using System.Text;
-using System.Reflection;
 using System.Diagnostics;
-using Dbg = System.Management.Automation;
 using System.Globalization;
+using System.Reflection;
+using System.Text;
+
+using Dbg = System.Management.Automation;
 
 namespace System.Management.Automation
 {
@@ -27,7 +27,7 @@ namespace System.Management.Automation
         /// </param>
         public FlagsExpression(string expression)
         {
-            if (!typeof(T).GetTypeInfo().IsEnum)
+            if (!typeof(T).IsEnum)
             {
                 throw InterpreterError.NewInterpreterException(expression, typeof(RuntimeException),
                     null, "InvalidGenericType", EnumExpressionEvaluatorStrings.InvalidGenericType);
@@ -35,7 +35,7 @@ namespace System.Management.Automation
 
             _underType = Enum.GetUnderlyingType(typeof(T));
 
-            if (String.IsNullOrWhiteSpace(expression))
+            if (string.IsNullOrWhiteSpace(expression))
             {
                 throw InterpreterError.NewInterpreterException(expression, typeof(RuntimeException),
                     null, "EmptyInputString", EnumExpressionEvaluatorStrings.EmptyInputString);
@@ -59,7 +59,7 @@ namespace System.Management.Automation
         /// </param>
         public FlagsExpression(object[] expression)
         {
-            if (!typeof(T).GetTypeInfo().IsEnum)
+            if (!typeof(T).IsEnum)
             {
                 throw InterpreterError.NewInterpreterException(expression, typeof(RuntimeException),
                     null, "InvalidGenericType", EnumExpressionEvaluatorStrings.InvalidGenericType);
@@ -67,7 +67,7 @@ namespace System.Management.Automation
 
             _underType = Enum.GetUnderlyingType(typeof(T));
 
-            if (null == expression)
+            if (expression == null)
             {
                 throw InterpreterError.NewInterpreterException(null, typeof(ArgumentNullException),
                     null, "EmptyInputString", EnumExpressionEvaluatorStrings.EmptyInputString);
@@ -75,7 +75,7 @@ namespace System.Management.Automation
 
             foreach (string inputClause in expression)
             {
-                if (String.IsNullOrWhiteSpace(inputClause))
+                if (string.IsNullOrWhiteSpace(inputClause))
                 {
                     throw InterpreterError.NewInterpreterException(expression, typeof(RuntimeException),
                         null, "EmptyInputString", EnumExpressionEvaluatorStrings.EmptyInputString);
@@ -244,6 +244,7 @@ namespace System.Management.Automation
                 {
                     return _operandValue;
                 }
+
                 set
                 {
                     _operandValue = value;
@@ -281,6 +282,7 @@ namespace System.Management.Automation
                     long operandValue = (long)LanguagePrimitives.ConvertTo(_operandValue, typeof(long), CultureInfo.InvariantCulture);
                     satisfy = (operandValue == (valueToCheck & operandValue));
                 }
+
                 return satisfy;
             }
 
@@ -302,6 +304,7 @@ namespace System.Management.Automation
                     long operandValue = (long)LanguagePrimitives.ConvertTo(_operandValue, typeof(long), CultureInfo.InvariantCulture);
                     exist = valueToCheck == (valueToCheck & operandValue);
                 }
+
                 return exist;
             }
 
@@ -395,6 +398,7 @@ namespace System.Management.Automation
                     tokenList.Add(GetNextToken(input, ref _offset));
                 }
             }
+
             return tokenList;
         }
 
@@ -437,8 +441,8 @@ namespace System.Management.Automation
         private Token GetNextToken(string input, ref int _offset)
         {
             StringBuilder sb = new StringBuilder();
-            //bool singleQuoted = false;
-            //bool doubleQuoted = false;
+            // bool singleQuoted = false;
+            // bool doubleQuoted = false;
             bool readingIdentifier = false;
             while (_offset < input.Length)
             {
@@ -453,6 +457,7 @@ namespace System.Management.Automation
                     {
                         _offset--;
                     }
+
                     break;
                 }
                 else
@@ -460,7 +465,7 @@ namespace System.Management.Automation
                     sb.Append(cc);
                     readingIdentifier = true;
                 }
-            }//while
+            }
 
             string result = sb.ToString().Trim();
             // If resulting identifier is enclosed in paired quotes,
@@ -475,7 +480,7 @@ namespace System.Management.Automation
             result = result.Trim();
 
             // possible empty token because white spaces are enclosed in quotation marks.
-            if (String.IsNullOrWhiteSpace(result))
+            if (string.IsNullOrWhiteSpace(result))
             {
                 throw InterpreterError.NewInterpreterException(input, typeof(RuntimeException),
                     null, "EmptyTokenString", EnumExpressionEvaluatorStrings.EmptyTokenString,
@@ -490,6 +495,7 @@ namespace System.Management.Automation
                         null, "NoIdentifierGroupingAllowed", EnumExpressionEvaluatorStrings.NoIdentifierGroupingAllowed);
                 }
             }
+
             if (result.Equals(","))
             {
                 return (new Token(TokenKind.Or));
@@ -559,6 +565,7 @@ namespace System.Management.Automation
                     string text = token.Text;
                     token.Text = EnumMinimumDisambiguation.EnumDisambiguate(text, typeof(T));
                 }
+
                 previous = token.Kind;
             }
         }
@@ -600,7 +607,7 @@ namespace System.Management.Automation
                 }
                 else if (kind == TokenKind.And)
                 {
-                    ;   // do nothing
+                    // do nothing
                 }
                 else if (kind == TokenKind.Or)
                 {
@@ -613,9 +620,10 @@ namespace System.Management.Automation
                         andNode.Operand1 = andQueue.Dequeue();
                         andCurrent = andNode;
                     }
+
                     orQueue.Enqueue(andCurrent);
                 }
-            }//foreach
+            }
 
             // Dequeue all nodes from OR queue,
             // create the OR tree (final expression tree)
@@ -626,6 +634,7 @@ namespace System.Management.Automation
                 orNode.Operand1 = orQueue.Dequeue();
                 orCurrent = orNode;
             }
+
             return orCurrent;
         }
 

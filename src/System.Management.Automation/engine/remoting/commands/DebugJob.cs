@@ -1,14 +1,13 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
 using System.Management.Automation.Internal;
-using System.Management.Automation.Runspaces;
 using System.Management.Automation.Remoting.Internal;
+using System.Management.Automation.Runspaces;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -23,7 +22,6 @@ namespace Microsoft.PowerShell.Commands
     /// When a job is debugged its output data is written to host and the executing job
     /// script will break into the host debugger, in step mode, at the next stoppable
     /// execution point.
-    ///
     /// </summary>
     [SuppressMessage("Microsoft.PowerShell", "PS1012:CallShouldProcessOnlyIfDeclaringSupport")]
     [Cmdlet(VerbsDiagnostic.Debug, "Job", SupportsShouldProcess = true, DefaultParameterSetName = DebugJobCommand.JobParameterSet,

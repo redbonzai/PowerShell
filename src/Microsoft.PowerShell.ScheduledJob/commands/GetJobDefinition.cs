@@ -1,11 +1,10 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
-using System.Management.Automation;
 using System.Diagnostics.CodeAnalysis;
+using System.Management.Automation;
 
 namespace Microsoft.PowerShell.ScheduledJob
 {
@@ -31,8 +30,10 @@ namespace Microsoft.PowerShell.ScheduledJob
         public Int32[] Id
         {
             get { return _definitionIds; }
+
             set { _definitionIds = value; }
         }
+
         private Int32[] _definitionIds;
 
         /// <summary>
@@ -45,8 +46,10 @@ namespace Microsoft.PowerShell.ScheduledJob
         public string[] Name
         {
             get { return _definitionNames; }
+
             set { _definitionNames = value; }
         }
+
         private string[] _definitionNames;
 
         #endregion
@@ -78,6 +81,7 @@ namespace Microsoft.PowerShell.ScheduledJob
                                 WriteObject(definition);
                             });
                     }
+
                     break;
 
                 case DefinitionNameParameterSet:

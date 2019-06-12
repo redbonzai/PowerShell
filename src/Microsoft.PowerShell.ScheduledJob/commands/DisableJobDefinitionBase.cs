@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -16,17 +15,17 @@ namespace Microsoft.PowerShell.ScheduledJob
         #region Parameters
 
         /// <summary>
-        /// DefinitionIdParameterSet
+        /// DefinitionIdParameterSet.
         /// </summary>
         protected const string DefinitionIdParameterSet = "DefinitionId";
 
         /// <summary>
-        /// DefinitionNameParameterSet
+        /// DefinitionNameParameterSet.
         /// </summary>
         protected const string DefinitionNameParameterSet = "DefinitionName";
 
         /// <summary>
-        /// DefinitionParameterSet
+        /// DefinitionParameterSet.
         /// </summary>
         protected const string DefinitionParameterSet = "Definition";
 
@@ -39,8 +38,10 @@ namespace Microsoft.PowerShell.ScheduledJob
         public ScheduledJobDefinition InputObject
         {
             get { return _definition; }
+
             set { _definition = value; }
         }
+
         private ScheduledJobDefinition _definition;
 
         /// <summary>
@@ -51,8 +52,10 @@ namespace Microsoft.PowerShell.ScheduledJob
         public Int32 Id
         {
             get { return _definitionId; }
+
             set { _definitionId = value; }
         }
+
         private Int32 _definitionId;
 
         /// <summary>
@@ -64,8 +67,10 @@ namespace Microsoft.PowerShell.ScheduledJob
         public string Name
         {
             get { return _definitionName; }
+
             set { _definitionName = value; }
         }
+
         private string _definitionName;
 
         /// <summary>
@@ -77,8 +82,10 @@ namespace Microsoft.PowerShell.ScheduledJob
         public SwitchParameter PassThru
         {
             get { return _passThru; }
+
             set { _passThru = value; }
         }
+
         private SwitchParameter _passThru;
 
         #endregion

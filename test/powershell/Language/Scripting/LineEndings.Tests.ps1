@@ -1,4 +1,6 @@
-﻿Describe 'Line endings' -Tags "CI" {
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+Describe 'Line endings' -Tags "CI" {
     BeforeAll {
         $lf = "`n"
         $cr = "`r"
@@ -111,10 +113,10 @@
 
         # wrap the content in the specified begin and end quoting characters.
         $content = "$($Begin)$($expected)$($End)"
-        $actual = iex $content
+        $actual = Invoke-Expression $content
 
         # $actual should be the content string ($expected) without the begin and end quoting characters.
-        $actual | Should Be $expected
+        $actual | Should -BeExactly $expected
     }
 
     It '<Name> in ps file' -TestCases:$testData {
@@ -133,7 +135,7 @@
         $actual = &( "TESTDRIVE:\$fileName")
 
         # $actual should be the content string ($expected) without the begin and end quoting characters.
-        $actual | Should Be $expected
+        $actual | Should -BeExactly $expected
     }
 }
 

@@ -1,17 +1,17 @@
-/********************************************************************++
- * Copyright (c) Microsoft Corporation.  All rights reserved.
- * --********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation.Internal;
+using System.Management.Automation.Remoting.Client;
 using System.Management.Automation.Runspaces;
 using System.Management.Automation.Runspaces.Internal;
-using System.Management.Automation.Remoting.Client;
+
 using Dbg = System.Management.Automation.Diagnostics;
 
 namespace System.Management.Automation.Remoting
 {
     /// <summary>
-    /// Implements ServerRemoteSessionDataStructureHandler
+    /// Implements ServerRemoteSessionDataStructureHandler.
     /// </summary>
     internal class ClientRemoteSessionDSHandlerImpl : ClientRemoteSessionDataStructureHandler, IDisposable
     {
@@ -55,7 +55,7 @@ namespace System.Management.Automation.Remoting
         #region constructors
 
         /// <summary>
-        /// Creates an instance of ClientRemoteSessionDSHandlerImpl
+        /// Creates an instance of ClientRemoteSessionDSHandlerImpl.
         /// </summary>
         internal ClientRemoteSessionDSHandlerImpl(ClientRemoteSession session,
             PSRemotingCryptoHelper cryptoHelper,
@@ -71,7 +71,7 @@ namespace System.Management.Automation.Remoting
 
             _session = session;
 
-            //Create state machine
+            // Create state machine
             _stateMachine = new ClientRemoteSessionDSHandlerStateMachine();
             _stateMachine.StateChanged += HandleStateChanged;
 
@@ -93,7 +93,7 @@ namespace System.Management.Automation.Remoting
             _transportManager.RobustConnectionNotification += new EventHandler<ConnectionStatusEventArgs>(HandleRobustConnectionNotification);
 
             WSManConnectionInfo wsmanConnectionInfo = _connectionInfo as WSManConnectionInfo;
-            if (null != wsmanConnectionInfo)
+            if (wsmanConnectionInfo != null)
             {
                 // only WSMan transport supports redirection
 
@@ -120,7 +120,7 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// This callback is called on complete of async connect call
+        /// This callback is called on complete of async connect call.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
@@ -134,8 +134,8 @@ namespace System.Management.Automation.Remoting
 
         private void HandleConnectComplete(object sender, EventArgs args)
         {
-            //No-OP. Once the negotiation messages are exchanged and the session gets into established state,
-            //it will take care of spawning the receive operation on the connected session
+            // No-OP. Once the negotiation messages are exchanged and the session gets into established state,
+            // it will take care of spawning the receive operation on the connected session
             // There is however a caveat.
             // A rouge remote server if it does not send the required negotiation data in the Connect Response,
             // then the state machine can never get into the established state and the runspace can never get into a opened state
@@ -152,7 +152,7 @@ namespace System.Management.Automation.Remoting
 
         private void HandleDisconnectComplete(object sender, EventArgs args)
         {
-            //Set statemachine event
+            // Set statemachine event
             RemoteSessionStateMachineEventArgs disconnectCompletedArg = new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.DisconnectCompleted);
             StateMachine.RaiseEvent(disconnectCompletedArg);
         }
@@ -197,7 +197,7 @@ namespace System.Management.Automation.Remoting
 
         private void HandleReconnectComplete(object sender, EventArgs args)
         {
-            //Set statemachine event
+            // Set statemachine event
             RemoteSessionStateMachineEventArgs reconnectCompletedArg = new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.ReconnectCompleted);
             StateMachine.RaiseEvent(reconnectCompletedArg);
         }
@@ -230,13 +230,12 @@ namespace System.Management.Automation.Remoting
             _stateMachine.RaiseEvent(closeCompletedArg);
         }
 
-
         #endregion close
 
         #region negotiation
 
         /// <summary>
-        /// Sends the negotiation package asynchronously
+        /// Sends the negotiation package asynchronously.
         /// </summary>
         internal override void SendNegotiationAsync(RemoteSessionState sessionState)
         {
@@ -244,7 +243,7 @@ namespace System.Management.Automation.Remoting
             // is prepared for a NegotiationReceived response.  Otherwise a race condition can
             // occur when the transport NegotiationReceived arrives too soon, breaking the session.
             // This race condition was observed for OutOfProc transport when reusing the OutOfProc process.
-            //this will change StateMachine to NegotiationSent.
+            // this will change StateMachine to NegotiationSent.
             RemoteSessionStateMachineEventArgs negotiationSendCompletedArg =
                 new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.NegotiationSendCompleted);
             _stateMachine.RaiseEvent(negotiationSendCompletedArg);
@@ -297,7 +296,7 @@ namespace System.Management.Automation.Remoting
                 SendNegotiationAsync(arg.SessionStateInfo.State);
             }
 
-            //once session is established.. start receiving data (if not already done and only apples to wsmanclientsessionTM)
+            // once session is established.. start receiving data (if not already done and only apples to wsmanclientsessionTM)
             if (arg.SessionStateInfo.State == RemoteSessionState.Established)
             {
                 WSManClientSessionTransportManager tm = _transportManager as WSManClientSessionTransportManager;
@@ -315,13 +314,13 @@ namespace System.Management.Automation.Remoting
                 CloseConnectionAsync();
             }
 
-            //process disconnect
+            // process disconnect
             if (arg.SessionStateInfo.State == RemoteSessionState.Disconnecting)
             {
                 DisconnectAsync();
             }
 
-            //process reconnect
+            // process reconnect
             if (arg.SessionStateInfo.State == RemoteSessionState.Reconnecting)
             {
                 ReconnectAsync();
@@ -337,7 +336,7 @@ namespace System.Management.Automation.Remoting
             RemoteSessionCapability clientCapability = _session.Context.ClientCapability;
             Dbg.Assert(clientCapability.RemotingDestination == RemotingDestination.Server, "Expected clientCapability.RemotingDestination == RemotingDestination.Server");
 
-            //Encode and send the negotiation reply
+            // Encode and send the negotiation reply
             RemoteDataObject data = RemotingEncoder.GenerateClientSessionCapability(
                                         clientCapability, _session.RemoteRunspacePoolInternal.InstanceId);
             RemoteDataObject<PSObject> dataAsPSObject = RemoteDataObject<PSObject>.CreateFrom(
@@ -363,7 +362,7 @@ namespace System.Management.Automation.Remoting
         /// 1. Close the current transport manager to clean resources
         /// 2. Raise a warning that URI is getting redirected.
         /// 3. Using the new URI, ask the same transport manager to redirect
-        /// Step 1 is performed here. Step2-3 is performed in another method
+        /// Step 1 is performed here. Step2-3 is performed in another method.
         /// </summary>
         /// <param name="newURIString"></param>
         /// <exception cref="ArgumentNullException">
@@ -434,7 +433,7 @@ namespace System.Management.Automation.Remoting
         /// <param name="newURI"></param>
         private void PerformURIRedirectionStep2(System.Uri newURI)
         {
-            Dbg.Assert(null != newURI, "Uri cannot be null");
+            Dbg.Assert(newURI != null, "Uri cannot be null");
             lock (_syncObject)
             {
                 // if connection is closed by the user..no need to redirect
@@ -444,7 +443,7 @@ namespace System.Management.Automation.Remoting
                 }
 
                 // raise warning to report the redirection
-                if (null != _uriRedirectionHandler)
+                if (_uriRedirectionHandler != null)
                 {
                     _uriRedirectionHandler(newURI);
                 }
@@ -488,7 +487,7 @@ namespace System.Management.Automation.Remoting
                     exception = uriFormatException;
                 }
                 // if we are here, there must be an exception constructing a uri
-                if (null != exception)
+                if (exception != null)
                 {
                     PSRemotingTransportException newException =
                         new PSRemotingTransportException(PSRemotingErrorId.RedirectedURINotWellFormatted, RemotingErrorIdStrings.RedirectedURINotWellFormatted,
@@ -531,7 +530,7 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Dispatches data when it arrives from the input queue
+        /// Dispatches data when it arrives from the input queue.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="dataArg">
@@ -563,20 +562,20 @@ namespace System.Management.Automation.Remoting
             {
                 case RemotingTargetInterface.Session:
                     {
-                        //Messages for session can cause statemachine state to change.
-                        //These messages are first processed by Sessiondata structure handler and depending
-                        //on the type of message, appropriate event is raised in state machine
+                        // Messages for session can cause statemachine state to change.
+                        // These messages are first processed by Sessiondata structure handler and depending
+                        // on the type of message, appropriate event is raised in state machine
                         ProcessSessionMessages(dataArg);
                         break;
                     }
 
                 case RemotingTargetInterface.RunspacePool:
                 case RemotingTargetInterface.PowerShell:
-                    //Non Session messages do not change the state of the statemachine.
-                    //However instead of forwarding them to Runspace/pipeline here, an
-                    //event is raised in state machine which verified that state is
-                    //suitable for accepting these messages. if state is suitable statemachine
-                    //will call DoMessageForwading which will forward the messages appropriately
+                    // Non Session messages do not change the state of the statemachine.
+                    // However instead of forwarding them to Runspace/pipeline here, an
+                    // event is raised in state machine which verified that state is
+                    // suitable for accepting these messages. if state is suitable statemachine
+                    // will call DoMessageForwading which will forward the messages appropriately
                     RemoteSessionStateMachineEventArgs msgRcvArg = new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.MessageReceived, null);
                     if (StateMachine.CanByPassRaiseEvent(msgRcvArg))
                     {
@@ -586,11 +585,13 @@ namespace System.Management.Automation.Remoting
                     {
                         StateMachine.RaiseEvent(msgRcvArg);
                     }
+
                     break;
                 default:
                     {
                         Dbg.Assert(false, "we should not be encountering this");
                     }
+
                     break;
             }
         }
@@ -600,7 +601,7 @@ namespace System.Management.Automation.Remoting
 
         /// <summary>
         /// This processes the object received from transport which are
-        /// targeted for session
+        /// targeted for session.
         /// </summary>
         /// <param name="arg">
         /// argument contains the data object
@@ -638,7 +639,7 @@ namespace System.Management.Automation.Remoting
                         // this will happen if expected properties are not
                         // received for session capability
                         throw new PSRemotingDataStructureException(RemotingErrorIdStrings.ClientNotFoundCapabilityProperties,
-                            dse.Message, PSVersionInfo.BuildVersion, RemotingConstants.ProtocolVersion);
+                            dse.Message, PSVersionInfo.GitCommitId, RemotingConstants.ProtocolVersion);
                     }
 
                     RemoteSessionStateMachineEventArgs capabilityArg = new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.NegotiationReceived);
@@ -651,15 +652,17 @@ namespace System.Management.Automation.Remoting
 
                 case RemotingDataType.EncryptedSessionKey:
                     {
-                        String encryptedSessionKey = RemotingDecoder.GetEncryptedSessionKey(rcvdData.Data);
+                        string encryptedSessionKey = RemotingDecoder.GetEncryptedSessionKey(rcvdData.Data);
                         EncryptedSessionKeyReceived.SafeInvoke(this, new RemoteDataEventArgs<string>(encryptedSessionKey));
                     }
+
                     break;
 
                 case RemotingDataType.PublicKeyRequest:
                     {
-                        PublicKeyRequestReceived.SafeInvoke(this, new RemoteDataEventArgs<string>(String.Empty));
+                        PublicKeyRequestReceived.SafeInvoke(this, new RemoteDataEventArgs<string>(string.Empty));
                     }
+
                     break;
 
                 default:
@@ -671,7 +674,7 @@ namespace System.Management.Automation.Remoting
 
         /// <summary>
         /// This processes the object received from transport which are
-        /// not targeted for session
+        /// not targeted for session.
         /// </summary>
         /// <param name="rcvdData">
         /// received data.
@@ -735,7 +738,7 @@ namespace System.Management.Automation.Remoting
         #region IDisposable
 
         /// <summary>
-        /// public method for dispose
+        /// Public method for dispose.
         /// </summary>
         public void Dispose()
         {
@@ -745,9 +748,9 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// release all resources
+        /// Release all resources.
         /// </summary>
-        /// <param name="disposing">if true, release all managed resources</param>
+        /// <param name="disposing">If true, release all managed resources.</param>
         protected void Dispose(bool disposing)
         {
             if (disposing)
@@ -764,9 +767,9 @@ namespace System.Management.Automation.Remoting
 
         internal override event EventHandler<RemoteDataEventArgs<string>> PublicKeyRequestReceived;
         /// <summary>
-        /// Send the specified local public key to the remote end
+        /// Send the specified local public key to the remote end.
         /// </summary>
-        /// <param name="localPublicKey">local public key as a string</param>
+        /// <param name="localPublicKey">Local public key as a string.</param>
         internal override void SendPublicKeyAsync(string localPublicKey)
         {
             _transportManager.DataToBeSentCollection.Add<object>(
@@ -775,9 +778,9 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Raise the public key received event
+        /// Raise the public key received event.
         /// </summary>
-        /// <param name="receivedData">received data</param>
+        /// <param name="receivedData">Received data.</param>
         /// <remarks>This method is a hook to be called
         /// from the transport manager</remarks>
         internal override void RaiseKeyExchangeMessageReceived(RemoteDataObject<PSObject> receivedData)

@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #region Using directives
 using System;
 using System.Collections.Generic;
@@ -7,7 +10,6 @@ using System.Security.Principal;
 using System.Management.Automation.SecurityAccountsManager;
 using System.Management.Automation.SecurityAccountsManager.Extensions;
 #endregion
-
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -38,8 +40,10 @@ namespace Microsoft.PowerShell.Commands
         public Microsoft.PowerShell.Commands.LocalGroup Group
         {
             get { return this.group;}
+
             set { this.group = value; }
         }
+
         private Microsoft.PowerShell.Commands.LocalGroup group;
 
         /// <summary>
@@ -53,8 +57,10 @@ namespace Microsoft.PowerShell.Commands
         public string Member
         {
             get { return this.member;}
+
             set { this.member = value; }
         }
+
         private string member;
 
         /// <summary>
@@ -70,8 +76,10 @@ namespace Microsoft.PowerShell.Commands
         public string Name
         {
             get { return this.name;}
+
             set { this.name = value; }
         }
+
         private string name;
 
         /// <summary>
@@ -87,11 +95,12 @@ namespace Microsoft.PowerShell.Commands
         public System.Security.Principal.SecurityIdentifier SID
         {
             get { return this.sid;}
+
             set { this.sid = value; }
         }
+
         private System.Security.Principal.SecurityIdentifier sid;
         #endregion Parameter Properties
-
 
         #region Cmdlet Overrides
         /// <summary>
@@ -101,7 +110,6 @@ namespace Microsoft.PowerShell.Commands
         {
             sam = new Sam();
         }
-
 
         /// <summary>
         /// ProcessRecord method.
@@ -128,7 +136,6 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-
         /// <summary>
         /// EndProcessing method.
         /// </summary>
@@ -150,12 +157,12 @@ namespace Microsoft.PowerShell.Commands
             // if no members are specified, return all of them
             if (Member == null)
             {
-                //return membership;
+                // return membership;
                 rv = new List<LocalPrincipal>(membership);
             }
             else
             {
-                //var rv = new List<LocalPrincipal>();
+                // var rv = new List<LocalPrincipal>();
                 rv = new List<LocalPrincipal>();
 
                 if (WildcardPattern.ContainsWildcardCharacters(Member))
@@ -223,7 +230,7 @@ namespace Microsoft.PowerShell.Commands
             return ProcessesMembership(sam.GetLocalGroupMembers(groupSid));
         }
         #endregion Private Methods
-    }//End Class
+    }
 
-}//End namespace
+}
 

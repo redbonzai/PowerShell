@@ -1,7 +1,5 @@
-/*============================================================================
- * Copyright (C) Microsoft Corporation, All rights reserved.
- *============================================================================
- */
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #region Using directives
 using System;
@@ -10,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.Management.Infrastructure.Options;
 
 #endregion
-
 
 namespace Microsoft.Management.Infrastructure.CimCmdlets
 {
@@ -36,12 +33,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public PasswordAuthenticationMechanism Authentication
         {
             get { return authentication;}
+
             set
             {
                 authentication = value;
                 authenticationSet = true;
             }
         }
+
         private PasswordAuthenticationMechanism authentication;
         private bool authenticationSet = false;
 
@@ -55,8 +54,10 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public PSCredential Credential
         {
             get { return credential; }
+
             set { credential = value; }
         }
+
         private PSCredential credential;
 
         /// <summary>
@@ -65,12 +66,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true,
                    ParameterSetName = CertificateParameterSet)]
-        public String CertificateThumbprint
+        public string CertificateThumbprint
         {
             get { return certificatethumbprint; }
+
             set { certificatethumbprint = value; }
         }
-        private String certificatethumbprint;
+
+        private string certificatethumbprint;
 
         /// <summary>
         /// The following is the definition of the input parameter "ComputerName".
@@ -83,12 +86,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             ValueFromPipelineByPropertyName = true)]
         [ValidateNotNullOrEmpty]
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public String[] ComputerName
+        public string[] ComputerName
         {
             get { return computername;}
+
             set { computername = value; }
         }
-        private String[] computername;
+
+        private string[] computername;
 
         /// <summary>
         /// <para>
@@ -102,12 +107,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         /// </para>
         /// </summary>
         [Parameter(ValueFromPipelineByPropertyName = true)]
-        public String Name
+        public string Name
         {
             get { return name;}
+
             set { name = value; }
         }
-        private String name;
+
+        private string name;
 
         /// <summary>
         /// <para>
@@ -124,12 +131,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public UInt32 OperationTimeoutSec
         {
             get { return operationTimeout; }
+
             set
             {
                 operationTimeout = value;
                 operationTimeoutSet = true;
             }
         }
+
         private UInt32 operationTimeout;
         internal bool operationTimeoutSet = false;
 
@@ -143,11 +152,13 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public SwitchParameter SkipTestConnection
         {
             get { return skipTestConnection; }
+
             set
             {
                 skipTestConnection = value;
             }
         }
+
         private SwitchParameter skipTestConnection;
 
         /// <summary>
@@ -159,12 +170,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public UInt32 Port
         {
             get { return port; }
+
             set
             {
                 port = value;
                 portSet = true;
             }
         }
+
         private UInt32 port;
         private bool portSet = false;
 
@@ -185,8 +198,10 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public Microsoft.Management.Infrastructure.Options.CimSessionOptions SessionOption
         {
             get { return sessionOption; }
+
             set { sessionOption = value; }
         }
+
         private Microsoft.Management.Infrastructure.Options.CimSessionOptions sessionOption;
 
         #endregion
@@ -201,7 +216,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             cimNewSession = new CimNewSession();
             this.CmdletOperation = new CmdletOperationTestCimSession(this, this.cimNewSession);
             this.AtBeginProcess = false;
-        }//End BeginProcessing()
+        }
 
         /// <summary>
         /// ProcessRecord method.
@@ -213,7 +228,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             BuildSessionOptions(out outputOptions, out outputCredential);
             cimNewSession.NewCimSession(this, outputOptions, outputCredential);
             cimNewSession.ProcessActions(this.CmdletOperation);
-        }//End ProcessRecord()
+        }
 
         /// <summary>
         /// EndProcessing method.
@@ -221,15 +236,15 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         protected override void EndProcessing()
         {
             cimNewSession.ProcessRemainActions(this.CmdletOperation);
-        }//End EndProcessing()
+        }
         #endregion
 
         #region helper methods
 
         /// <summary>
-        /// Build a CimSessionOptions, used to create CimSession
+        /// Build a CimSessionOptions, used to create CimSession.
         /// </summary>
-        /// <returns>Null means no prefer CimSessionOptions</returns>
+        /// <returns>Null means no prefer CimSessionOptions.</returns>
         internal void BuildSessionOptions(out CimSessionOptions outputOptions, out CimCredential outputCredential)
         {
             DebugHelper.WriteLogEx();
@@ -247,6 +262,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                     options = new DComSessionOptions(this.sessionOption as DComSessionOptions);
                 }
             }
+
             outputOptions = null;
             outputCredential = null;
             if (options != null)
@@ -261,11 +277,13 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                         conflict = true;
                         parameterName = @"CertificateThumbprint";
                     }
+
                     if (portSet)
                     {
                         conflict = true;
                         parameterName = @"Port";
                     }
+
                     if (conflict)
                     {
                         ThrowConflictParameterWasSet(@"New-CimSession", parameterName, @"DComSessionOptions");
@@ -273,6 +291,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                     }
                 }
             }
+
             if (portSet || (this.CertificateThumbprint != null))
             {
                 WSManSessionOptions wsmanOptions = (options == null) ? new WSManSessionOptions() : options as WSManSessionOptions;
@@ -281,13 +300,16 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                     wsmanOptions.DestinationPort = this.Port;
                     portSet = false;
                 }
+
                 if (this.CertificateThumbprint != null)
                 {
                     CimCredential credentials = new CimCredential(CertificateAuthenticationMechanism.Default, this.CertificateThumbprint);
                     wsmanOptions.AddDestinationCredentials(credentials);
                 }
+
                 options = wsmanOptions;
             }
+
             if (this.operationTimeoutSet)
             {
                 if (options != null)
@@ -295,6 +317,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                     options.Timeout = TimeSpan.FromSeconds((double)this.OperationTimeoutSec);
                 }
             }
+
             if (this.authenticationSet || (this.credential != null))
             {
                 PasswordAuthenticationMechanism authentication = this.authenticationSet ? this.Authentication : PasswordAuthenticationMechanism.Default;
@@ -302,6 +325,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                 {
                     this.authenticationSet = false;
                 }
+
                 CimCredential credentials = CreateCimCredentials(this.Credential, authentication, @"New-CimSession", @"Authentication");
                 if (credentials == null)
                 {
@@ -316,6 +340,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
                     options.AddDestinationCredentials(credentials);
                 }
             }
+
             DebugHelper.WriteLogEx("Set outputOptions: {0}", 1, outputOptions);
             outputOptions = options;
         }
@@ -335,7 +360,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
 
         #region IDisposable
         /// <summary>
-        /// Clean up resources
+        /// Clean up resources.
         /// </summary>
         protected override void DisposeInternal()
         {
@@ -348,5 +373,5 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             }
         }
         #endregion
-    }//End Class
-}//End namespace
+    }
+}

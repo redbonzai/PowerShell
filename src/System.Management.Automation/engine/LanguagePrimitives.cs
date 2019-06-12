@@ -1,31 +1,31 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Management.Automation.Internal;
 using System.Management.Automation.Language;
+using System.Management.Automation.Runspaces;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
-using System.IO;
-using System.Text;
-using System.Management.Automation.Internal;
-using System.Management.Automation.Runspaces;
-using System.Diagnostics.CodeAnalysis; // for fxcop
-using Dbg = System.Management.Automation.Diagnostics;
-using System.Reflection.Emit;
 
-#if !CORECLR
-// System.DirectoryServices are not in CoreCLR
+using Dbg = System.Management.Automation.Diagnostics;
+using MethodCacheEntry = System.Management.Automation.DotNetAdapter.MethodCacheEntry;
+#if !UNIX
 using System.DirectoryServices;
+using System.Management;
 #endif
 
 #pragma warning disable 1634, 1691 // Stops compiler from warning about unknown warnings
@@ -73,16 +73,16 @@ namespace System.Management.Automation
         /// <summary>
         /// Determines if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter.
         /// </summary>
-        /// <param name="sourceValue">value supposedly *not* of the types supported by this converted to be converted to the <paramref name="destinationType"/> parameter</param>
-        /// <param name="destinationType">one of the types supported by this converter to which the <paramref name="sourceValue"/> parameter should be converted</param>
+        /// <param name="sourceValue">Value supposedly *not* of the types supported by this converted to be converted to the <paramref name="destinationType"/> parameter.</param>
+        /// <param name="destinationType">One of the types supported by this converter to which the <paramref name="sourceValue"/> parameter should be converted.</param>
         /// <returns>True if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter, otherwise false.</returns>
         public abstract bool CanConvertFrom(object sourceValue, Type destinationType);
 
         /// <summary>
         /// Determines if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter.
         /// </summary>
-        /// <param name="sourceValue">value supposedly *not* of the types supported by this converted to be converted to the <paramref name="destinationType"/> parameter</param>
-        /// <param name="destinationType">one of the types supported by this converter to which the <paramref name="sourceValue"/> parameter should be converted</param>
+        /// <param name="sourceValue">Value supposedly *not* of the types supported by this converted to be converted to the <paramref name="destinationType"/> parameter.</param>
+        /// <param name="destinationType">One of the types supported by this converter to which the <paramref name="sourceValue"/> parameter should be converted.</param>
         /// <returns>True if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter, otherwise false.</returns>
         public virtual bool CanConvertFrom(PSObject sourceValue, Type destinationType)
         {
@@ -90,43 +90,43 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase
+        /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.
         /// </summary>
-        /// <param name="sourceValue">value supposedly *not* of the types supported by this converted to be converted to the <paramref name="destinationType"/> parameter</param>
-        /// <param name="destinationType">one of the types supported by this converter to which the <paramref name="sourceValue"/> parameter should be converted to</param>
-        /// <param name="formatProvider">The format provider to use like in IFormattable's ToString</param>
-        /// <param name="ignoreCase">true if case should be ignored</param>
-        /// <returns>the <paramref name="sourceValue"/> parameter converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase</returns>
-        /// <exception cref="InvalidCastException">if no conversion was possible</exception>
+        /// <param name="sourceValue">Value supposedly *not* of the types supported by this converted to be converted to the <paramref name="destinationType"/> parameter.</param>
+        /// <param name="destinationType">One of the types supported by this converter to which the <paramref name="sourceValue"/> parameter should be converted to.</param>
+        /// <param name="formatProvider">The format provider to use like in IFormattable's ToString.</param>
+        /// <param name="ignoreCase">True if case should be ignored.</param>
+        /// <returns>The <paramref name="sourceValue"/> parameter converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.</returns>
+        /// <exception cref="InvalidCastException">If no conversion was possible.</exception>
         public abstract object ConvertFrom(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase);
 
         /// <summary>
-        /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase
+        /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.
         /// </summary>
-        /// <param name="sourceValue">value supposedly *not* of the types supported by this converted to be converted to the <paramref name="destinationType"/> parameter</param>
-        /// <param name="destinationType">one of the types supported by this converter to which the <paramref name="sourceValue"/> parameter should be converted to</param>
-        /// <param name="formatProvider">The format provider to use like in IFormattable's ToString</param>
-        /// <param name="ignoreCase">true if case should be ignored</param>
-        /// <returns>the <paramref name="sourceValue"/> parameter converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase</returns>
-        /// <exception cref="InvalidCastException">if no conversion was possible</exception>
+        /// <param name="sourceValue">Value supposedly *not* of the types supported by this converted to be converted to the <paramref name="destinationType"/> parameter.</param>
+        /// <param name="destinationType">One of the types supported by this converter to which the <paramref name="sourceValue"/> parameter should be converted to.</param>
+        /// <param name="formatProvider">The format provider to use like in IFormattable's ToString.</param>
+        /// <param name="ignoreCase">True if case should be ignored.</param>
+        /// <returns>The <paramref name="sourceValue"/> parameter converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.</returns>
+        /// <exception cref="InvalidCastException">If no conversion was possible.</exception>
         public virtual object ConvertFrom(PSObject sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
         {
             return this.ConvertFrom(GetSourceValueAsObject(sourceValue), destinationType, formatProvider, ignoreCase);
         }
 
         /// <summary>
-        /// Returns true if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter
+        /// Returns true if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter.
         /// </summary>
-        /// <param name="sourceValue">value supposedly from one of the types supported by this converter to be converted to the <paramref name="destinationType"/> parameter</param>
-        /// <param name="destinationType">type to convert the <paramref name="sourceValue"/> parameter, supposedly not one of the types supported by the converter</param>
+        /// <param name="sourceValue">Value supposedly from one of the types supported by this converter to be converted to the <paramref name="destinationType"/> parameter.</param>
+        /// <param name="destinationType">Type to convert the <paramref name="sourceValue"/> parameter, supposedly not one of the types supported by the converter.</param>
         /// <returns>True if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter, otherwise false.</returns>
         public abstract bool CanConvertTo(object sourceValue, Type destinationType);
 
         /// <summary>
-        /// Returns true if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter
+        /// Returns true if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter.
         /// </summary>
-        /// <param name="sourceValue">value supposedly from one of the types supported by this converter to be converted to the <paramref name="destinationType"/> parameter</param>
-        /// <param name="destinationType">type to convert the <paramref name="sourceValue"/> parameter, supposedly not one of the types supported by the converter</param>
+        /// <param name="sourceValue">Value supposedly from one of the types supported by this converter to be converted to the <paramref name="destinationType"/> parameter.</param>
+        /// <param name="destinationType">Type to convert the <paramref name="sourceValue"/> parameter, supposedly not one of the types supported by the converter.</param>
         /// <returns>True if the converter can convert the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter, otherwise false.</returns>
         public virtual bool CanConvertTo(PSObject sourceValue, Type destinationType)
         {
@@ -134,25 +134,25 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase
+        /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.
         /// </summary>
-        /// <param name="sourceValue">value supposedly from one of the types supported by this converter to be converted to the <paramref name="destinationType"/> parameter</param>
-        /// <param name="destinationType">type to convert the <paramref name="sourceValue"/> parameter, supposedly not one of the types supported by the converter</param>
-        /// <param name="formatProvider">The format provider to use like in IFormattable's ToString</param>
-        /// <param name="ignoreCase">true if case should be ignored</param>
-        /// <returns>sourceValue converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase</returns>
-        /// <exception cref="InvalidCastException">if no conversion was possible</exception>
+        /// <param name="sourceValue">Value supposedly from one of the types supported by this converter to be converted to the <paramref name="destinationType"/> parameter.</param>
+        /// <param name="destinationType">Type to convert the <paramref name="sourceValue"/> parameter, supposedly not one of the types supported by the converter.</param>
+        /// <param name="formatProvider">The format provider to use like in IFormattable's ToString.</param>
+        /// <param name="ignoreCase">True if case should be ignored.</param>
+        /// <returns>SourceValue converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.</returns>
+        /// <exception cref="InvalidCastException">If no conversion was possible.</exception>
         public abstract object ConvertTo(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase);
 
         /// <summary>
-        /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase
+        /// Converts the <paramref name="sourceValue"/> parameter to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.
         /// </summary>
-        /// <param name="sourceValue">value supposedly from one of the types supported by this converter to be converted to the <paramref name="destinationType"/> parameter</param>
-        /// <param name="destinationType">type to convert the <paramref name="sourceValue"/> parameter, supposedly not one of the types supported by the converter</param>
-        /// <param name="formatProvider">The format provider to use like in IFormattable's ToString</param>
-        /// <param name="ignoreCase">true if case should be ignored</param>
-        /// <returns>sourceValue converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase</returns>
-        /// <exception cref="InvalidCastException">if no conversion was possible</exception>
+        /// <param name="sourceValue">Value supposedly from one of the types supported by this converter to be converted to the <paramref name="destinationType"/> parameter.</param>
+        /// <param name="destinationType">Type to convert the <paramref name="sourceValue"/> parameter, supposedly not one of the types supported by the converter.</param>
+        /// <param name="formatProvider">The format provider to use like in IFormattable's ToString.</param>
+        /// <param name="ignoreCase">True if case should be ignored.</param>
+        /// <returns>SourceValue converted to the <paramref name="destinationType"/> parameter using formatProvider and ignoreCase.</returns>
+        /// <exception cref="InvalidCastException">If no conversion was possible.</exception>
         public virtual object ConvertTo(PSObject sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
         {
             return this.ConvertTo(GetSourceValueAsObject(sourceValue), destinationType, formatProvider, ignoreCase);
@@ -161,7 +161,7 @@ namespace System.Management.Automation
 
     /// <summary>
     /// Enables a type that only has conversion from string to be converted from all other
-    /// types through string
+    /// types through string.
     /// </summary>
     /// <remarks>
     /// It is permitted to subclass <see cref="ConvertThroughString"/>
@@ -170,11 +170,11 @@ namespace System.Management.Automation
     public class ConvertThroughString : PSTypeConverter
     {
         /// <summary>
-        /// This will return false only if sourceValue is string
+        /// This will return false only if sourceValue is string.
         /// </summary>
-        /// <param name="sourceValue">value to convert from</param>
-        /// <param name="destinationType">ignored</param>
-        /// <returns>false only if sourceValue is string</returns>
+        /// <param name="sourceValue">Value to convert from.</param>
+        /// <param name="destinationType">Ignored.</param>
+        /// <returns>False only if sourceValue is string.</returns>
         public override bool CanConvertFrom(object sourceValue, Type destinationType)
         {
             // This if avoids infinite recursion.
@@ -182,6 +182,7 @@ namespace System.Management.Automation
             {
                 return false;
             }
+
             return true;
         }
 
@@ -189,12 +190,12 @@ namespace System.Management.Automation
         /// Converts to destinationType by first converting sourceValue to string
         /// and then converting the result to destinationType.
         /// </summary>
-        /// <param name="sourceValue">The value to convert from</param>
-        /// <param name="destinationType">The type this converter is associated with</param>
-        /// <param name="formatProvider">The IFormatProvider to use</param>
-        /// <param name="ignoreCase">true if case should be ignored</param>
-        /// <returns>sourceValue converted to destinationType</returns>
-        /// <exception cref="PSInvalidCastException">When no conversion was possible</exception>
+        /// <param name="sourceValue">The value to convert from.</param>
+        /// <param name="destinationType">The type this converter is associated with.</param>
+        /// <param name="formatProvider">The IFormatProvider to use.</param>
+        /// <param name="ignoreCase">True if case should be ignored.</param>
+        /// <returns>SourceValue converted to destinationType.</returns>
+        /// <exception cref="PSInvalidCastException">When no conversion was possible.</exception>
         public override object ConvertFrom(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
         {
             string sourceAsString = (string)LanguagePrimitives.ConvertTo(sourceValue, typeof(string), formatProvider);
@@ -205,9 +206,9 @@ namespace System.Management.Automation
         /// Returns false, since this converter is not designed to be used to
         /// convert from the type associated with the converted to other types.
         /// </summary>
-        /// <param name="sourceValue">The value to convert from</param>
-        /// <param name="destinationType">The value to convert from</param>
-        /// <returns>false</returns>
+        /// <param name="sourceValue">The value to convert from.</param>
+        /// <param name="destinationType">The value to convert from.</param>
+        /// <returns>False.</returns>
         public override bool CanConvertTo(object sourceValue, Type destinationType)
         {
             return false;
@@ -217,12 +218,12 @@ namespace System.Management.Automation
         /// Throws NotSupportedException, since this converter is not designed to be used to
         /// convert from the type associated with the converted to other types.
         /// </summary>
-        /// <param name="sourceValue">The value to convert from</param>
-        /// <param name="destinationType">The value to convert from</param>
-        /// <param name="formatProvider">The IFormatProvider to use</param>
-        /// <param name="ignoreCase">true if case should be ignored</param>
+        /// <param name="sourceValue">The value to convert from.</param>
+        /// <param name="destinationType">The value to convert from.</param>
+        /// <param name="formatProvider">The IFormatProvider to use.</param>
+        /// <param name="ignoreCase">True if case should be ignored.</param>
         /// <returns>This method does not return a value.</returns>
-        /// <exception cref="NotSupportedException">NotSupportedException is always thrown</exception>
+        /// <exception cref="NotSupportedException">NotSupportedException is always thrown.</exception>
         public override object ConvertTo(object sourceValue, Type destinationType, IFormatProvider formatProvider, bool ignoreCase)
         {
             throw PSTraceSource.NewNotSupportedException();
@@ -291,7 +292,7 @@ namespace System.Management.Automation
     }
 
     /// <summary>
-    /// Defines language support methods
+    /// Defines language support methods.
     /// </summary>
     [SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling", Justification = "Refactoring LanguagePrimitives takes lot of dev/test effort. Since V1 code is already shipped, we tend to exclude this message.")]
     public static class LanguagePrimitives
@@ -303,11 +304,11 @@ namespace System.Management.Automation
 
         internal delegate void MemberSetValueError(SetValueException e);
 
-        internal const String OrderedAttribute = "ordered";
+        internal const string OrderedAttribute = "ordered";
 
         internal static void CreateMemberNotFoundError(PSObject pso, DictionaryEntry property, Type resultType)
         {
-            String availableProperties = GetAvailableProperties(pso);
+            string availableProperties = GetAvailableProperties(pso);
 
             string message = StringUtil.Format(ExtendedTypeSystem.PropertyNotFound, property.Key.ToString(), resultType.FullName, availableProperties);
 
@@ -374,7 +375,7 @@ namespace System.Management.Automation
             private void CreateGetEnumerator()
             {
                 _getEnumerator = new DynamicMethod("GetEnumerator", typeof(object),
-                    new Type[] { typeof(object) }, typeof(LanguagePrimitives).GetTypeInfo().Module, true);
+                    new Type[] { typeof(object) }, typeof(LanguagePrimitives).Module, true);
 
                 ILGenerator emitter = _getEnumerator.GetILGenerator();
 
@@ -399,12 +400,12 @@ namespace System.Management.Automation
         {
             foreach (Type i in obj.GetType().GetInterfaces())
             {
-                TypeInfo typeinfo = i.GetTypeInfo();
-                if (typeinfo.IsGenericType && typeinfo.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
                     return new EnumerableTWrapper(obj, i);
                 }
             }
+
             return null;
         }
 
@@ -422,6 +423,7 @@ namespace System.Management.Automation
                     s_getEnumerableCache.Add(type, getEnumerable);
                 }
             }
+
             return getEnumerable;
         }
 
@@ -440,12 +442,26 @@ namespace System.Management.Automation
 
         internal static bool IsTypeEnumerable(Type type)
         {
+            if (type == null) { return false; }
+
             GetEnumerableDelegate getEnumerable = GetOrCalculateEnumerable(type);
             return (getEnumerable != LanguagePrimitives.ReturnNullEnumerable);
         }
 
         /// <summary>
-        /// Retrieves the IEnumerable of obj or null if the language does not consider obj to be IEnumerable
+        /// Returns True if the language considers obj to be IEnumerable.
+        /// </summary>
+        /// <param name="obj">
+        /// IEnumerable or IEnumerable-like object
+        /// </param>
+        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Since V1 code is already shipped, excluding this message.")]
+        public static bool IsObjectEnumerable(object obj)
+        {
+            return IsTypeEnumerable(PSObject.Base(obj)?.GetType());
+        }
+
+        /// <summary>
+        /// Retrieves the IEnumerable of obj or null if the language does not consider obj to be IEnumerable.
         /// </summary>
         /// <param name="obj">
         /// IEnumerable or IEnumerable-like object
@@ -453,26 +469,10 @@ namespace System.Management.Automation
         [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Since V1 code is already shipped, excluding this message.")]
         public static IEnumerable GetEnumerable(object obj)
         {
-            if (obj == null)
-            {
-                return null;
-            }
+            obj = PSObject.Base(obj);
+            if (obj == null) { return null; }
 
-            Type objectType = obj.GetType();
-
-            // if the object passed is an PSObject,
-            // look at the base object. Notice that, if the
-            // object has been serialized, the base object
-            // will be there as an ArrayList if the original
-            // object was IEnumerable
-            if (objectType == typeof(PSObject))
-            {
-                PSObject mshObj = (PSObject)obj;
-                obj = mshObj.BaseObject;
-                objectType = obj.GetType();
-            }
-
-            GetEnumerableDelegate getEnumerable = GetOrCalculateEnumerable(objectType);
+            GetEnumerableDelegate getEnumerable = GetOrCalculateEnumerable(obj.GetType());
             return getEnumerable(obj);
         }
 
@@ -481,12 +481,10 @@ namespace System.Management.Automation
             return null;
         }
 
-#if !CORECLR
         private static IEnumerable DataTableEnumerable(object obj)
         {
             return (((DataTable)obj).Rows);
         }
-#endif
 
         private static IEnumerable TypicalEnumerable(object obj)
         {
@@ -522,12 +520,10 @@ namespace System.Management.Automation
 
         private static GetEnumerableDelegate CalculateGetEnumerable(Type objectType)
         {
-#if !CORECLR
             if (typeof(DataTable).IsAssignableFrom(objectType))
             {
                 return LanguagePrimitives.DataTableEnumerable;
             }
-#endif
 
             // Don't treat IDictionary or XmlNode as enumerable...
             if (typeof(IEnumerable).IsAssignableFrom(objectType)
@@ -540,17 +536,16 @@ namespace System.Management.Automation
             return LanguagePrimitives.ReturnNullEnumerable;
         }
 
-
         private static readonly CallSite<Func<CallSite, object, IEnumerator>> s_getEnumeratorSite =
             CallSite<Func<CallSite, object, IEnumerator>>.Create(PSEnumerableBinder.Get());
 
         /// <summary>
-        /// Retrieves the IEnumerator of obj or null if the language does not consider obj as capable of returning an IEnumerator
+        /// Retrieves the IEnumerator of obj or null if the language does not consider obj as capable of returning an IEnumerator.
         /// </summary>
         /// <param name="obj">
         /// IEnumerable or IEnumerable-like object
         /// </param>
-        /// <exception cref="ExtendedTypeSystemException">When the act of getting the enumerator throws an exception</exception>
+        /// <exception cref="ExtendedTypeSystemException">When the act of getting the enumerator throws an exception.</exception>
         [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Since V1 code is already shipped, excluding this message for backward compatibility reasons.")]
         public static IEnumerator GetEnumerator(object obj)
         {
@@ -584,6 +579,7 @@ namespace System.Management.Automation
                     result.Add(PSObject.AsPSObject(inputValue));
                 }
             }
+
             result.Complete();
             return result;
         }
@@ -591,10 +587,10 @@ namespace System.Management.Automation
         /// <summary>
         /// Used to compare two objects for equality converting the second to the type of the first, if required.
         /// </summary>
-        /// <param name="first">first object</param>
-        /// <param name="second">object to compare first to</param>
-        /// <returns>true if first is equal to the second</returns>
-        public new static bool Equals(object first, object second)
+        /// <param name="first">First object.</param>
+        /// <param name="second">Object to compare first to.</param>
+        /// <returns>True if first is equal to the second.</returns>
+        public static new bool Equals(object first, object second)
         {
             return Equals(first, second, false, CultureInfo.InvariantCulture);
         }
@@ -602,11 +598,11 @@ namespace System.Management.Automation
         /// <summary>
         /// Used to compare two objects for equality converting the second to the type of the first, if required.
         /// </summary>
-        /// <param name="first">first object</param>
-        /// <param name="second">object to compare first to</param>
+        /// <param name="first">First object.</param>
+        /// <param name="second">Object to compare first to.</param>
         /// <param name="ignoreCase">used only if first and second are strings
         /// to specify the type of string comparison </param>
-        /// <returns>true if first is equal to the second</returns>
+        /// <returns>True if first is equal to the second.</returns>
         public static bool Equals(object first, object second, bool ignoreCase)
         {
             return Equals(first, second, ignoreCase, CultureInfo.InvariantCulture);
@@ -615,20 +611,20 @@ namespace System.Management.Automation
         /// <summary>
         /// Used to compare two objects for equality converting the second to the type of the first, if required.
         /// </summary>
-        /// <param name="first">first object</param>
-        /// <param name="second">object to compare first to</param>
+        /// <param name="first">First object.</param>
+        /// <param name="second">Object to compare first to.</param>
         /// <param name="ignoreCase">used only if first and second are strings
         /// to specify the type of string comparison </param>
         /// <param name="formatProvider">the format/culture to be used. If this parameter is null,
         /// CultureInfo.InvariantCulture will be used.
         /// </param>
-        /// <returns>true if first is equal to the second</returns>
+        /// <returns>True if first is equal to the second.</returns>
         public static bool Equals(object first, object second, bool ignoreCase, IFormatProvider formatProvider)
         {
             // If both first and second are null it returns true.
             // If one is null and the other is not it returns false.
             // if (first.Equals(second)) it returns true otherwise it goes ahead with type conversion operations.
-            // If both first and second are strings it returns (String.Compare(firstString, secondString, ignoreCase) == 0).
+            // If both first and second are strings it returns (string.Compare(firstString, secondString, ignoreCase) == 0).
             // If second can be converted to the type of the first, it does so and returns first.Equals(secondConverted)
             // Otherwise false is returned
 
@@ -707,13 +703,37 @@ namespace System.Management.Automation
         }
 
         /// <summary>
+        /// Helper method for [Try]Compare to determine object ordering with null.
+        /// </summary>
+        /// <param name="value">The numeric value to compare to null.</param>
+        /// <param name="numberIsRightHandSide">True if the number to compare is on the right hand side if the comparison.</param>
+        private static int CompareObjectToNull(object value, bool numberIsRightHandSide)
+        {
+            var i = numberIsRightHandSide ? -1 : 1;
+
+            // If it's a positive number, including 0, it's greater than null
+            // for everything else it's less than zero...
+            switch (value)
+            {
+                case Int16 i16: return Math.Sign(i16) < 0 ? -i : i;
+                case Int32 i32: return Math.Sign(i32) < 0 ? -i : i;
+                case Int64 i64: return Math.Sign(i64) < 0 ? -i : i;
+                case sbyte sby: return Math.Sign(sby) < 0 ? -i : i;
+                case float f: return Math.Sign(f) < 0 ? -i : i;
+                case double d: return Math.Sign(d) < 0 ? -i : i;
+                case decimal de: return Math.Sign(de) < 0 ? -i : i;
+                default: return i;
+            }
+        }
+
+        /// <summary>
         /// Compare first and second, converting second to the
         /// type of the first, if necessary.
         /// </summary>
-        /// <param name="first">first comparison value</param>
-        /// <param name="second">second comparison value</param>
-        /// <returns>less than zero if first is smaller than second, more than
-        /// zero if it is greater or zero if they are the same</returns>
+        /// <param name="first">First comparison value.</param>
+        /// <param name="second">Second comparison value.</param>
+        /// <returns>Less than zero if first is smaller than second, more than
+        /// zero if it is greater or zero if they are the same.</returns>
         /// <exception cref="System.ArgumentException">
         /// <paramref name="first"/> does not implement IComparable or <paramref name="second"/> cannot be converted
         /// to the type of <paramref name="first"/>.
@@ -727,11 +747,11 @@ namespace System.Management.Automation
         /// Compare first and second, converting second to the
         /// type of the first, if necessary.
         /// </summary>
-        /// <param name="first">first comparison value</param>
-        /// <param name="second">second comparison value</param>
-        /// <param name="ignoreCase">Used if both values are strings</param>
-        /// <returns>less than zero if first is smaller than second, more than
-        /// zero if it is greater or zero if they are the same</returns>
+        /// <param name="first">First comparison value.</param>
+        /// <param name="second">Second comparison value.</param>
+        /// <param name="ignoreCase">Used if both values are strings.</param>
+        /// <returns>Less than zero if first is smaller than second, more than
+        /// zero if it is greater or zero if they are the same.</returns>
         /// <exception cref="System.ArgumentException">
         /// <paramref name="first"/> does not implement IComparable or <paramref name="second"/> cannot be converted
         /// to the type of <paramref name="first"/>.
@@ -745,12 +765,12 @@ namespace System.Management.Automation
         /// Compare first and second, converting second to the
         /// type of the first, if necessary.
         /// </summary>
-        /// <param name="first">first comparison value</param>
-        /// <param name="second">second comparison value</param>
-        /// <param name="ignoreCase">Used if both values are strings</param>
-        /// <param name="formatProvider">Used in type conversions and if both values are strings</param>
-        /// <returns>less than zero if first is smaller than second, more than
-        /// zero if it is greater or zero if they are the same</returns>
+        /// <param name="first">First comparison value.</param>
+        /// <param name="second">Second comparison value.</param>
+        /// <param name="ignoreCase">Used if both values are strings.</param>
+        /// <param name="formatProvider">Used in type conversions and if both values are strings.</param>
+        /// <returns>Less than zero if first is smaller than second, more than
+        /// zero if it is greater or zero if they are the same.</returns>
         /// <exception cref="System.ArgumentException">
         /// <paramref name="first"/> does not implement IComparable or <paramref name="second"/> cannot be converted
         /// to the type of <paramref name="first"/>.
@@ -773,49 +793,15 @@ namespace System.Management.Automation
 
             if (first == null)
             {
-                if (second == null)
-                {
-                    return 0;
-                }
-                else
-                {
-                    // If it's a positive number, including 0, it's greater than null
-                    // for everything else it's less than zero...
-                    switch (LanguagePrimitives.GetTypeCode(second.GetType()))
-                    {
-                        case TypeCode.Int16: return System.Math.Sign((Int16)second) < 0 ? 1 : -1;
-                        case TypeCode.Int32: return System.Math.Sign((Int32)second) < 0 ? 1 : -1;
-                        case TypeCode.Int64: return System.Math.Sign((Int64)second) < 0 ? 1 : -1;
-                        case TypeCode.SByte: return System.Math.Sign((sbyte)second) < 0 ? 1 : -1;
-                        case TypeCode.Single: return System.Math.Sign((System.Single)second) < 0 ? 1 : -1;
-                        case TypeCode.Double: return System.Math.Sign((System.Double)second) < 0 ? 1 : -1;
-                        case TypeCode.Decimal: return System.Math.Sign((System.Decimal)second) < 0 ? 1 : -1;
-                        default: return -1;
-                    }
-                }
+                return second == null ? 0 : CompareObjectToNull(second, true);
             }
 
             if (second == null)
             {
-                // If it's a positive number, including 0, it's greater than null
-                // for everything else it's less than zero...
-                switch (LanguagePrimitives.GetTypeCode(first.GetType()))
-                {
-                    case TypeCode.Int16: return System.Math.Sign((Int16)first) < 0 ? -1 : 1;
-                    case TypeCode.Int32: return System.Math.Sign((Int32)first) < 0 ? -1 : 1;
-                    case TypeCode.Int64: return System.Math.Sign((Int64)first) < 0 ? -1 : 1;
-                    case TypeCode.SByte: return System.Math.Sign((sbyte)first) < 0 ? -1 : 1;
-                    case TypeCode.Single: return System.Math.Sign((System.Single)first) < 0 ? -1 : 1;
-                    case TypeCode.Double: return System.Math.Sign((System.Double)first) < 0 ? -1 : 1;
-                    case TypeCode.Decimal: return System.Math.Sign((System.Decimal)first) < 0 ? -1 : 1;
-                    default: return 1;
-                }
+                return CompareObjectToNull(first, false);
             }
 
-
-            string firstString = first as string;
-
-            if (firstString != null)
+            if (first is string firstString)
             {
                 string secondString = second as string;
                 if (secondString == null)
@@ -830,6 +816,7 @@ namespace System.Management.Automation
                                                                  first.ToString(), second.ToString(), e.Message);
                     }
                 }
+
                 return culture.CompareInfo.Compare(firstString, secondString,
                                                    ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
             }
@@ -842,6 +829,7 @@ namespace System.Management.Automation
             {
                 return LanguagePrimitives.NumericCompare(first, second, firstIndex, secondIndex);
             }
+
             object secondConverted;
             try
             {
@@ -853,9 +841,7 @@ namespace System.Management.Automation
                                                          first.ToString(), second.ToString(), e.Message);
             }
 
-            IComparable firstComparable = first as IComparable;
-
-            if (firstComparable != null)
+            if (first is IComparable firstComparable)
             {
                 return firstComparable.CompareTo(secondConverted);
             }
@@ -871,10 +857,131 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Returns true if the language considers obj to be true
+        /// Tries to compare first and second, converting second to the type of the first, if necessary.
+        /// If a conversion is needed but fails, false is return.
         /// </summary>
-        /// <param name="obj">obj to verify if it is true</param>
-        /// <returns>true if obj is true</returns>
+        /// <param name="first">First comparison value.</param>
+        /// <param name="second">Second comparison value.</param>
+        /// <param name="result">Less than zero if first is smaller than second, more than
+        /// zero if it is greater or zero if they are the same.</param>
+        /// <returns>True if the comparison was successful, false otherwise.</returns>
+        public static bool TryCompare(object first, object second, out int result)
+        {
+            return TryCompare(first, second, ignoreCase: false, CultureInfo.InvariantCulture, out result);
+        }
+
+        /// <summary>
+        /// Tries to compare first and second, converting second to the type of the first, if necessary.
+        /// If a conversion is needed but fails, false is return.
+        /// </summary>
+        /// <param name="first">First comparison value.</param>
+        /// <param name="second">Second comparison value.</param>
+        /// <param name="ignoreCase">Used if both values are strings.</param>
+        /// <param name="result">Less than zero if first is smaller than second, more than zero if it is greater or zero if they are the same.</param>
+        /// <returns>True if the comparison was successful, false otherwise.</returns>
+        public static bool TryCompare(object first, object second, bool ignoreCase, out int result)
+        {
+            return TryCompare(first, second, ignoreCase, CultureInfo.InvariantCulture, out result);
+        }
+
+        /// <summary>
+        /// Tries to compare first and second, converting second to the type of the first, if necessary.
+        /// If a conversion is needed but fails, false is return.
+        /// </summary>
+        /// <param name="first">First comparison value.</param>
+        /// <param name="second">Second comparison value.</param>
+        /// <param name="ignoreCase">Used if both values are strings.</param>
+        /// <param name="formatProvider">Used in type conversions and if both values are strings.</param>
+        /// <param name="result">Less than zero if first is smaller than second, more than  zero if it is greater or zero if they are the same.</param>
+        /// <returns>True if the comparison was successful, false otherwise.</returns>
+        /// <exception cref="ArgumentException">The parameter <paramref name="formatProvider"/> is not a <see cref="CultureInfo"/>.</exception>
+        public static bool TryCompare(object first, object second, bool ignoreCase, IFormatProvider formatProvider, out int result)
+        {
+            result = 0;
+            if (formatProvider == null)
+            {
+                formatProvider = CultureInfo.InvariantCulture;
+            }
+
+            if (!(formatProvider is CultureInfo culture))
+            {
+                throw PSTraceSource.NewArgumentException("formatProvider");
+            }
+
+            first = PSObject.Base(first);
+            second = PSObject.Base(second);
+
+            if (first == null && second == null)
+            {
+                result = 0;
+                return true;
+            }
+
+            if (first == null)
+            {
+                result = CompareObjectToNull(second, true);
+                return true;
+            }
+
+            if (second == null)
+            {
+                // If it's a positive number, including 0, it's greater than null
+                // for everything else it's less than zero...
+                result = CompareObjectToNull(first, false);
+                return true;
+            }
+
+            if (first is string firstString)
+            {
+                if (!(second is string secondString))
+                {
+                    if (!TryConvertTo(second, culture, out secondString))
+                    {
+                        return false;
+                    }
+                }
+
+                result = culture.CompareInfo.Compare(firstString, secondString, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
+                return true;
+            }
+
+            Type firstType = first.GetType();
+            Type secondType = second.GetType();
+            int firstIndex = TypeTableIndex(firstType);
+            int secondIndex = TypeTableIndex(secondType);
+            if (firstIndex != -1 && secondIndex != -1)
+            {
+                result = NumericCompare(first, second, firstIndex, secondIndex);
+                return true;
+            }
+
+            if (!TryConvertTo(second, firstType, culture, out object secondConverted))
+            {
+                return false;
+            }
+
+            if (first is IComparable firstComparable)
+            {
+                result = firstComparable.CompareTo(secondConverted);
+                return true;
+            }
+
+            if (first.Equals(second))
+            {
+                result = 0;
+                return true;
+            }
+
+            // At this point, we know that they aren't equal but we have no way of
+            // knowing which should compare greater than the other so we return false.
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if the language considers obj to be true.
+        /// </summary>
+        /// <param name="obj">Obj to verify if it is true.</param>
+        /// <returns>True if obj is true.</returns>
         [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Since V1 code is already shipped, excluding this message for backward compatibility reasons")]
         public static bool IsTrue(object obj)
         {
@@ -898,8 +1005,8 @@ namespace System.Management.Automation
 
             if (LanguagePrimitives.IsNumeric(LanguagePrimitives.GetTypeCode(objType)))
             {
-                ConversionData data = GetConversionData(objType, typeof(bool)) ??
-                                      CacheConversion(objType, typeof(bool), CreateNumericToBoolConverter(objType), ConversionRank.Language);
+                IConversionData data = GetConversionData(objType, typeof(bool)) ??
+                                       CacheConversion(objType, typeof(bool), CreateNumericToBoolConverter(objType), ConversionRank.Language);
                 return (bool)data.Invoke(obj, typeof(bool), false, null, null, null);
             }
 
@@ -955,15 +1062,15 @@ namespace System.Management.Automation
         /// <summary>
         /// Internal routine that determines if an object meets any of our criteria for null.
         /// </summary>
-        /// <param name="obj">The object to test</param>
-        /// <returns>true if the object is null</returns>
+        /// <param name="obj">The object to test.</param>
+        /// <returns>True if the object is null.</returns>
         internal static bool IsNull(object obj)
         {
             return (obj == null || obj == AutomationNull.Value);
         }
 
         /// <summary>
-        /// Auxiliary for the cases where we want a new PSObject or null
+        /// Auxiliary for the cases where we want a new PSObject or null.
         /// </summary>
         internal static PSObject AsPSObjectOrNull(object obj)
         {
@@ -971,8 +1078,10 @@ namespace System.Management.Automation
             {
                 return null;
             }
+
             return PSObject.AsPSObject(obj);
         }
+
         internal static int TypeTableIndex(Type type)
         {
             switch (LanguagePrimitives.GetTypeCode(type))
@@ -1066,7 +1175,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Necessary not to return an integer type code for enums
+        /// Necessary not to return an integer type code for enums.
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
@@ -1080,7 +1189,7 @@ namespace System.Management.Automation
         /// the PSObject if required.
         /// </summary>
         /// <typeparam name="T">The type for which to convert</typeparam>
-        /// <param name="castObject">The object from which to convert</param>
+        /// <param name="castObject">The object from which to convert.</param>
         /// <returns>An object of the specified type, if the conversion was successful.  Returns null otherwise.</returns>
         internal static T FromObjectAs<T>(Object castObject)
         {
@@ -1153,60 +1262,60 @@ namespace System.Management.Automation
         };
 
         /// <summary>
-        /// Verifies if type is a signed integer
+        /// Verifies if type is a signed integer.
         /// </summary>
-        /// <param name="typeCode">type code to check</param>
-        /// <returns>true if type is a signed integer, false otherwise</returns>
+        /// <param name="typeCode">Type code to check.</param>
+        /// <returns>True if type is a signed integer, false otherwise.</returns>
         internal static bool IsSignedInteger(TypeCode typeCode)
         {
             return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.SignedInteger) != 0;
         }
 
         /// <summary>
-        /// Verifies if type is an unsigned integer
+        /// Verifies if type is an unsigned integer.
         /// </summary>
-        /// <param name="typeCode">type code to check</param>
-        /// <returns>true if type is an unsigned integer, false otherwise</returns>
+        /// <param name="typeCode">Type code to check.</param>
+        /// <returns>True if type is an unsigned integer, false otherwise.</returns>
         internal static bool IsUnsignedInteger(TypeCode typeCode)
         {
             return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.UnsignedInteger) != 0;
         }
 
         /// <summary>
-        /// Verifies if type is integer
+        /// Verifies if type is integer.
         /// </summary>
-        /// <param name="typeCode">type code to check</param>
-        /// <returns>true if type is integer, false otherwise</returns>
+        /// <param name="typeCode">Type code to check.</param>
+        /// <returns>True if type is integer, false otherwise.</returns>
         internal static bool IsInteger(TypeCode typeCode)
         {
             return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.Integer) != 0;
         }
 
         /// <summary>
-        /// Verifies if type is a floating point number
+        /// Verifies if type is a floating point number.
         /// </summary>
-        /// <param name="typeCode">type code to check</param>
-        /// <returns>true if type is floating point, false otherwise</returns>
+        /// <param name="typeCode">Type code to check.</param>
+        /// <returns>True if type is floating point, false otherwise.</returns>
         internal static bool IsFloating(TypeCode typeCode)
         {
             return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.Floating) != 0;
         }
 
         /// <summary>
-        /// Verifies if type is an integer or floating point number
+        /// Verifies if type is an integer or floating point number.
         /// </summary>
-        /// <param name="typeCode">type code to check</param>
-        /// <returns>true if type is integer or floating point, false otherwise</returns>
+        /// <param name="typeCode">Type code to check.</param>
+        /// <returns>True if type is integer or floating point, false otherwise.</returns>
         internal static bool IsNumeric(TypeCode typeCode)
         {
             return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.Numeric) != 0;
         }
 
         /// <summary>
-        /// Verifies if type is a CIM intrinsic type
+        /// Verifies if type is a CIM intrinsic type.
         /// </summary>
-        /// <param name="typeCode">type code to check</param>
-        /// <returns>true if type is CIM intrinsic type, false otherwise</returns>
+        /// <param name="typeCode">Type code to check.</param>
+        /// <returns>True if type is CIM intrinsic type, false otherwise.</returns>
         internal static bool IsCimIntrinsicScalarType(TypeCode typeCode)
         {
             return (s_typeCodeTraits[(int)typeCode] & TypeCodeTraits.CimIntrinsicType) != 0;
@@ -1221,7 +1330,7 @@ namespace System.Management.Automation
             // - TimeSpan part of "datetime"
             // - <classname> ref
             TypeCode typeCode = LanguagePrimitives.GetTypeCode(type);
-            if (LanguagePrimitives.IsCimIntrinsicScalarType(typeCode) && !type.GetTypeInfo().IsEnum)
+            if (LanguagePrimitives.IsCimIntrinsicScalarType(typeCode) && !type.IsEnum)
             {
                 return true;
             }
@@ -1234,40 +1343,39 @@ namespace System.Management.Automation
             return false;
         }
 
-
         /// <summary>
-        /// Verifies if type is one of the boolean types
+        /// Verifies if type is one of the boolean types.
         /// </summary>
-        /// <param name="type">type to check</param>
-        /// <returns>true if type is one of boolean types, false otherwise</returns>
+        /// <param name="type">Type to check.</param>
+        /// <returns>True if type is one of boolean types, false otherwise.</returns>
         internal static bool IsBooleanType(Type type)
         {
             if (type == typeof(bool) ||
-                type == typeof(Nullable<bool>))
+                type == typeof(bool?))
                 return true;
             else
                 return false;
         }
 
         /// <summary>
-        /// Verifies if type is one of switch parameter types
+        /// Verifies if type is one of switch parameter types.
         /// </summary>
-        /// <param name="type">type to check</param>
-        /// <returns>true if type is one of switch parameter types, false otherwise</returns>
+        /// <param name="type">Type to check.</param>
+        /// <returns>True if type is one of switch parameter types, false otherwise.</returns>
         internal static bool IsSwitchParameterType(Type type)
         {
-            if (type == typeof(SwitchParameter) || type == typeof(Nullable<SwitchParameter>))
+            if (type == typeof(SwitchParameter) || type == typeof(SwitchParameter?))
                 return true;
             else
                 return false;
         }
 
         /// <summary>
-        /// Verifies if type is one of boolean or switch parameter types
+        /// Verifies if type is one of boolean or switch parameter types.
         /// </summary>
-        /// <param name="type">type to check</param>
-        /// <returns>true if type if one of boolean or switch parameter types,
-        /// false otherwise</returns>
+        /// <param name="type">Type to check.</param>
+        /// <returns>True if type if one of boolean or switch parameter types,
+        /// false otherwise.</returns>
         internal static bool IsBoolOrSwitchParameterType(Type type)
         {
             if (IsBooleanType(type) || IsSwitchParameterType(type))
@@ -1286,14 +1394,13 @@ namespace System.Management.Automation
         /// need of conversion.
         /// </summary>
         /// <param name="dictionary">The dictionary that potentially implement <see cref="IDictionary&lt;TKey,TValue&gt;"/></param>
-        /// <param name="key">The object representing the key</param>
-        /// <param name="value">The value to assign</param>
+        /// <param name="key">The object representing the key.</param>
+        /// <param name="value">The value to assign.</param>
         internal static void DoConversionsForSetInGenericDictionary(IDictionary dictionary, ref object key, ref object value)
         {
             foreach (Type i in dictionary.GetType().GetInterfaces())
             {
-                TypeInfo typeInfo = i.GetTypeInfo();
-                if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                if (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>))
                 {
                     // If we get here, we know the target implements IDictionary.  We will assume
                     // that the non-generic implementation of the indexer property just forwards
@@ -1314,6 +1421,7 @@ namespace System.Management.Automation
         #region type converter
 
         internal static PSTraceSource typeConversion = PSTraceSource.GetTracer("TypeConversion", "Traces the type conversion algorithm", false);
+        internal static ConversionData<object> NoConversion = new ConversionData<object>(ConvertNoConversion, ConversionRank.None);
 
         private static TypeConverter GetIntegerSystemConverter(Type type)
         {
@@ -1349,6 +1457,7 @@ namespace System.Management.Automation
             {
                 return new SByteConverter();
             }
+
             return null;
         }
 
@@ -1365,6 +1474,7 @@ namespace System.Management.Automation
                 s_tracer.WriteLine("ecFromTLS != null");
                 typesXmlConverter = ecFromTLS.TypeTable.GetTypeConverter(type.FullName);
             }
+
             if ((typesXmlConverter == null) && (backupTypeTable != null))
             {
                 s_tracer.WriteLine("Using provided TypeTable to get the type converter");
@@ -1377,7 +1487,7 @@ namespace System.Management.Automation
                 return typesXmlConverter;
             }
 
-            var typeConverters = type.GetTypeInfo().GetCustomAttributes(typeof(TypeConverterAttribute), false);
+            var typeConverters = type.GetCustomAttributes(typeof(TypeConverterAttribute), false);
             foreach (var typeConverter in typeConverters)
             {
                 var attr = (TypeConverterAttribute)typeConverter;
@@ -1399,6 +1509,7 @@ namespace System.Management.Automation
                 typeConversion.WriteLine("Type name \"{0}\" should be assembly qualified.", assemblyQualifiedTypeName);
                 return null;
             }
+
             string assemblyName = assemblyQualifiedTypeName.Substring(typeSeparator + 2);
             string typeName = assemblyQualifiedTypeName.Substring(0, typeSeparator);
 
@@ -1416,6 +1527,7 @@ namespace System.Management.Automation
                         typeConversion.WriteLine("Assembly \"{0}\" threw an exception when retrieving the type \"{1}\": \"{2}\".", assemblyName, typeName, e.Message);
                         return null;
                     }
+
                     try
                     {
                         return Activator.CreateInstance(converterType);
@@ -1429,6 +1541,7 @@ namespace System.Management.Automation
                     }
                 }
             }
+
             typeConversion.WriteLine("Could not create an instance of type \"{0}\".", assemblyQualifiedTypeName);
             return null;
         }
@@ -1511,7 +1624,7 @@ namespace System.Management.Automation
         #region public type conversion
 
         /// <summary>
-        /// Converts valueToConvert to resultType
+        /// Converts valueToConvert to resultType.
         /// </summary>
         /// <remarks>
         /// A null valueToConvert can be converted to :
@@ -1550,7 +1663,7 @@ namespace System.Management.Automation
         ///                                                 query is run using ManagementObjectSearcher Class.
         ///     - to WMIClass                           -   returns ManagementClass represented by the
         ///                                                 string representation of valueToConvert.
-        ///     - to ADSI                               -   returns DirectoryEntry  represented by the
+        ///     - to ADSI                               -   returns DirectoryEntry represented by the
         ///                                                 string representation of valueToConvert.
         ///     - to ADSISearcher                       -   return DirectorySearcher represented by the
         ///                                                 string representation of valueToConvert.
@@ -1566,18 +1679,18 @@ namespace System.Management.Automation
         ///  If any operation above throws an exception, this exception will be wrapped into a
         ///  PSInvalidCastException and thrown resulting in no further conversion attempt.
         /// </remarks>
-        /// <param name="valueToConvert">value to be converted and returned</param>
-        /// <param name="resultType">type to convert valueToConvert</param>
-        /// <returns>converted value</returns>
-        /// <exception cref="ArgumentNullException">if resultType is null</exception>
-        /// <exception cref="PSInvalidCastException">if the conversion failed</exception>
+        /// <param name="valueToConvert">Value to be converted and returned.</param>
+        /// <param name="resultType">Type to convert valueToConvert.</param>
+        /// <returns>Converted value.</returns>
+        /// <exception cref="ArgumentNullException">If resultType is null.</exception>
+        /// <exception cref="PSInvalidCastException">If the conversion failed.</exception>
         public static object ConvertTo(object valueToConvert, Type resultType)
         {
             return ConvertTo(valueToConvert, resultType, true, CultureInfo.InvariantCulture, null);
         }
 
         /// <summary>
-        /// Converts valueToConvert to resultType possibly considering formatProvider
+        /// Converts valueToConvert to resultType possibly considering formatProvider.
         /// </summary>
         /// <remarks>
         /// A null valueToConvert can be converted to :
@@ -1621,12 +1734,12 @@ namespace System.Management.Automation
         ///  If any operation above throws an exception, this exception will be wrapped into a
         ///  PSInvalidCastException and thrown resulting in no further conversion attempt.
         /// </remarks>
-        /// <param name="valueToConvert">value to be converted and returned</param>
-        /// <param name="resultType">type to convert valueToConvert</param>
-        /// <param name="formatProvider">To be used in custom type conversions, to call parse and to call Convert.ChangeType</param>
-        /// <returns>converted value</returns>
-        /// <exception cref="ArgumentNullException">if resultType is null</exception>
-        /// <exception cref="PSInvalidCastException">if the conversion failed</exception>
+        /// <param name="valueToConvert">Value to be converted and returned.</param>
+        /// <param name="resultType">Type to convert valueToConvert.</param>
+        /// <param name="formatProvider">To be used in custom type conversions, to call parse and to call Convert.ChangeType.</param>
+        /// <returns>Converted value.</returns>
+        /// <exception cref="ArgumentNullException">If resultType is null.</exception>
+        /// <exception cref="PSInvalidCastException">If the conversion failed.</exception>
         public static object ConvertTo(object valueToConvert, Type resultType, IFormatProvider formatProvider)
         {
             return ConvertTo(valueToConvert, resultType, true, formatProvider, null);
@@ -1635,20 +1748,21 @@ namespace System.Management.Automation
         /// <summary>
         /// Converts PSObject to resultType.
         /// </summary>
-        /// <param name="valueToConvert">value to be converted and returned.</param>
-        /// <param name="resultType">type to convert psobject.</param>
+        /// <param name="valueToConvert">Value to be converted and returned.</param>
+        /// <param name="resultType">Type to convert psobject.</param>
         /// <param name="recursion">Indicates if inner properties have to be recursively converted.</param>
-        /// <param name="formatProvider">To be used in custom type conversions, to call parse and to call Convert.ChangeType</param>
+        /// <param name="formatProvider">To be used in custom type conversions, to call parse and to call Convert.ChangeType.</param>
         /// <param name="ignoreUnknownMembers">Indicates if Unknown members in the psobject have to be ignored if the corresponding members in resultType do not exist.</param>
-        /// <returns>converted value.</returns>
+        /// <returns>Converted value.</returns>
         public static object ConvertPSObjectToType(PSObject valueToConvert, Type resultType, bool recursion, IFormatProvider formatProvider, bool ignoreUnknownMembers)
         {
             if (valueToConvert != null)
             {
-                ConstructorInfo toConstructor = resultType.GetConstructor(PSTypeExtensions.EmptyTypes);
+                ConstructorInfo toConstructor = resultType.GetConstructor(Type.EmptyTypes);
                 ConvertViaNoArgumentConstructor noArgumentConstructorConverter = new ConvertViaNoArgumentConstructor(toConstructor, resultType);
                 return noArgumentConstructorConverter.Convert(PSObject.Base(valueToConvert), resultType, recursion, (PSObject)valueToConvert, formatProvider, null, ignoreUnknownMembers);
             }
+
             return null;
         }
 
@@ -1660,10 +1774,11 @@ namespace System.Management.Automation
         /// <returns></returns>
         public static T ConvertTo<T>(object valueToConvert)
         {
-            if (valueToConvert is T)
+            if (valueToConvert is T value)
             {
-                return (T)valueToConvert;
+                return value;
             }
+
             return (T)ConvertTo(valueToConvert, typeof(T), true, CultureInfo.InvariantCulture, null);
         }
 
@@ -1673,16 +1788,17 @@ namespace System.Management.Automation
         /// <remarks>
         /// This method is a variant of ConvertTo that does not throw exceptions if the conversion fails.
         /// </remarks>
-        /// <param name="valueToConvert">value to be converted and returned</param>
-        /// <param name="result">result of the conversion. This is valid only if the return is true.</param>
-        /// <returns>false for conversion failure, true for success</returns>
+        /// <param name="valueToConvert">Value to be converted and returned.</param>
+        /// <param name="result">Result of the conversion. This is valid only if the return is true.</param>
+        /// <returns>False for conversion failure, true for success.</returns>
         public static bool TryConvertTo<T>(object valueToConvert, out T result)
         {
-            if (valueToConvert is T)
+            if (valueToConvert is T value)
             {
-                result = (T)valueToConvert;
+                result = value;
                 return true;
             }
+
             return TryConvertTo(valueToConvert, CultureInfo.InvariantCulture, out result);
         }
         /// <summary>
@@ -1692,26 +1808,21 @@ namespace System.Management.Automation
         /// <remarks>
         /// This method is a variant of ConvertTo that does not throw exceptions if the conversion fails.
         /// </remarks>
-        /// <param name="valueToConvert">value to be converted and returned</param>
-        /// <param name="formatProvider">governing conversion of types</param>
-        /// <param name="result">result of the conversion. This is valid only if the return is true.</param>
-        /// <returns>false for conversion failure, true for success</returns>
+        /// <param name="valueToConvert">Value to be converted and returned.</param>
+        /// <param name="formatProvider">Governing conversion of types.</param>
+        /// <param name="result">Result of the conversion. This is valid only if the return is true.</param>
+        /// <returns>False for conversion failure, true for success.</returns>
         public static bool TryConvertTo<T>(object valueToConvert, IFormatProvider formatProvider, out T result)
         {
             result = default(T);
-            try
+
+            if (TryConvertTo(valueToConvert, typeof(T), formatProvider, out object res))
             {
-                result = (T)ConvertTo(valueToConvert, typeof(T), formatProvider);
+                result = (T)res;
+                return true;
             }
-            catch (InvalidCastException)
-            {
-                return false;
-            }
-            catch (ArgumentException)
-            {
-                return false;
-            }
-            return true;
+
+            return false;
         }
 
         /// <summary>
@@ -1720,10 +1831,10 @@ namespace System.Management.Automation
         /// <remarks>
         /// This method is a variant of ConvertTo that does not throw exceptions if the conversion fails.
         /// </remarks>
-        /// <param name="valueToConvert">value to be converted and returned</param>
-        /// <param name="resultType">type to convert valueToConvert</param>
-        /// <param name="result">result of the conversion. This is valid only if the return is true.</param>
-        /// <returns>false for conversion failure, true for success</returns>
+        /// <param name="valueToConvert">Value to be converted and returned.</param>
+        /// <param name="resultType">Type to convert valueToConvert.</param>
+        /// <param name="result">Result of the conversion. This is valid only if the return is true.</param>
+        /// <returns>False for conversion failure, true for success.</returns>
         public static bool TryConvertTo(object valueToConvert, Type resultType, out object result)
         {
             return TryConvertTo(valueToConvert, resultType, CultureInfo.InvariantCulture, out result);
@@ -1736,27 +1847,44 @@ namespace System.Management.Automation
         /// <remarks>
         /// This method is a variant of ConvertTo that does not throw exceptions if the conversion fails.
         /// </remarks>
-        /// <param name="valueToConvert">value to be converted and returned</param>
-        /// <param name="resultType">type to convert valueToConvert</param>
-        /// <param name="formatProvider">governing conversion of types</param>
-        /// <param name="result">result of the conversion. This is valid only if the return is true.</param>
-        /// <returns>false for conversion failure, true for success</returns>
+        /// <param name="valueToConvert">Value to be converted and returned.</param>
+        /// <param name="resultType">Type to convert valueToConvert.</param>
+        /// <param name="formatProvider">Governing conversion of types.</param>
+        /// <param name="result">Result of the conversion. This is valid only if the return is true.</param>
+        /// <returns>False for conversion failure, true for success.</returns>
         public static bool TryConvertTo(object valueToConvert, Type resultType, IFormatProvider formatProvider, out object result)
         {
             result = null;
             try
             {
-                result = ConvertTo(valueToConvert, resultType, formatProvider);
+                using (typeConversion.TraceScope("Converting \"{0}\" to \"{1}\".", valueToConvert, resultType))
+                {
+                    if (resultType == null)
+                    {
+                        return false;
+                    }
+
+                    var conversion = FigureConversion(valueToConvert, resultType, out bool debase);
+                    if (conversion.Rank == ConversionRank.None)
+                    {
+                        return false;
+                    }
+
+                    result = conversion.Invoke(
+                        debase ? PSObject.Base(valueToConvert) : valueToConvert,
+                        resultType,
+                        recurse: true,
+                        debase ? (PSObject)valueToConvert : null,
+                        formatProvider,
+                        backupTable: null);
+
+                    return true;
+                }
             }
             catch (InvalidCastException)
             {
                 return false;
             }
-            catch (ArgumentException)
-            {
-                return false;
-            }
-            return true;
         }
 
         #endregion public type conversion
@@ -1773,7 +1901,7 @@ namespace System.Management.Automation
         {
             private class EnumHashEntry
             {
-                internal EnumHashEntry(String[] names, Array values, UInt64 allValues, bool hasNegativeValue, bool hasFlagsAttribute)
+                internal EnumHashEntry(string[] names, Array values, UInt64 allValues, bool hasNegativeValue, bool hasFlagsAttribute)
                 {
                     this.names = names;
                     this.values = values;
@@ -1782,7 +1910,7 @@ namespace System.Management.Automation
                     this.hasFlagsAttribute = hasFlagsAttribute;
                 }
 
-                internal String[] names;
+                internal string[] names;
                 internal Array values;
                 internal UInt64 allValues;
                 internal bool hasNegativeValue;
@@ -1808,6 +1936,7 @@ namespace System.Management.Automation
                     {
                         s_enumTable.Clear();
                     }
+
                     UInt64 allValues = 0;
                     bool hasNegativeValue = false;
                     Array values = Enum.GetValues(enumType);
@@ -1840,7 +1969,7 @@ namespace System.Management.Automation
 
                     // See if the [Flag] attribute is set on this type...
                     // MemberInfo.GetCustomAttributes returns IEnumerable<Attribute> in CoreCLR.
-                    bool hasFlagsAttribute = enumType.GetTypeInfo().GetCustomAttributes(typeof(FlagsAttribute), false).Any();
+                    bool hasFlagsAttribute = enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Any();
 
                     returnValue = new EnumHashEntry(Enum.GetNames(enumType), values, allValues, hasNegativeValue, hasFlagsAttribute);
                     s_enumTable.Add(enumType, returnValue);
@@ -1850,14 +1979,14 @@ namespace System.Management.Automation
 
             public override bool CanConvertFrom(object sourceValue, Type destinationType)
             {
-                return sourceValue is string && destinationType.GetTypeInfo().IsEnum;
+                return sourceValue is string && destinationType.IsEnum;
             }
 
             /// <summary>
             /// Checks if the enumValue is defined or not in enumType.
             /// </summary>
-            /// <param name="enumType">some enumeration</param>
-            /// <param name="enumValue">supposed to be an integer</param>
+            /// <param name="enumType">Some enumeration.</param>
+            /// <param name="enumValue">Supposed to be an integer.</param>
             /// <returns>
             /// </returns>
             private static bool IsDefinedEnum(object enumValue, Type enumType)
@@ -1924,9 +2053,9 @@ namespace System.Management.Automation
             /// Throws if the enumType enumeration has no negative values, but the enumValue is not
             /// defined in enumType.
             /// </summary>
-            /// <param name="enumType">some enumeration</param>
-            /// <param name="enumValue">supposed to be an integer</param>
-            /// <param name="errorId">the error id to be used when throwing an exception</param>
+            /// <param name="enumType">Some enumeration.</param>
+            /// <param name="enumValue">Supposed to be an integer.</param>
+            /// <param name="errorId">The error id to be used when throwing an exception.</param>
             internal static void ThrowForUndefinedEnum(string errorId, object enumValue, Type enumType)
             {
                 ThrowForUndefinedEnum(errorId, enumValue, enumValue, enumType);
@@ -1936,10 +2065,10 @@ namespace System.Management.Automation
             /// Throws if the enumType enumeration has no negative values, but the enumValue is not
             /// defined in enumType.
             /// </summary>
-            /// <param name="errorId">The error id to be used when throwing an exception</param>
-            /// <param name="enumValue">value to validate</param>
-            /// <param name="valueToUseToThrow">value to use while throwing an exception</param>
-            /// <param name="enumType">the enum type to validate the enumValue with.</param>
+            /// <param name="errorId">The error id to be used when throwing an exception.</param>
+            /// <param name="enumValue">Value to validate.</param>
+            /// <param name="valueToUseToThrow">Value to use while throwing an exception.</param>
+            /// <param name="enumType">The enum type to validate the enumValue with.</param>
             /// <remarks>
             /// <paramref name="valueToUseToThrow"/> is used by those callers who want the exception
             /// to contain a different value than the one that is validated.
@@ -1978,13 +2107,15 @@ namespace System.Management.Automation
                         ExtendedTypeSystem.InvalidCastException,
                         sourceValue, ObjectToTypeNameString(sourceValue), destinationType);
                 }
-                Diagnostics.Assert(destinationType.GetTypeInfo().IsEnum, "EnumSingleTypeConverter is only applied to enumerations");
+
+                Diagnostics.Assert(destinationType.IsEnum, "EnumSingleTypeConverter is only applied to enumerations");
                 if (sourceValueString.Length == 0)
                 {
                     throw new PSInvalidCastException("InvalidCastEnumFromEmptyString", null,
                         ExtendedTypeSystem.InvalidCastException,
                         sourceValue, ObjectToTypeNameString(sourceValue), destinationType);
                 }
+
                 sourceValueString = sourceValueString.Trim();
                 if (sourceValueString.Length == 0)
                 {
@@ -1993,7 +2124,7 @@ namespace System.Management.Automation
                         sourceValue, ObjectToTypeNameString(sourceValue), destinationType);
                 }
 
-                if (Char.IsDigit(sourceValueString[0]) || sourceValueString[0] == '+' || sourceValueString[0] == '-')
+                if (char.IsDigit(sourceValueString[0]) || sourceValueString[0] == '+' || sourceValueString[0] == '-')
                 {
                     Type underlyingType = Enum.GetUnderlyingType(destinationType);
                     try
@@ -2018,6 +2149,7 @@ namespace System.Management.Automation
                             ExtendedTypeSystem.InvalidCastExceptionEnumerationNoFlagAndComma,
                             sourceValue, destinationType);
                     }
+
                     sourceValueEntries = new string[] { sourceValueString };
                     fromValuePatterns = new WildcardPattern[1];
                     if (WildcardPattern.ContainsWildcardCharacters(sourceValueString))
@@ -2076,9 +2208,10 @@ namespace System.Management.Automation
                         }
                         else
                         {
-                            if (String.Compare(sourceValueEntry, name, ignoreCaseOpt) != 0)
+                            if (string.Compare(sourceValueEntry, name, ignoreCaseOpt) != 0)
                                 continue;
                         }
+
                         if (!multipleValues && foundOne)
                         {
                             object firstValue = Enum.ToObject(destinationType, returnUInt64);
@@ -2087,9 +2220,11 @@ namespace System.Management.Automation
                                 ExtendedTypeSystem.InvalidCastExceptionEnumerationMoreThanOneValue,
                                 sourceValue, destinationType, firstValue, secondValue);
                         }
+
                         foundOne = true;
                         returnUInt64 |= Convert.ToUInt64(values.GetValue(j), CultureInfo.CurrentCulture);
                     }
+
                     if (!foundOne)
                     {
                         throw new PSInvalidCastException("InvalidCastEnumStringNotFound", null,
@@ -2115,33 +2250,37 @@ namespace System.Management.Automation
         /// <summary>
         /// There might be many cast operators in a Type A that take Type A. Each operator will have a
         /// different return type. Because of that we cannot call GetMethod since it would cause a
-        /// AmbiguousMatchException. This auxiliary method calls GetMember to find the right method
+        /// AmbiguousMatchException. This auxiliary method calls GetMember to find the right method.
         /// </summary>
-        /// <param name="methodName">Either op_Explicit or op_Implicit, at the moment</param>
-        /// <param name="targetType">the type to look for an operator</param>
-        /// <param name="originalType">Type of the only parameter the operator method should have</param>
-        /// <param name="resultType">Return type of the operator method</param>
-        /// <returns>A cast operator method, or null if not found</returns>
+        /// <param name="methodName">Either op_Explicit or op_Implicit, at the moment.</param>
+        /// <param name="targetType">The type to look for an operator.</param>
+        /// <param name="originalType">Type of the only parameter the operator method should have.</param>
+        /// <param name="resultType">Return type of the operator method.</param>
+        /// <returns>A cast operator method, or null if not found.</returns>
         private static MethodInfo FindCastOperator(string methodName, Type targetType, Type originalType, Type resultType)
         {
             using (typeConversion.TraceScope("Looking for \"{0}\" cast operator.", methodName))
             {
                 // Get multiple matched Public & Static methods
-                var methods = ClrFacade.GetMethods(targetType, methodName);
+                const BindingFlags flagsToUse = BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod;
+                var methods = targetType.GetMember(methodName, flagsToUse);
                 foreach (MethodInfo method in methods)
                 {
                     if (!resultType.IsAssignableFrom(method.ReturnType))
                     {
                         continue;
                     }
+
                     System.Reflection.ParameterInfo[] parameters = method.GetParameters();
                     if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableFrom(originalType))
                     {
                         continue;
                     }
+
                     typeConversion.WriteLine("Found \"{0}\" cast operator in type {1}.", methodName, targetType.FullName);
                     return method;
                 }
+
                 typeConversion.TraceScope("Cast operator for \"{0}\" not found.", methodName);
                 return null;
             }
@@ -2159,15 +2298,7 @@ namespace System.Management.Automation
             }
         }
 
-#if !CORECLR
-        // No Following Types In CoreCLR
-        //    ManagementObject
-        //    ManagementObjectSearcher
-        //    ManagementClass
-        //    CommaDelimitedStringCollection
-        //    DirectoryEntry
-        #region Converters_Not_Available_In_CorePS
-
+#if !UNIX
         private static ManagementObject ConvertToWMI(object valueToConvert,
                                                      Type resultType,
                                                      bool recursion,
@@ -2291,6 +2422,7 @@ namespace System.Management.Automation
                     valueToConvert.ToString(), resultType.ToString(), wmiClassException.Message);
             }
         }
+#endif
 
         // System.Configuration.CommaDelimitedStringCollection is derived from the StringCollection class
         private static System.Configuration.CommaDelimitedStringCollection ConvertToCommaDelimitedStringCollection(object valueToConvert,
@@ -2306,6 +2438,7 @@ namespace System.Management.Automation
             return commaDelimitedStringCollection;
         }
 
+#if !UNIX
         private static DirectoryEntry ConvertToADSI(object valueToConvert,
                                                     Type resultType,
                                                     bool recursion,
@@ -2313,7 +2446,7 @@ namespace System.Management.Automation
                                                     IFormatProvider formatProvider,
                                                     TypeTable backupTable)
         {
-            typeConversion.WriteLine("Standard type conversion to  DirectoryEntry.");
+            typeConversion.WriteLine("Standard type conversion to DirectoryEntry.");
 
             string valueToConvertString;
             try
@@ -2363,8 +2496,6 @@ namespace System.Management.Automation
                     valueToConvert.ToString(), resultType.ToString(), e.Message);
             }
         }
-
-        #endregion Converters_Not_Available_In_CorePS
 #endif
 
         private static StringCollection ConvertToStringCollection(object valueToConvert,
@@ -2502,6 +2633,7 @@ namespace System.Management.Automation
                             typeConversion.WriteLine("TypeConverter cannot convert to resultType.");
                         }
                     }
+
                     PSTypeConverter valuePSTypeConverter = valueConverter as PSTypeConverter;
                     if (valuePSTypeConverter != null)
                     {
@@ -2529,6 +2661,7 @@ namespace System.Management.Automation
                         }
                     }
                 }
+
                 s_tracer.WriteLine("No converter found in original type.");
 
                 // now ConvertFrom for the destination type
@@ -2560,6 +2693,7 @@ namespace System.Management.Automation
                             typeConversion.WriteLine("Destination type's converter cannot convert from originalType.");
                         }
                     }
+
                     PSTypeConverter valuePSTypeConverter = valueConverter as PSTypeConverter;
                     if (valuePSTypeConverter != null)
                     {
@@ -2587,6 +2721,7 @@ namespace System.Management.Automation
                         }
                     }
                 }
+
                 result = null;
                 return false;
             }
@@ -2717,6 +2852,7 @@ namespace System.Management.Automation
                     ExtendedTypeSystem.InvalidCastException,
                     valueToConvert.ToString(), ObjectToTypeNameString(valueToConvert), resultType.ToString());
             }
+
             return namedType;
         }
 
@@ -2750,6 +2886,34 @@ namespace System.Management.Automation
             }
         }
 
+        /// <summary>
+        /// Attempts to use Parser.ScanNumber to get the value of a numeric string.
+        /// </summary>
+        /// <param name="strToConvert">The string to convert to a number.</param>
+        /// <param name="resultType">The resulting value type to convert to.</param>
+        /// <param name="result">The resulting numeric value.</param>
+        /// <returns>
+        /// True if the parse succeeds, false if a parse exception arises.
+        /// In all other cases, an exception will be thrown.
+        /// </returns>
+        private static bool TryScanNumber(string strToConvert, Type resultType, out object result)
+        {
+            try
+            {
+                result = Convert.ChangeType(
+                    Parser.ScanNumber(strToConvert, resultType, shouldTryCoercion: false),
+                    resultType,
+                    System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
+                return true;
+            }
+            catch (Exception)
+            {
+                // Parse or convert failed
+                result = null;
+                return false;
+            }
+        }
+
         private static object ConvertStringToInteger(object valueToConvert,
                                                      Type resultType,
                                                      bool recursion,
@@ -2772,7 +2936,14 @@ namespace System.Management.Automation
             TypeConverter integerConverter = LanguagePrimitives.GetIntegerSystemConverter(resultType);
             try
             {
-                return integerConverter.ConvertFrom(strToConvert);
+                if (TryScanNumber(strToConvert, resultType, out object result))
+                {
+                    return result;
+                }
+                else
+                {
+                    return integerConverter.ConvertFrom(strToConvert);
+                }
             }
             catch (Exception e)
             {
@@ -2782,6 +2953,7 @@ namespace System.Management.Automation
                 {
                     e = e.InnerException;
                 }
+
                 typeConversion.WriteLine("Exception converting to integer: \"{0}\".", e.Message);
                 if (e is FormatException)
                 {
@@ -2795,6 +2967,7 @@ namespace System.Management.Automation
                         typeConversion.WriteLine("Exception converting to integer through double: \"{0}\".", ex.Message);
                     }
                 }
+
                 throw new PSInvalidCastException("InvalidCastFromStringToInteger", e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
                     strToConvert, resultType.ToString(), e.Message);
@@ -2809,8 +2982,9 @@ namespace System.Management.Automation
                                                      TypeTable backupTable)
         {
             Diagnostics.Assert(valueToConvert is string, "Value to convert must be a string");
+            var strToConvert = valueToConvert as string;
 
-            if (((string)valueToConvert).Length == 0)
+            if (strToConvert.Length == 0)
             {
                 typeConversion.WriteLine("Returning numeric zero.");
                 // This is not wrapped in a try/catch because it can't fail.
@@ -2820,8 +2994,15 @@ namespace System.Management.Automation
             typeConversion.WriteLine("Converting to decimal.");
             try
             {
-                return Convert.ChangeType(valueToConvert, resultType,
-                    System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
+                typeConversion.WriteLine("Parsing string value to account for multipliers and type suffixes");
+                if (TryScanNumber(strToConvert, resultType, out object result))
+                {
+                    return result;
+                }
+                else
+                {
+                    return Convert.ChangeType(strToConvert, resultType, CultureInfo.InvariantCulture.NumberFormat);
+                }
             }
             catch (Exception e)
             {
@@ -2830,16 +3011,17 @@ namespace System.Management.Automation
                 {
                     try
                     {
-                        return ConvertNumericThroughDouble(valueToConvert, resultType);
+                        return ConvertNumericThroughDouble(strToConvert, resultType);
                     }
                     catch (Exception ex)
                     {
                         typeConversion.WriteLine("Exception converting to integer through double: \"{0}\".", ex.Message);
                     }
                 }
+
                 throw new PSInvalidCastException("InvalidCastFromStringToDecimal", e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    strToConvert, resultType.ToString(), e.Message);
             }
         }
 
@@ -2851,8 +3033,9 @@ namespace System.Management.Automation
                                                   TypeTable backupTable)
         {
             Diagnostics.Assert(valueToConvert is string, "Value to convert must be a string");
+            var strToConvert = valueToConvert as string;
 
-            if (((string)valueToConvert).Length == 0)
+            if (strToConvert.Length == 0)
             {
                 typeConversion.WriteLine("Returning numeric zero.");
                 // This is not wrapped in a try/catch because it can't fail.
@@ -2862,15 +3045,23 @@ namespace System.Management.Automation
             typeConversion.WriteLine("Converting to double or single.");
             try
             {
-                return Convert.ChangeType(valueToConvert, resultType,
-                    System.Globalization.CultureInfo.InvariantCulture.NumberFormat);
+                typeConversion.WriteLine("Parsing string value to account for multipliers and type suffixes");
+
+                if (TryScanNumber(strToConvert, resultType, out object result))
+                {
+                    return result;
+                }
+                else
+                {
+                    return Convert.ChangeType(strToConvert, resultType, CultureInfo.InvariantCulture.NumberFormat);
+                }
             }
             catch (Exception e)
             {
                 typeConversion.WriteLine("Exception converting to double or single: \"{0}\".", e.Message);
                 throw new PSInvalidCastException("InvalidCastFromStringToDoubleOrSingle", e,
                     ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
-                    valueToConvert.ToString(), resultType.ToString(), e.Message);
+                    strToConvert, resultType.ToString(), e.Message);
             }
         }
 
@@ -3142,7 +3333,7 @@ namespace System.Management.Automation
             try
             {
                 typeConversion.WriteLine("Converting object to string.");
-                return PSObject.ToStringParser(ecFromTLS, valueToConvert);
+                return PSObject.ToStringParser(ecFromTLS, valueToConvert, formatProvider);
             }
             catch (ExtendedTypeSystemException e)
             {
@@ -3276,6 +3467,7 @@ namespace System.Management.Automation
                     // false means no further recursions and therefore no cycles
                     result.Add(ConvertTo(obj, resultElementType, false, formatProvider, backupTable));
                 }
+
                 return result.ToArray(resultElementType);
             }
             catch (Exception e)
@@ -3339,7 +3531,7 @@ namespace System.Management.Automation
                     valueToConvert.ToString(), resultType.ToString(), e.Message);
             }
 
-            // Check if the result is a defined enum..otherwise throw  an error
+            // Check if the result is a defined enum..otherwise throw an error
             // valueToConvert is the user supplied value. Use that in the error message.
             EnumSingleTypeConverter.ThrowForUndefinedEnum("UndefinedIntegerToEnum", result, valueToConvert, resultType);
 
@@ -3449,10 +3641,70 @@ namespace System.Management.Automation
                             e.Current, resultType, EnumSingleTypeConverter.EnumValues(resultType));
                     }
                 }
+
                 sbResult.Append(current);
             }
 
             return ConvertStringToEnum(sbResult.ToString(), resultType, recursion, originalValueToConvert, formatProvider, backupTable);
+        }
+
+        private class PSMethodToDelegateConverter
+        {
+            // Index of the matching overload method.
+            private readonly int _matchIndex;
+            // Size of the cache. It's rare to have more than 10 overloads for a method.
+            private const int CacheSize = 10;
+            private static readonly PSMethodToDelegateConverter[] s_converterCache = new PSMethodToDelegateConverter[CacheSize];
+
+            private PSMethodToDelegateConverter(int matchIndex)
+            {
+                _matchIndex = matchIndex;
+            }
+
+            internal static PSMethodToDelegateConverter GetConverter(int matchIndex)
+            {
+                if (matchIndex >= CacheSize) { return new PSMethodToDelegateConverter(matchIndex); }
+
+                var result = s_converterCache[matchIndex];
+                if (result == null)
+                {
+                    // If the cache entry is null, generate a new instance for the cache slot.
+                    var converter = new PSMethodToDelegateConverter(matchIndex);
+                    Threading.Interlocked.CompareExchange(ref s_converterCache[matchIndex], converter, null);
+                    result = s_converterCache[matchIndex];
+                }
+
+                return result;
+            }
+
+            internal Delegate Convert(object valueToConvert,
+                                      Type resultType,
+                                      bool recursion,
+                                      PSObject originalValueToConvert,
+                                      IFormatProvider formatProvider,
+                                      TypeTable backupTable)
+            {
+                // We can only possibly convert PSMethod instance of the type PSMethod<T>.
+                // Such a PSMethod essentially represents a set of .NET method overloads.
+                var psMethod = (PSMethod)valueToConvert;
+
+                try
+                {
+                    var methods = (MethodCacheEntry)psMethod.adapterData;
+                    var isStatic = psMethod.instance is Type;
+
+                    var candidate = (MethodInfo)methods.methodInformationStructures[_matchIndex].method;
+                    return isStatic ? candidate.CreateDelegate(resultType)
+                                    : candidate.CreateDelegate(resultType, psMethod.instance);
+                }
+                catch (Exception e)
+                {
+                    typeConversion.WriteLine("PSMethod to Delegate exception: \"{0}\".", e.Message);
+                    throw new PSInvalidCastException("InvalidCastExceptionPSMethodToDelegate", e,
+                        ExtendedTypeSystem.InvalidCastExceptionWithInnerException,
+                        valueToConvert.ToString(), resultType.ToString(), e.Message);
+                }
+            }
         }
 
         private class ConvertViaParseMethod
@@ -3690,7 +3942,12 @@ namespace System.Management.Automation
                     ExecutionContext ecFromTLS = LocalPipeline.GetExecutionContextFromTLS();
                     object result = null;
 
-                    if ((ecFromTLS == null) || (ecFromTLS != null && ecFromTLS.LanguageMode == PSLanguageMode.FullLanguage))
+                    // Setting arbitrary properties is dangerous, so we allow this only if
+                    //  - It's running on a thread without Runspace; Or
+                    //  - It's in FullLanguage but not because it's part of a parameter binding that is transitioning from ConstrainedLanguage to FullLanguage
+                    // When this is invoked from a parameter binding in transition from ConstrainedLanguage environment to FullLanguage command, we disallow
+                    // the property conversion because it's dangerous.
+                    if (ecFromTLS == null || (ecFromTLS.LanguageMode == PSLanguageMode.FullLanguage && !ecFromTLS.LanguageModeTransitionInParameterBinding))
                     {
                         result = _constructor();
                         var psobject = valueToConvert as PSObject;
@@ -3706,6 +3963,7 @@ namespace System.Management.Automation
                             IDictionary properties = valueToConvert as IDictionary;
                             SetObjectProperties(result, properties, resultType, CreateMemberNotFoundError, CreateMemberSetValueError, enableMethodCall: false);
                         }
+
                         typeConversion.WriteLine("Constructor result: \"{0}\".", result);
                     }
                     else
@@ -3835,7 +4093,6 @@ namespace System.Management.Automation
             }
         }
 
-
         private class ConvertCheckingForCustomConverter
         {
             internal PSConverter<object> tryfirstConverter;
@@ -3911,7 +4168,7 @@ namespace System.Management.Automation
         {
             typeConversion.WriteLine("Converting null to \"\".");
             // if the destination type is string, return an empty string...
-            return String.Empty;
+            return string.Empty;
         }
 
         private static PSReference ConvertNullToPSReference(object valueToConvert,
@@ -4006,6 +4263,7 @@ namespace System.Management.Automation
             return null;
         }
 
+        [System.Diagnostics.DebuggerDisplay("{from.Name}->{to.Name}")]
         private struct ConversionTypePair
         {
             internal Type from;
@@ -4046,9 +4304,10 @@ namespace System.Management.Automation
 
         internal delegate object PSNullConverter(object nullOrAutomationNull);
 
-        internal interface ConversionData
+        internal interface IConversionData
         {
             object Converter { get; }
+
             ConversionRank Rank { get; }
 
             object Invoke(object valueToConvert,
@@ -4059,7 +4318,8 @@ namespace System.Management.Automation
                           TypeTable backupTable);
         }
 
-        internal class ConversionData<T> : ConversionData
+        [System.Diagnostics.DebuggerDisplay("{_converter.Method.Name}")]
+        internal class ConversionData<T> : IConversionData
         {
             private readonly PSConverter<T> _converter;
 
@@ -4082,13 +4342,12 @@ namespace System.Management.Automation
             }
         }
 
-        private static Dictionary<ConversionTypePair, ConversionData> s_converterCache
-            = new Dictionary<ConversionTypePair, ConversionData>(256);
+        private static Dictionary<ConversionTypePair, IConversionData> s_converterCache = new Dictionary<ConversionTypePair, IConversionData>(256);
 
-        private static ConversionData CacheConversion<T>(Type fromType, Type toType, PSConverter<T> converter, ConversionRank rank)
+        private static IConversionData CacheConversion<T>(Type fromType, Type toType, PSConverter<T> converter, ConversionRank rank)
         {
             ConversionTypePair pair = new ConversionTypePair(fromType, toType);
-            ConversionData data = null;
+            IConversionData data = null;
             lock (s_converterCache)
             {
                 if (!s_converterCache.TryGetValue(pair, out data))
@@ -4102,14 +4361,15 @@ namespace System.Management.Automation
                         "Existing conversion isn't the same as new conversion");
                 }
             }
+
             return data;
         }
 
-        private static ConversionData GetConversionData(Type fromType, Type toType)
+        private static IConversionData GetConversionData(Type fromType, Type toType)
         {
             lock (s_converterCache)
             {
-                ConversionData result = null;
+                IConversionData result = null;
                 s_converterCache.TryGetValue(new ConversionTypePair(fromType, toType), out result);
                 return result;
             }
@@ -4138,7 +4398,6 @@ namespace System.Management.Automation
         private static Type[] s_unsignedIntegerTypes = new Type[] { typeof(Byte), typeof(UInt16), typeof(UInt32), typeof(UInt64) };
 
         private static Type[] s_realTypes = new Type[] { typeof(Single), typeof(Double), typeof(Decimal) };
-
 
         internal static void RebuildConversionCache()
         {
@@ -4213,6 +4472,7 @@ namespace System.Management.Automation
                                                 LanguagePrimitives.ConvertNumeric, ConversionRank.NumericExplicit);
                     }
                 }
+
                 foreach (Type integerType in s_integerTypes)
                 {
                     CacheConversion<object>(typeofString, integerType, LanguagePrimitives.ConvertStringToInteger, ConversionRank.NumericString);
@@ -4255,7 +4515,8 @@ namespace System.Management.Automation
                 CacheConversion<bool>(typeofString, typeofBool, LanguagePrimitives.ConvertStringToBool, ConversionRank.Language);
                 CacheConversion<bool>(typeof(SwitchParameter), typeofBool, LanguagePrimitives.ConvertSwitchParameterToBool, ConversionRank.Language);
 
-#if !CORECLR    // No DirectoryService && WMIv1 In CoreCLR
+#if !UNIX
+                // Conversions to WMI and ADSI
                 CacheConversion<ManagementObjectSearcher>(typeofString, typeof(ManagementObjectSearcher), LanguagePrimitives.ConvertToWMISearcher, ConversionRank.Language);
                 CacheConversion<ManagementClass>(typeofString, typeof(ManagementClass), LanguagePrimitives.ConvertToWMIClass, ConversionRank.Language);
                 CacheConversion<ManagementObject>(typeofString, typeof(ManagementObject), LanguagePrimitives.ConvertToWMI, ConversionRank.Language);
@@ -4360,6 +4621,7 @@ namespace System.Management.Automation
                                     if (TypeResolver.TryResolveType(property.TypeNameOfValue, out propType))
                                     {
                                         if (formatProvider == null) { formatProvider = CultureInfo.InvariantCulture; }
+
                                         try
                                         {
                                             PSObject propertyValue = prop.Value as PSObject;
@@ -4382,6 +4644,7 @@ namespace System.Management.Automation
                                         }
                                     }
                                 }
+
                                 property.Value = propValue;
                             }
                             else
@@ -4415,10 +4678,11 @@ namespace System.Management.Automation
                     }
                 }
             }
+
             return pso;
         }
 
-        private static String GetAvailableProperties(PSObject pso)
+        private static string GetAvailableProperties(PSObject pso)
         {
             StringBuilder availableProperties = new StringBuilder();
             bool first = true;
@@ -4431,6 +4695,7 @@ namespace System.Management.Automation
                     {
                         availableProperties.Append(" , ");
                     }
+
                     availableProperties.Append("[" + p.Name + " <" + p.TypeNameOfValue + ">]");
                     if (first == true)
                     {
@@ -4442,7 +4707,7 @@ namespace System.Management.Automation
             return availableProperties.ToString();
         }
 
-        internal static ConversionData FigureConversion(object valueToConvert, Type resultType, out bool debase)
+        internal static IConversionData FigureConversion(object valueToConvert, Type resultType, out bool debase)
         {
             PSObject valueAsPsObj;
             Type originalType;
@@ -4459,7 +4724,7 @@ namespace System.Management.Automation
 
             debase = false;
 
-            ConversionData data = FigureConversion(originalType, resultType);
+            IConversionData data = FigureConversion(originalType, resultType);
             if (data.Rank != ConversionRank.None)
             {
                 return data;
@@ -4497,20 +4762,19 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        ///
         /// </summary>
-        /// <param name="valueToConvert">the same as in the public version</param>
-        /// <param name="resultType">the same as in the public version</param>
-        /// <param name="recursion">true if we should perform any recursive calls to ConvertTo</param>
-        /// <param name="formatProvider">governing conversion of types</param>
+        /// <param name="valueToConvert">The same as in the public version.</param>
+        /// <param name="resultType">The same as in the public version.</param>
+        /// <param name="recursion">True if we should perform any recursive calls to ConvertTo.</param>
+        /// <param name="formatProvider">Governing conversion of types.</param>
         /// <param name="backupTypeTable">
         /// Used by Remoting Rehydration Logic. While Deserializing a remote object,
         /// LocalPipeline.ExecutionContextFromTLS() might return null..In which case this
         /// TypeTable will be used to do the conversion.
         /// </param>
-        /// <returns>the value converted</returns>
-        /// <exception cref="ArgumentNullException">if resultType is null</exception>
-        /// <exception cref="PSInvalidCastException">if the conversion failed</exception>
+        /// <returns>The value converted.</returns>
+        /// <exception cref="ArgumentNullException">If resultType is null.</exception>
+        /// <exception cref="PSInvalidCastException">If the conversion failed.</exception>
         internal static object ConvertTo(object valueToConvert,
                                          Type resultType,
                                          bool recursion,
@@ -4527,14 +4791,18 @@ namespace System.Management.Automation
                 bool debase;
                 var conversion = FigureConversion(valueToConvert, resultType, out debase);
 
-                return conversion.Invoke(debase ? PSObject.Base(valueToConvert) : valueToConvert,
-                                            resultType, recursion, debase ? (PSObject)valueToConvert : null,
-                                            formatProvider, backupTypeTable);
+                return conversion.Invoke(
+                    debase ? PSObject.Base(valueToConvert) : valueToConvert,
+                    resultType,
+                    recursion,
+                    debase ? (PSObject)valueToConvert : null,
+                    formatProvider,
+                    backupTypeTable);
             }
         }
 
         /// <summary>
-        /// Get the errorId and errorMessage for an InvalidCastException
+        /// Get the errorId and errorMessage for an InvalidCastException.
         /// </summary>
         /// <param name="valueToConvert"></param>
         /// <param name="resultType"></param>
@@ -4544,9 +4812,17 @@ namespace System.Management.Automation
         internal static Tuple<string, string> GetInvalidCastMessages(object valueToConvert, Type resultType)
         {
             string errorId, errorMsg;
+            if (resultType.IsByRefLike)
+            {
+                typeConversion.WriteLine("Cannot convert to ByRef-Like types as they should be used on stack only.");
+                errorId = nameof(ExtendedTypeSystem.InvalidCastToByRefLikeType);
+                errorMsg = StringUtil.Format(ExtendedTypeSystem.InvalidCastToByRefLikeType, resultType);
+                return Tuple.Create(errorId, errorMsg);
+            }
+
             if (PSObject.Base(valueToConvert) == null)
             {
-                if (resultType.GetTypeInfo().IsEnum)
+                if (resultType.IsEnum)
                 {
                     typeConversion.WriteLine("Issuing an error message about not being able to convert null to an Enum type.");
                     // a nice error message specifically for null being converted to enum
@@ -4587,7 +4863,7 @@ namespace System.Management.Automation
             throw new PSInvalidCastException("ConversionSupportedOnlyToCoreTypes", null, ExtendedTypeSystem.InvalidCastExceptionNonCoreType, resultType.ToString());
         }
 
-        private static ConversionData FigureLanguageConversion(Type fromType, Type toType,
+        private static IConversionData FigureLanguageConversion(Type fromType, Type toType,
                                                                out PSConverter<object> valueDependentConversion,
                                                                out ConversionRank valueDependentRank)
         {
@@ -4597,7 +4873,7 @@ namespace System.Management.Automation
             Type underlyingType = Nullable.GetUnderlyingType(toType);
             if (underlyingType != null)
             {
-                ConversionData nullableConversion = FigureConversion(fromType, underlyingType);
+                IConversionData nullableConversion = FigureConversion(fromType, underlyingType);
                 if (nullableConversion.Rank != ConversionRank.None)
                 {
                     return CacheConversion<object>(fromType, toType, LanguagePrimitives.ConvertToNullable, nullableConversion.Rank);
@@ -4616,11 +4892,11 @@ namespace System.Management.Automation
                 {
                     converter = LanguagePrimitives.ConvertIListToBool;
                 }
-                else if (fromType.GetTypeInfo().IsEnum)
+                else if (fromType.IsEnum)
                 {
                     converter = LanguagePrimitives.CreateNumericToBoolConverter(fromType);
                 }
-                else if (fromType.GetTypeInfo().IsValueType)
+                else if (fromType.IsValueType)
                 {
                     converter = LanguagePrimitives.ConvertValueToBool;
                 }
@@ -4628,12 +4904,13 @@ namespace System.Management.Automation
                 {
                     converter = LanguagePrimitives.ConvertClassToBool;
                 }
+
                 return CacheConversion<bool>(fromType, toType, converter, ConversionRank.Language);
             }
 
             if (toType == typeof(string))
             {
-                Dbg.Assert(!LanguagePrimitives.IsNumeric(LanguagePrimitives.GetTypeCode(fromType)) || fromType.GetTypeInfo().IsEnum,
+                Dbg.Assert(!LanguagePrimitives.IsNumeric(LanguagePrimitives.GetTypeCode(fromType)) || fromType.IsEnum,
                     "Number to string should be cached on initialization of cache table");
                 return CacheConversion<string>(fromType, toType, LanguagePrimitives.ConvertNonNumericToString, ConversionRank.ToString);
             }
@@ -4657,7 +4934,7 @@ namespace System.Management.Automation
                     return CacheConversion<object>(fromType, toType, LanguagePrimitives.ConvertEnumerableToArray, ConversionRank.Language);
                 }
 
-                ConversionData data = FigureConversion(fromType, toElementType);
+                IConversionData data = FigureConversion(fromType, toElementType);
                 if (data.Rank != ConversionRank.None)
                 {
                     valueDependentRank = data.Rank & ConversionRank.ValueDependent;
@@ -4729,19 +5006,163 @@ namespace System.Management.Automation
             {
                 Type actualResultType = typeof(PSObject);
 
-                ConstructorInfo resultConstructor = actualResultType.GetConstructor(PSTypeExtensions.EmptyTypes);
+                ConstructorInfo resultConstructor = actualResultType.GetConstructor(Type.EmptyTypes);
 
                 var converterObj = new ConvertViaNoArgumentConstructor(resultConstructor, actualResultType);
                 return CacheConversion(fromType, toType, converterObj.Convert, ConversionRank.Language);
             }
 
             TypeCode fromTypeCode = LanguagePrimitives.GetTypeCode(fromType);
-            if (LanguagePrimitives.IsInteger(fromTypeCode) && toType.GetTypeInfo().IsEnum)
+            if (LanguagePrimitives.IsInteger(fromTypeCode) && toType.IsEnum)
             {
                 return CacheConversion<object>(fromType, toType, LanguagePrimitives.ConvertIntegerToEnum, ConversionRank.Language);
             }
 
+            if (fromType.IsSubclassOf(typeof(PSMethod)) && toType.IsSubclassOf(typeof(Delegate)) && !toType.IsAbstract)
+            {
+                var targetMethod = toType.GetMethod("Invoke");
+                var comparator = new SignatureComparator(targetMethod);
+                var signatureEnumerator = new PSMethodSignatureEnumerator(fromType);
+                int index = -1, matchedIndex = -1;
+
+                while (signatureEnumerator.MoveNext())
+                {
+                    index++;
+                    var signatureType = signatureEnumerator.Current;
+                    // Skip the non-bindable signatures
+                    if (signatureType == typeof(Func<PSNonBindableType>)) { continue; }
+
+                    Type[] argumentTypes = signatureType.GenericTypeArguments;
+                    if (comparator.ProjectedSignatureMatchesTarget(argumentTypes, out bool signaturesMatchExactly))
+                    {
+                        if (signaturesMatchExactly)
+                        {
+                            // We prefer the signature that exactly matches the target delegate.
+                            matchedIndex = index;
+                            break;
+                        }
+
+                        // If there is no exact match, then we use the first compatible signature we found.
+                        if (matchedIndex == -1) { matchedIndex = index; }
+                    }
+                }
+
+                if (matchedIndex > -1)
+                {
+                    // We got the index of the matching method signature based on the PSMethod<..> type.
+                    // Signatures in PSMethod<..> type were constructed based on the array of method overloads,
+                    // in the exact order. So we can use this index directly to locate the matching overload in
+                    // the converter, without having to compare the signature again.
+                    var converter = PSMethodToDelegateConverter.GetConverter(matchedIndex);
+                    return CacheConversion<Delegate>(fromType, toType, converter.Convert, ConversionRank.Language);
+                }
+            }
+
             return null;
+        }
+
+        private struct SignatureComparator
+        {
+            enum TypeMatchingContext
+            {
+                ReturnType,
+                ParameterType,
+                OutParameterType
+            }
+
+            private readonly ParameterInfo[] targetParameters;
+            private readonly Type targetReturnType;
+
+            internal SignatureComparator(MethodInfo targetMethodInfo)
+            {
+                targetReturnType = targetMethodInfo.ReturnType;
+                targetParameters = targetMethodInfo.GetParameters();
+            }
+
+            /// <summary>
+            /// Check if a projected signature matches the target method.
+            /// </summary>
+            /// <param name="argumentTypes">
+            /// The type arguments from the metadata type 'Func[..]' that represents the projected signature.
+            /// It contains the return type as the last item in the array.
+            /// </param>
+            /// <param name="signaturesMatchExactly">
+            /// Set by this method to indicate if it's an exact match.
+            /// </param>
+            internal bool ProjectedSignatureMatchesTarget(Type[] argumentTypes, out bool signaturesMatchExactly)
+            {
+                signaturesMatchExactly = false;
+                int length = argumentTypes.Length;
+                if (length != targetParameters.Length + 1) { return false; }
+
+                bool typesMatchExactly, allTypesMatchExactly;
+                Type sourceReturnType = argumentTypes[length - 1];
+
+                if (ProjectedTypeMatchesTargetType(sourceReturnType, targetReturnType, TypeMatchingContext.ReturnType, out typesMatchExactly))
+                {
+                    allTypesMatchExactly = typesMatchExactly;
+                    for (int i = 0; i < targetParameters.Length; i++)
+                    {
+                        var targetParam = targetParameters[i];
+                        var sourceType = argumentTypes[i];
+                        var matchContext = targetParam.IsOut ? TypeMatchingContext.OutParameterType : TypeMatchingContext.ParameterType;
+
+                        if (!ProjectedTypeMatchesTargetType(sourceType, targetParam.ParameterType, matchContext, out typesMatchExactly))
+                        {
+                            return false;
+                        }
+
+                        allTypesMatchExactly &= typesMatchExactly;
+                    }
+
+                    signaturesMatchExactly = allTypesMatchExactly;
+                    return true;
+                }
+
+                return false;
+            }
+
+            private static bool ProjectedTypeMatchesTargetType(Type sourceType, Type targetType, TypeMatchingContext matchContext, out bool matchExactly)
+            {
+                matchExactly = false;
+                if (targetType.IsByRef || targetType.IsPointer)
+                {
+                    if (!sourceType.IsGenericType) { return false; }
+
+                    var sourceTypeDef = sourceType.GetGenericTypeDefinition();
+                    bool isOutParameter = matchContext == TypeMatchingContext.OutParameterType;
+
+                    if (targetType.IsByRef && sourceTypeDef == (isOutParameter ? typeof(PSOutParameter<>) : typeof(PSReference<>)) ||
+                        targetType.IsPointer && sourceTypeDef == typeof(PSPointer<>))
+                    {
+                        // For ref/out parameter types and pointer types, the element types need to match exactly.
+                        if (targetType.GetElementType() == sourceType.GenericTypeArguments[0])
+                        {
+                            matchExactly = true;
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                if (targetType == sourceType ||
+                    targetType == typeof(void) && sourceType == typeof(VOID) ||
+                    targetType == typeof(TypedReference) && sourceType == typeof(PSTypedReference))
+                {
+                    matchExactly = true;
+                    return true;
+                }
+
+                if (targetType == typeof(void) || targetType == typeof(TypedReference))
+                {
+                    return false;
+                }
+
+                return matchContext == TypeMatchingContext.ReturnType
+                    ? targetType.IsAssignableFrom(sourceType)
+                    : sourceType.IsAssignableFrom(targetType);
+            }
         }
 
         private static PSConverter<object> FigureStaticCreateMethodConversion(Type fromType, Type toType)
@@ -4759,7 +5180,7 @@ namespace System.Management.Automation
 
         private static PSConverter<object> FigureParseConversion(Type fromType, Type toType)
         {
-            if (toType.GetTypeInfo().IsEnum)
+            if (toType.IsEnum)
             {
                 if (fromType == typeof(string))
                 {
@@ -4788,6 +5209,7 @@ namespace System.Management.Automation
                 {
                     typeConversion.WriteLine("Exception finding Parse method with CultureInfo: \"{0}\".", e.Message);
                 }
+
                 if (parse != null)
                 {
                     ConvertViaParseMethod converter = new ConvertViaParseMethod();
@@ -4822,7 +5244,7 @@ namespace System.Management.Automation
         /// <summary>
         /// Figure conversion when following conditions are satisfied:
         /// 1. toType is a closed generic type and it has a constructor that takes IEnumerable[T], ICollection[T] or IList[T]
-        /// 2. fromType is System.Array, System.Object[] or it's the same as the element type of toType
+        /// 2. fromType is System.Array, System.Object[] or it's the same as the element type of toType.
         /// </summary>
         /// <param name="fromType"></param>
         /// <param name="toType"></param>
@@ -4830,8 +5252,7 @@ namespace System.Management.Automation
         internal static Tuple<PSConverter<object>, ConversionRank> FigureIEnumerableConstructorConversion(Type fromType, Type toType)
         {
             // Win8: 653180. If toType is an Abstract type then we cannot construct it anyway. So, bailing out fast.
-            TypeInfo toTypeInfo = toType.GetTypeInfo();
-            if (toTypeInfo.IsAbstract == true)
+            if (toType.IsAbstract == true)
             {
                 return null;
             }
@@ -4843,7 +5264,7 @@ namespace System.Management.Automation
                 Type elementType = null;
                 ConstructorInfo resultConstructor = null;
 
-                if (toTypeInfo.IsGenericType && !toTypeInfo.ContainsGenericParameters &&
+                if (toType.IsGenericType && !toType.ContainsGenericParameters &&
                     (typeof(IList).IsAssignableFrom(toType) ||
                      typeof(ICollection).IsAssignableFrom(toType) ||
                      typeof(IEnumerable).IsAssignableFrom(toType)))
@@ -4856,6 +5277,7 @@ namespace System.Management.Automation
                                 "toType has more than one generic arguments. Here we only care about the toType which contains only one generic argument and whose constructor takes IEnumerable<T>, ICollection<T> or IList<T>.");
                         return null;
                     }
+
                     elementType = argTypes[0];
 
                     if (typeof(Array) == fromType || typeof(object[]) == fromType ||
@@ -4984,7 +5406,7 @@ namespace System.Management.Automation
             {
                 ParameterInfo[] targetParams = resultConstructor.GetParameters();
                 Type targetParamType = targetParams[0].ParameterType;
-                bool useExplicitConversion = targetParamType.GetTypeInfo().IsValueType && fromType != targetParamType && Nullable.GetUnderlyingType(targetParamType) == null;
+                bool useExplicitConversion = targetParamType.IsValueType && fromType != targetParamType && Nullable.GetUnderlyingType(targetParamType) == null;
                 converter.TargetCtorLambda = CreateCtorLambdaClosure<object, object>(resultConstructor, targetParamType, useExplicitConversion);
             }
             catch (Exception e)
@@ -5012,8 +5434,7 @@ namespace System.Management.Automation
 
         internal static PSConverter<object> FigurePropertyConversion(Type fromType, Type toType, ref ConversionRank rank)
         {
-            TypeInfo toTypeInfo = toType.GetTypeInfo();
-            if ((!typeof(PSObject).IsAssignableFrom(fromType)) || (toTypeInfo.IsAbstract))
+            if ((!typeof(PSObject).IsAssignableFrom(fromType)) || (toType.IsAbstract))
             {
                 return null;
             }
@@ -5021,7 +5442,7 @@ namespace System.Management.Automation
             ConstructorInfo toConstructor = null;
             try
             {
-                toConstructor = toType.GetConstructor(PSTypeExtensions.EmptyTypes);
+                toConstructor = toType.GetConstructor(Type.EmptyTypes);
             }
             catch (AmbiguousMatchException e)
             {
@@ -5032,7 +5453,7 @@ namespace System.Management.Automation
                 typeConversion.WriteLine("Exception finding Constructor: \"{0}\".", e.Message);
             }
 
-            if (toConstructor == null && !toTypeInfo.IsValueType)
+            if (toConstructor == null && !toType.IsValueType)
             {
                 return null;
             }
@@ -5102,7 +5523,7 @@ namespace System.Management.Automation
             }
 
             // GetCustomAttributes returns IEnumerable<Attribute> in CoreCLR
-            var typeConverters = type.GetTypeInfo().GetCustomAttributes(typeof(TypeConverterAttribute), false);
+            var typeConverters = type.GetCustomAttributes(typeof(TypeConverterAttribute), false);
             if (typeConverters.Any())
             {
                 return true;
@@ -5124,9 +5545,10 @@ namespace System.Management.Automation
         }
 
         internal class InternalPSObject : PSObject { }
-        internal static ConversionData FigureConversion(Type fromType, Type toType)
+
+        internal static IConversionData FigureConversion(Type fromType, Type toType)
         {
-            ConversionData data = GetConversionData(fromType, toType);
+            IConversionData data = GetConversionData(fromType, toType);
             if (data != null)
             {
                 return data;
@@ -5141,6 +5563,12 @@ namespace System.Management.Automation
             {
                 return CacheConversion<object>(fromType, toType, LanguagePrimitives.ConvertAssignableFrom,
                                                toType == fromType ? ConversionRank.Identity : ConversionRank.Assignable);
+            }
+
+            if (fromType.IsByRefLike || toType.IsByRefLike)
+            {
+                // ByRef-like types are not boxable and should be used on stack only.
+                return CacheConversion(fromType, toType, ConvertNoConversion, ConversionRank.None);
             }
 
             if (typeof(PSObject).IsAssignableFrom(fromType) && typeof(InternalPSObject) != fromType)
@@ -5177,20 +5605,19 @@ namespace System.Management.Automation
                     }
                 }
             }
-#if CORECLR
+
             // Assemblies in CoreCLR might not allow reflection execution on their internal types.
-            TypeInfo typeInfo = toType.GetTypeInfo();
-            if (!TypeResolver.IsPublic(typeInfo) && DotNetAdapter.DisallowPrivateReflection(typeInfo))
+            if (!TypeResolver.IsPublic(toType) && DotNetAdapter.DisallowPrivateReflection(toType))
             {
                 // If the type is non-public and reflection execution is not allowed on it, then we return
                 // 'ConvertNoConversion', because we won't be able to invoke constructor, methods or set
                 // properties on an instance of this type through reflection.
                 return CacheConversion(fromType, toType, ConvertNoConversion, ConversionRank.None);
             }
-#endif
+
             PSConverter<object> valueDependentConversion = null;
             ConversionRank valueDependentRank = ConversionRank.None;
-            ConversionData conversionData = FigureLanguageConversion(fromType, toType, out valueDependentConversion, out valueDependentRank);
+            IConversionData conversionData = FigureLanguageConversion(fromType, toType, out valueDependentConversion, out valueDependentRank);
             if (conversionData != null)
             {
                 return conversionData;
@@ -5212,7 +5639,7 @@ namespace System.Management.Automation
                         {
                             if (typeof(IConvertible).IsAssignableFrom(fromType))
                             {
-                                if (LanguagePrimitives.IsNumeric(GetTypeCode(fromType)) && !fromType.GetTypeInfo().IsEnum)
+                                if (LanguagePrimitives.IsNumeric(GetTypeCode(fromType)) && !fromType.IsEnum)
                                 {
                                     if (!toType.IsArray)
                                     {
@@ -5237,10 +5664,9 @@ namespace System.Management.Automation
                                 // If the ToType has a constructor that takes a hashtable or OrderedDictionary,
                                 // then it would have been returned as the constructor during FigureConstructorConversion
                                 // So, we need to check only for the first condition
-                                ConstructorInfo resultConstructor = toType.GetConstructor(PSTypeExtensions.EmptyTypes);
+                                ConstructorInfo resultConstructor = toType.GetConstructor(Type.EmptyTypes);
 
-                                TypeInfo toTypeInfo = toType.GetTypeInfo();
-                                if (resultConstructor != null || (toTypeInfo.IsValueType && !toTypeInfo.IsPrimitive))
+                                if (resultConstructor != null || (toType.IsValueType && !toType.IsPrimitive))
                                 {
                                     ConvertViaNoArgumentConstructor noArgumentConstructorConverter = new ConvertViaNoArgumentConstructor(resultConstructor, toType);
                                     converter = noArgumentConstructorConverter.Convert;
@@ -5311,9 +5737,9 @@ namespace System.Management.Automation
         }
 
         internal class Null { };
-        private static ConversionData FigureConversionFromNull(Type toType)
+        private static IConversionData FigureConversionFromNull(Type toType)
         {
-            ConversionData data = GetConversionData(typeof(Null), toType);
+            IConversionData data = GetConversionData(typeof(Null), toType);
             if (data != null)
             {
                 return data;
@@ -5323,10 +5749,11 @@ namespace System.Management.Automation
             {
                 return CacheConversion<object>(typeof(Null), toType, LanguagePrimitives.ConvertNullToNullable, ConversionRank.NullToValue);
             }
-            else if (!toType.GetTypeInfo().IsValueType)
+            else if (!toType.IsValueType)
             {
                 return CacheConversion<object>(typeof(Null), toType, LanguagePrimitives.ConvertNullToRef, ConversionRank.NullToRef);
             }
+
             return CacheConversion(typeof(Null), toType, ConvertNoConversion, ConversionRank.None);
         }
 
@@ -5343,6 +5770,7 @@ namespace System.Management.Automation
             {
                 return typeNames[0];
             }
+
             return Microsoft.PowerShell.ToStringCodeMethods.Type(o.GetType());
         }
 
@@ -5358,6 +5786,7 @@ namespace System.Management.Automation
                     return assem;
                 }
             }
+
             return null;
         }
 #endif

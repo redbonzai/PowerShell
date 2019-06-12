@@ -1,6 +1,10 @@
-# This is a Pester test suite to validate the cmdlets in LocalAccounts module
-#
-# Copyright (c) Microsoft Corporation, 2015
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+# Module removed due to #4272
+# disabling tests
+
+return
 
 Set-Variable dateInFuture -option Constant -value "12/12/2036 09:00"
 Set-Variable dateInPast -option Constant -value "12/12/2010 09:00"
@@ -47,7 +51,7 @@ try {
     Describe "Verify Expected LocalUser Cmdlets are present" -Tags 'CI' {
 
         It "Test command presence" {
-            $result = Get-Command -Module Microsoft.PowerShell.LocalAccounts | % Name
+            $result = Get-Command -Module Microsoft.PowerShell.LocalAccounts | ForEach-Object Name
 
             $result -contains "New-LocalUser" | Should Be $true
             $result -contains "Set-LocalUser" | Should Be $true
@@ -62,7 +66,7 @@ try {
     Describe "Verify Expected LocalUser Aliases are present" -Tags @('CI', 'RequireAdminOnWindows') {
 
         It "Test command presence" {
-            $result = get-alias | % { if ($_.Source -eq "Microsoft.PowerShell.LocalAccounts") {$_}}
+            $result = get-alias | ForEach-Object { if ($_.Source -eq "Microsoft.PowerShell.LocalAccounts") {$_}}
 
             $result.Name -contains "algm" | Should Be $true
             $result.Name -contains "dlu" | Should Be $true
@@ -247,14 +251,12 @@ try {
             $result.AccountExpires | Should BeNullOrEmpty
         }
 
-
          It "Errors on both AccountExpires and AccountNeverExpires being set" {
             $sb = {
                 New-LocalUser TestUserNew1 -NoPassword -AccountExpires $dateInFuture -AccountNeverExpires
             }
             VerifyFailingTest $sb "InvalidParameters,Microsoft.PowerShell.Commands.NewLocalUserCommand"
         }
-
 
         It "Can set empty string for Description" {
             $result = New-LocalUser TestUserNew1 -NoPassword -Description ""
@@ -348,6 +350,17 @@ try {
             VerifyFailingTest $sb "InvalidPassword,Microsoft.PowerShell.Commands.NewLocalUserCommand"
         }
 
+        It "User should not be created when invalid password is provided" {
+            $sb = {
+                New-LocalUser TestUserNew1 -Password (ConvertTo-SecureString ("A"*257) -AsPlainText -Force)
+            }
+            VerifyFailingTest $sb "InvalidPassword,Microsoft.PowerShell.Commands.NewLocalUserCommand"
+            $sb1 = {
+                Get-LocalUser TestUserNew1
+            }
+            VerifyFailingTest $sb1 "UserNotFound,Microsoft.PowerShell.Commands.GetLocalUserCommand"
+        }
+
         It "Can set UserMayNotChangePassword" {
             $result = New-LocalUser TestUserNew1 -NoPassword -UserMayNotChangePassword
 
@@ -360,6 +373,7 @@ try {
         }
 
         It "Can set PasswordNeverExpires to create a user with null for PasswordExpires date" {
+            #[SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Demo/doc/test secret.")]
             $result = New-LocalUser TestUserNew1 -Password (ConvertTo-SecureString "p@ssw0rd" -Asplaintext -Force) -PasswordNeverExpires
 
             $result.Name | Should BeExactly TestUserNew1
@@ -525,7 +539,7 @@ try {
             $localUserName = 'TestUserGetNameThatDoesntExist'
             $result = Get-LocalGroup $localUserName*
 
-            $result -eq $null | Should Be $true
+            $result | Should Be $null
         }
 
         It "Returns the correct property values of a user" {
@@ -765,6 +779,7 @@ try {
         }
 
         It 'Can use PasswordNeverExpires:$true to null a PasswordExpires date' {
+            #[SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Demo/doc/test secret.")]
             $user = New-LocalUser TestUserSet2 -Password (ConvertTo-SecureString "p@ssw0rd" -Asplaintext -Force)
             $user | Set-LocalUser -PasswordNeverExpires:$true
             $result = Get-LocalUser TestUserSet2
@@ -774,6 +789,7 @@ try {
         }
 
         It 'Can use PasswordNeverExpires:$false to activate a PasswordExpires date' {
+            #[SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Demo/doc/test secret.")]
             $user = New-LocalUser TestUserSet2 -Password (ConvertTo-SecureString "p@ssw0rd" -Asplaintext -Force) -PasswordNeverExpires
             $user | Set-LocalUser -PasswordNeverExpires:$false
             $result = Get-LocalUser TestUserSet2

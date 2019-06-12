@@ -1,6 +1,5 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
@@ -18,7 +17,7 @@ namespace Microsoft.PowerShell.Commands
         #region parameters
 
         /// <summary>
-        /// An identifier for this event subscription
+        /// An identifier for this event subscription.
         /// </summary>
         [Parameter(Position = 0, ValueFromPipelineByPropertyName = true, ParameterSetName = "BySource")]
         [ValidateNotNullOrEmpty()]
@@ -28,6 +27,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _sourceIdentifier;
             }
+
             set
             {
                 _sourceIdentifier = value;
@@ -38,10 +38,11 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
         }
+
         private string _sourceIdentifier = null;
 
         /// <summary>
-        /// An identifier for this event subscription
+        /// An identifier for this event subscription.
         /// </summary>
         [Parameter(Mandatory = true, Position = 0, ValueFromPipelineByPropertyName = true, ParameterSetName = "ById")]
         [Alias("Id")]
@@ -51,20 +52,21 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _eventId;
             }
+
             set
             {
                 _eventId = value;
             }
         }
-        private int _eventId = -1;
 
+        private int _eventId = -1;
 
         #endregion parameters
 
         private WildcardPattern _matchPattern;
 
         /// <summary>
-        /// Get the requested events
+        /// Get the requested events.
         /// </summary>
         protected override void EndProcessing()
         {
@@ -123,7 +125,7 @@ namespace Microsoft.PowerShell.Commands
                     }
 
                     ErrorRecord errorRecord = new ErrorRecord(
-                        new ArgumentException(String.Format(System.Globalization.CultureInfo.CurrentCulture, error, identifier)),
+                        new ArgumentException(string.Format(System.Globalization.CultureInfo.CurrentCulture, error, identifier)),
                         "INVALID_SOURCE_IDENTIFIER",
                         ErrorCategory.InvalidArgument,
                         null);

@@ -1,16 +1,9 @@
-/********************************************************************++
- * Copyright (c) Microsoft Corporation.  All rights reserved.
- * --********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System.Runtime.Serialization;
 using System.Management.Automation.Internal;
-
-#if CORECLR
-// Use stubs for SerializableAttribute, SecurityPermissionAttribute and ISerializable related types.
-using Microsoft.PowerShell.CoreClr.Stubs;
-#else
+using System.Runtime.Serialization;
 using System.Security.Permissions;
-#endif
 
 namespace System.Management.Automation.Remoting
 {
@@ -134,6 +127,7 @@ namespace System.Management.Automation.Remoting
         CannotSetStdOutHandle = 822,
         CannotSetStdErrHandle = 823,
         InvalidConfigurationName = 824,
+        ConnectSkipCheckFailed = 825,
         // Error codes added to support new WSMan Fan-In Model API
         CreateSessionFailed = 851,
         CreateExFailed = 853,
@@ -260,7 +254,6 @@ namespace System.Management.Automation.Remoting
         IPCExceptionLaunchingProcess = 2107,
     }
 
-
     /// <summary>
     /// This static class defines the resource base name used by remoting errors.
     /// It also provides a convenience method to get the localized strings.
@@ -374,7 +367,6 @@ namespace System.Management.Automation.Remoting
         {
         }
 
-
         #endregion Constructors
 
         /// <summary>
@@ -386,7 +378,6 @@ namespace System.Management.Automation.Remoting
             SetErrorId(typeof(PSRemotingDataStructureException).FullName);
         }
     }
-
 
     /// <summary>
     /// This exception is used by remoting code to indicate an error condition in network operations.
@@ -419,8 +410,6 @@ namespace System.Management.Automation.Remoting
         {
             SetDefaultErrorRecord();
         }
-
-
 
         /// <summary>
         /// This constructor takes a localized message and an inner exception.
@@ -499,8 +488,8 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Serializes the exception data.
         /// </summary>
-        /// <param name="info"> serialization information </param>
-        /// <param name="context"> streaming context </param>
+        /// <param name="info">Serialization information.</param>
+        /// <param name="context">Streaming context.</param>
         [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -533,6 +522,7 @@ namespace System.Management.Automation.Remoting
             {
                 return _errorCode;
             }
+
             set
             {
                 _errorCode = value;
@@ -548,6 +538,7 @@ namespace System.Management.Automation.Remoting
             {
                 return _transportMessage;
             }
+
             set
             {
                 _transportMessage = value;
@@ -662,8 +653,8 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Serializes the exception data.
         /// </summary>
-        /// <param name="info"> serialization information </param>
-        /// <param name="context"> streaming context </param>
+        /// <param name="info">Serialization information.</param>
+        /// <param name="context">Streaming context.</param>
         [SecurityPermissionAttribute(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

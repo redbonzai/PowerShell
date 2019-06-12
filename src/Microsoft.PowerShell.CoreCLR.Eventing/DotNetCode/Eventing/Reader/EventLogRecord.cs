@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 /*============================================================
 **
@@ -30,16 +32,16 @@ namespace System.Diagnostics.Eventing.Reader
         private string _containerChannel;
         private int[] _matchedQueryIds;
 
-        //a dummy object which is used only for the locking.
+        // a dummy object which is used only for the locking.
         private object _syncObject;
 
-        //cached DisplayNames for each instance
+        // cached DisplayNames for each instance
         private string _levelName = null;
         private string _taskName = null;
         private string _opcodeName = null;
         private IEnumerable<string> _keywordsNames = null;
 
-        //cached DisplayNames for each instance
+        // cached DisplayNames for each instance
         private bool _levelNameReady;
         private bool _taskNameReady;
         private bool _opcodeNameReady;
@@ -68,13 +70,12 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-
         internal void PrepareSystemData()
         {
             if (_systemProperties.filled)
                 return;
 
-            //prepare the System Context, if it is not already initialized.
+            // prepare the System Context, if it is not already initialized.
             _session.SetupSystemContext();
 
             lock (_syncObject)
@@ -263,6 +264,7 @@ namespace System.Diagnostics.Eventing.Reader
                     {
                         _containerChannel = (string)NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventPath);
                     }
+
                     return _containerChannel;
                 }
             }
@@ -280,11 +282,11 @@ namespace System.Diagnostics.Eventing.Reader
                     {
                         _matchedQueryIds = (int[])NativeWrapper.EvtGetEventInfo(this.Handle, UnsafeNativeMethods.EvtEventPropertyId.EvtEventQueryIDs);
                     }
+
                     return _matchedQueryIds;
                 }
             }
         }
-
 
         public override EventBookmark Bookmark
         {
@@ -308,8 +310,8 @@ namespace System.Diagnostics.Eventing.Reader
         {
             if (values == null) return this.FormatDescription();
 
-            //copy the value IEnumerable to an array.
-            string[] theValues = new string[0];
+            // copy the value IEnumerable to an array.
+            string[] theValues = Array.Empty<string>();
             int i = 0;
             foreach (object o in values)
             {
@@ -335,11 +337,11 @@ namespace System.Diagnostics.Eventing.Reader
                         _levelNameReady = true;
                         _levelName = _cachedMetadataInformation.GetLevelDisplayName(this.ProviderName, _handle);
                     }
+
                     return _levelName;
                 }
             }
         }
-
 
         public override string OpcodeDisplayName
         {
@@ -352,6 +354,7 @@ namespace System.Diagnostics.Eventing.Reader
                         _opcodeNameReady = true;
                         _opcodeName = _cachedMetadataInformation.GetOpcodeDisplayName(this.ProviderName, _handle);
                     }
+
                     return _opcodeName;
                 }
             }
@@ -370,6 +373,7 @@ namespace System.Diagnostics.Eventing.Reader
                         _taskNameReady = true;
                         _taskName = _cachedMetadataInformation.GetTaskDisplayName(this.ProviderName, _handle);
                     }
+
                     return _taskName;
                 }
             }
@@ -387,11 +391,11 @@ namespace System.Diagnostics.Eventing.Reader
                     {
                         _keywordsNames = _cachedMetadataInformation.GetKeywordDisplayNames(this.ProviderName, _handle);
                     }
+
                     return _keywordsNames;
                 }
             }
         }
-
 
         public override IList<EventProperty> Properties
         {
@@ -404,6 +408,7 @@ namespace System.Diagnostics.Eventing.Reader
                 {
                     list.Add(new EventProperty(value));
                 }
+
                 return list;
             }
         }

@@ -1,19 +1,13 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System.Threading;
-using PSHost = System.Management.Automation.Host.PSHost;
-using Dbg = System.Management.Automation.Diagnostics;
+using System.Collections.ObjectModel;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Runspaces.Internal;
-using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
+using System.Threading;
 
-#if CORECLR
-// Use stub for SerializableAttribute, NonSerializedAttribute and ISerializable related types.
-using Microsoft.PowerShell.CoreClr.Stubs;
-#endif
+using PSHost = System.Management.Automation.Host.PSHost;
 
 namespace System.Management.Automation.Runspaces
 {
@@ -65,7 +59,7 @@ namespace System.Management.Automation.Runspaces
         /// Initializes a new instance of the InvalidRunspacePoolStateException
         /// with a specified error message and current and expected state.
         /// </summary>
-        /// <param name="message">The message that describes the error. </param>
+        /// <param name="message">The message that describes the error.</param>
         /// <param name="currentState">Current state of runspace pool.</param>
         /// <param name="expectedState">Expected state of the runspace pool.</param>
         internal InvalidRunspacePoolStateException
@@ -79,7 +73,6 @@ namespace System.Management.Automation.Runspaces
             _expectedState = expectedState;
             _currentState = currentState;
         }
-
 
         #region ISerializable Members
 
@@ -133,7 +126,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// Converts the current to an InvalidRunspaceStateException
+        /// Converts the current to an InvalidRunspaceStateException.
         /// </summary>
         internal InvalidRunspaceStateException ToInvalidRunspaceStateException()
         {
@@ -146,7 +139,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// Converts a RunspacePoolState to a RunspaceState
+        /// Converts a RunspacePoolState to a RunspaceState.
         /// </summary>
         private static RunspaceState RunspacePoolStateToRunspaceState(RunspacePoolState state)
         {
@@ -206,7 +199,7 @@ namespace System.Management.Automation.Runspaces
     public enum RunspacePoolState
     {
         /// <summary>
-        /// Beginning state upon creation
+        /// Beginning state upon creation.
         /// </summary>
         BeforeOpen = 0,
         /// <summary>
@@ -222,7 +215,7 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         Closed = 3,
         /// <summary>
-        /// The RunspacePool is being closed
+        /// The RunspacePool is being closed.
         /// </summary>
         Closing = 4,
         /// <summary>
@@ -231,17 +224,17 @@ namespace System.Management.Automation.Runspaces
         Broken = 5,
 
         /// <summary>
-        /// The RunspacePool is being disconnected
+        /// The RunspacePool is being disconnected.
         /// </summary>
         Disconnecting = 6,
 
         /// <summary>
-        ///  The RunspacePool has been disconnected
+        /// The RunspacePool has been disconnected.
         /// </summary>
         Disconnected = 7,
 
         /// <summary>
-        ///  The RunspacePool is being connected
+        /// The RunspacePool is being connected.
         /// </summary>
         Connecting = 8,
     }
@@ -255,7 +248,7 @@ namespace System.Management.Automation.Runspaces
         #region Constructors
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         /// <param name="state">
         /// state to raise the event with.
@@ -266,7 +259,6 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="stateInfo"></param>
         internal RunspacePoolStateChangedEventArgs(RunspacePoolStateInfo stateInfo)
@@ -370,7 +362,7 @@ namespace System.Management.Automation.Runspaces
     #region AsyncResult
 
     /// <summary>
-    /// Encapsulated the AsyncResult for pool's Open/Close async operations
+    /// Encapsulated the AsyncResult for pool's Open/Close async operations.
     /// </summary>
     internal sealed class RunspacePoolAsyncResult : AsyncResult
     {
@@ -381,7 +373,7 @@ namespace System.Management.Automation.Runspaces
         #region Constructor
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         /// <param name="ownerId">
         /// Instance Id of the pool creating this instance
@@ -408,8 +400,8 @@ namespace System.Management.Automation.Runspaces
         #region Internal Properties
 
         /// <summary>
-        /// true if AsyncResult monitors Async Open.
-        /// false otherwise
+        /// True if AsyncResult monitors Async Open.
+        /// false otherwise.
         /// </summary>
         internal bool IsAssociatedWithAsyncOpen { get; }
 
@@ -417,7 +409,7 @@ namespace System.Management.Automation.Runspaces
     }
 
     /// <summary>
-    /// Encapsulated the results of a RunspacePool.BeginGetRunspace method
+    /// Encapsulated the results of a RunspacePool.BeginGetRunspace method.
     /// </summary>
     internal sealed class GetRunspaceAsyncResult : AsyncResult
     {
@@ -430,7 +422,7 @@ namespace System.Management.Automation.Runspaces
         #region Constructor
 
         /// <summary>
-        /// Constructor
+        /// Constructor.
         /// </summary>
         /// <param name="ownerId">
         /// Instance Id of the pool creating this instance
@@ -472,6 +464,7 @@ namespace System.Management.Automation.Runspaces
                     return _isActive;
                 }
             }
+
             set
             {
                 lock (SyncObject)
@@ -534,29 +527,23 @@ namespace System.Management.Automation.Runspaces
         /// The maximum number of Runspaces that can exist in this pool.
         /// Should be greater than or equal to 1.
         /// </param>
-        /// <param name="runspaceConfiguration">
-        /// RunspaceConfiguration to use when creating a new Runspace.
-        /// </param>
         /// <param name="host">
         /// The explicit PSHost implementation.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        /// RunspaceConfiguration is null.
         /// Host is null.
         /// </exception>
         /// <exception cref="ArgumentException">
         /// Maximum runspaces is less than 1.
         /// Minimum runspaces is less than 1.
         /// </exception>
-        internal RunspacePool(int minRunspaces, int maxRunspaces,
-            RunspaceConfiguration runspaceConfiguration, PSHost host)
+        internal RunspacePool(int minRunspaces, int maxRunspaces, PSHost host)
         {
             // Currently we support only Local Runspace Pool..
             // this needs to be changed once remote runspace pool
             // is implemented
 
-            _internalPool = new RunspacePoolInternal(minRunspaces,
-                maxRunspaces, runspaceConfiguration, host);
+            _internalPool = new RunspacePoolInternal(minRunspaces, maxRunspaces, host);
         }
 
         /// <summary>
@@ -712,7 +699,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// Connection information for remote RunspacePools, null for local RunspacePools
+        /// Connection information for remote RunspacePools, null for local RunspacePools.
         /// </summary>
         public RunspaceConnectionInfo ConnectionInfo
         {
@@ -728,6 +715,7 @@ namespace System.Management.Automation.Runspaces
         public TimeSpan CleanupInterval
         {
             get { return _internalPool.CleanupInterval; }
+
             set { _internalPool.CleanupInterval = value; }
         }
 
@@ -752,7 +740,7 @@ namespace System.Management.Automation.Runspaces
             {
                 lock (_syncObject)
                 {
-                    bool firstEntry = (null == InternalStateChanged);
+                    bool firstEntry = (InternalStateChanged == null);
                     InternalStateChanged += value;
                     if (firstEntry)
                     {
@@ -770,7 +758,7 @@ namespace System.Management.Automation.Runspaces
                 lock (_syncObject)
                 {
                     InternalStateChanged -= value;
-                    if (null == InternalStateChanged)
+                    if (InternalStateChanged == null)
                     {
                         _internalPool.StateChanged -=
                             new EventHandler<RunspacePoolStateChangedEventArgs>(OnStateChanged);
@@ -804,7 +792,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// Event raised when one of the runspaces in the pool forwards an event to this instance
+        /// Event raised when one of the runspaces in the pool forwards an event to this instance.
         /// </summary>
         internal event EventHandler<PSEventArgs> ForwardEvent
         {
@@ -838,7 +826,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// Pass thru of the ForwardEvent event from the internal pool
+        /// Pass thru of the ForwardEvent event from the internal pool.
         /// </summary>
         private void OnInternalPoolForwardEvent(object sender, PSEventArgs e)
         {
@@ -846,7 +834,7 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// Raises the ForwardEvent event
+        /// Raises the ForwardEvent event.
         /// </summary>
         private void OnEventForwarded(PSEventArgs e)
         {
@@ -867,7 +855,7 @@ namespace System.Management.Automation.Runspaces
             {
                 lock (_syncObject)
                 {
-                    bool firstEntry = (null == InternalRunspaceCreated);
+                    bool firstEntry = (InternalRunspaceCreated == null);
                     InternalRunspaceCreated += value;
                     if (firstEntry)
                     {
@@ -884,7 +872,7 @@ namespace System.Management.Automation.Runspaces
                 lock (_syncObject)
                 {
                     InternalRunspaceCreated -= value;
-                    if (null == InternalRunspaceCreated)
+                    if (InternalRunspaceCreated == null)
                     {
                         _internalPool.RunspaceCreated -= OnRunspaceCreated;
                     }
@@ -1022,7 +1010,7 @@ namespace System.Management.Automation.Runspaces
         ///<summary>
         /// Returns RunspacePool capabilities.
         /// </summary>
-        /// <returns>RunspacePoolCapability</returns>
+        /// <returns>RunspacePoolCapability.</returns>
         public RunspacePoolCapability GetCapabilities()
         {
             return _internalPool.GetCapabilities();
@@ -1245,7 +1233,7 @@ namespace System.Management.Automation.Runspaces
         #region Internal API
 
         /// <summary>
-        /// This property determines whether a new thread is created for each invocation
+        /// This property determines whether a new thread is created for each invocation.
         /// </summary>
         /// <remarks>
         /// Any updates to the value of this property must be done before the RunspacePool is opened
@@ -1273,7 +1261,7 @@ namespace System.Management.Automation.Runspaces
 
 #if !CORECLR // No ApartmentState In CoreCLR
         /// <summary>
-        /// ApartmentState of the thread used to execute commands within this RunspacePool
+        /// ApartmentState of the thread used to execute commands within this RunspacePool.
         /// </summary>
         /// <remarks>
         /// Any updates to the value of this property must be done before the RunspacePool is opened
@@ -1373,13 +1361,13 @@ namespace System.Management.Automation.Runspaces
         }
 
         /// <summary>
-        /// Indicates whether the RunspacePool is a remote one
+        /// Indicates whether the RunspacePool is a remote one.
         /// </summary>
         internal bool IsRemote { get; } = false;
 
         /// <summary>
         /// RemoteRunspacePoolInternal associated with this
-        /// runspace pool
+        /// runspace pool.
         /// </summary>
         internal RemoteRunspacePoolInternal RemoteRunspacePoolInternal
         {

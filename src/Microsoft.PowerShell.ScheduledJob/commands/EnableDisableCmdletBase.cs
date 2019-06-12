@@ -1,16 +1,15 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Management.Automation;
-using System.Management.Automation.Internal;
-using System.Management.Automation.Host;
-using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Management.Automation;
+using System.Management.Automation.Host;
+using System.Management.Automation.Internal;
+using System.Threading;
 
 namespace Microsoft.PowerShell.ScheduledJob
 {
@@ -36,6 +35,7 @@ namespace Microsoft.PowerShell.ScheduledJob
         public ScheduledJobTrigger[] InputObject
         {
             get { return _triggers; }
+
             set { _triggers = value; }
         }
 
@@ -46,8 +46,10 @@ namespace Microsoft.PowerShell.ScheduledJob
         public SwitchParameter PassThru
         {
             get { return _passThru; }
+
             set { _passThru = value; }
         }
+
         private SwitchParameter _passThru;
 
         private ScheduledJobTrigger[] _triggers;

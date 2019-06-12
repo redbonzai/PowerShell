@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 /*============================================================
 **
@@ -26,7 +28,7 @@ namespace System.Diagnostics.Eventing.Reader
         private ProviderMetadata _pmReference;
         private object _syncObject;
 
-        //called from EventMetadata
+        // called from EventMetadata
         internal EventKeyword(long value, ProviderMetadata pmReference)
         {
             _value = value;
@@ -34,7 +36,7 @@ namespace System.Diagnostics.Eventing.Reader
             _syncObject = new object();
         }
 
-        //called from ProviderMetadata
+        // called from ProviderMetadata
         internal EventKeyword(string name, long value, string displayName)
         {
             _value = value;

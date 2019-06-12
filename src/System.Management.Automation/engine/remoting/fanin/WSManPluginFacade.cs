@@ -1,8 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 // ----------------------------------------------------------------------
-//
-//  Microsoft Windows NT
-//  Copyright (C) Microsoft Corporation, 2007.
-//
 //  Contents:  Entry points for managed PowerShell plugin worker used to
 //  host powershell in a WSMan service.
 // ----------------------------------------------------------------------
@@ -27,14 +25,13 @@ namespace System.Management.Automation.Remoting
     // pointers (otherwise we end up storing the delegate into a GCRoot).
 
     /// <summary>
-    ///
     /// </summary>
-    /// <param name="pluginContext">PVOID</param>
-    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-    /// <param name="flags">DWORD</param>
-    /// <param name="extraInfo">PCWSTR</param>
-    /// <param name="startupInfo">WSMAN_SHELL_STARTUP_INFO*</param>
-    /// <param name="inboundShellInformation">WSMAN_DATA*</param>
+    /// <param name="pluginContext">PVOID.</param>
+    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+    /// <param name="flags">DWORD.</param>
+    /// <param name="extraInfo">PCWSTR.</param>
+    /// <param name="startupInfo">WSMAN_SHELL_STARTUP_INFO*.</param>
+    /// <param name="inboundShellInformation">WSMAN_DATA*.</param>
     internal delegate void WSMPluginShellDelegate( // TODO: Rename to WSManPluginShellDelegate once I remove the MC++ module.
         IntPtr pluginContext,
         IntPtr requestDetails,
@@ -44,23 +41,21 @@ namespace System.Management.Automation.Remoting
         IntPtr inboundShellInformation);
 
     /// <summary>
-    ///
     /// </summary>
-    /// <param name="pluginContext">PVOID</param>
-    /// <param name="shellContext">PVOID</param>
+    /// <param name="pluginContext">PVOID.</param>
+    /// <param name="shellContext">PVOID.</param>
     internal delegate void WSMPluginReleaseShellContextDelegate(
         IntPtr pluginContext,
         IntPtr shellContext);
 
     /// <summary>
-    ///
     /// </summary>
-    /// <param name="pluginContext">PVOID</param>
-    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-    /// <param name="flags">DWORD</param>
-    /// <param name="shellContext">PVOID</param>
-    /// <param name="commandContext">PVOID optional</param>
-    /// <param name="inboundConnectInformation">WSMAN_DATA* optional</param>
+    /// <param name="pluginContext">PVOID.</param>
+    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+    /// <param name="flags">DWORD.</param>
+    /// <param name="shellContext">PVOID.</param>
+    /// <param name="commandContext">PVOID optional.</param>
+    /// <param name="inboundConnectInformation">WSMAN_DATA* optional.</param>
     internal delegate void WSMPluginConnectDelegate(
         IntPtr pluginContext,
         IntPtr requestDetails,
@@ -70,14 +65,13 @@ namespace System.Management.Automation.Remoting
         IntPtr inboundConnectInformation);
 
     /// <summary>
-    ///
     /// </summary>
-    /// <param name="pluginContext">PVOID</param>
-    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-    /// <param name="flags">DWORD</param>
-    /// <param name="shellContext">PVOID</param>
-    /// <param name="commandLine">PCWSTR</param>
-    /// <param name="arguments">WSMAN_COMMAND_ARG_SET*</param>
+    /// <param name="pluginContext">PVOID.</param>
+    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+    /// <param name="flags">DWORD.</param>
+    /// <param name="shellContext">PVOID.</param>
+    /// <param name="commandLine">PCWSTR.</param>
+    /// <param name="arguments">WSMAN_COMMAND_ARG_SET*.</param>
     internal delegate void WSMPluginCommandDelegate(
         IntPtr pluginContext,
         IntPtr requestDetails,
@@ -87,33 +81,31 @@ namespace System.Management.Automation.Remoting
         IntPtr arguments);
 
     /// <summary>
-    /// Delegate that is passed to native layer for callback on operation shutdown notifications
+    /// Delegate that is passed to native layer for callback on operation shutdown notifications.
     /// </summary>
-    /// <param name="shutdownContext">IntPtr</param>
+    /// <param name="shutdownContext">IntPtr.</param>
     internal delegate void WSMPluginOperationShutdownDelegate(
            IntPtr shutdownContext);
 
     /// <summary>
-    ///
     /// </summary>
-    /// <param name="pluginContext">PVOID</param>
-    /// <param name="shellContext">PVOID</param>
-    /// <param name="commandContext">PVOID</param>
+    /// <param name="pluginContext">PVOID.</param>
+    /// <param name="shellContext">PVOID.</param>
+    /// <param name="commandContext">PVOID.</param>
     internal delegate void WSMPluginReleaseCommandContextDelegate(
         IntPtr pluginContext,
         IntPtr shellContext,
         IntPtr commandContext);
 
     /// <summary>
-    ///
     /// </summary>
-    /// <param name="pluginContext">PVOID</param>
-    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-    /// <param name="flags">DWORD</param>
-    /// <param name="shellContext">PVOID</param>
-    /// <param name="commandContext">PVOID</param>
-    /// <param name="stream">PCWSTR</param>
-    /// <param name="inboundData">WSMAN_DATA*</param>
+    /// <param name="pluginContext">PVOID.</param>
+    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+    /// <param name="flags">DWORD.</param>
+    /// <param name="shellContext">PVOID.</param>
+    /// <param name="commandContext">PVOID.</param>
+    /// <param name="stream">PCWSTR.</param>
+    /// <param name="inboundData">WSMAN_DATA*.</param>
     internal delegate void WSMPluginSendDelegate(
         IntPtr pluginContext,
         IntPtr requestDetails,
@@ -124,14 +116,13 @@ namespace System.Management.Automation.Remoting
         IntPtr inboundData);
 
     /// <summary>
-    ///
     /// </summary>
-    /// <param name="pluginContext">PVOID</param>
-    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-    /// <param name="flags">DWORD</param>
-    /// <param name="shellContext">PVOID</param>
-    /// <param name="commandContext">PVOID optional</param>
-    /// <param name="streamSet">WSMAN_STREAM_ID_SET* optional</param>
+    /// <param name="pluginContext">PVOID.</param>
+    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+    /// <param name="flags">DWORD.</param>
+    /// <param name="shellContext">PVOID.</param>
+    /// <param name="commandContext">PVOID optional.</param>
+    /// <param name="streamSet">WSMAN_STREAM_ID_SET* optional.</param>
     internal delegate void WSMPluginReceiveDelegate(
         IntPtr pluginContext,
         IntPtr requestDetails,
@@ -141,14 +132,13 @@ namespace System.Management.Automation.Remoting
         IntPtr streamSet);
 
     /// <summary>
-    ///
     /// </summary>
-    /// <param name="pluginContext">PVOID</param>
-    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-    /// <param name="flags">DWORD</param>
-    /// <param name="shellContext">PVOID</param>
-    /// <param name="commandContext">PVOID optional</param>
-    /// <param name="code">PCWSTR</param>
+    /// <param name="pluginContext">PVOID.</param>
+    /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+    /// <param name="flags">DWORD.</param>
+    /// <param name="shellContext">PVOID.</param>
+    /// <param name="commandContext">PVOID optional.</param>
+    /// <param name="code">PCWSTR.</param>
     internal delegate void WSMPluginSignalDelegate(
         IntPtr pluginContext,
         IntPtr requestDetails,
@@ -158,7 +148,7 @@ namespace System.Management.Automation.Remoting
         [MarshalAs(UnmanagedType.LPWStr)] string code);
 
     /// <summary>
-    ///  Callback that handles shell shutdown notification events.
+    /// Callback that handles shell shutdown notification events.
     /// </summary>
     /// <param name="state"></param>
     /// <param name="timedOut"></param>
@@ -167,14 +157,12 @@ namespace System.Management.Automation.Remoting
         bool timedOut);
 
     /// <summary>
-    ///
     /// </summary>
-    /// <param name="pluginContext">PVOID</param>
+    /// <param name="pluginContext">PVOID.</param>
     internal delegate void WSMShutdownPluginDelegate(
         IntPtr pluginContext);
 
     /// <summary>
-    ///
     /// </summary>
     internal sealed class WSManPluginEntryDelegates : IDisposable
     {
@@ -208,7 +196,7 @@ namespace System.Management.Automation.Remoting
 
         #region Constructor
         /// <summary>
-        /// Initializes the delegate struct for later use
+        /// Initializes the delegate struct for later use.
         /// </summary>
         internal WSManPluginEntryDelegates()
         {
@@ -315,6 +303,7 @@ namespace System.Management.Automation.Remoting
                 _shutdownPluginGCHandle = GCHandle.Alloc(shutdownPlugin);
                 _unmanagedStruct.wsManPluginShutdownPluginCallbackNative = Marshal.GetFunctionPointerForDelegate(shutdownPlugin);
             }
+
             if (!Platform.IsWindows)
             {
                 WSMPluginOperationShutdownDelegate pluginShutDownDelegate = new WSMPluginOperationShutdownDelegate(WSManPluginManagedEntryWrapper.WSManPSShutdown);
@@ -324,12 +313,11 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
         private void CleanUpDelegates()
         {
             // Free GCHandles so that the memory they point to may be unpinned (garbage collected)
-            if (null != _pluginShellGCHandle)
+            if (_pluginShellGCHandle != null)
             {
                 _pluginShellGCHandle.Free();
                 _pluginReleaseShellContextGCHandle.Free();
@@ -355,61 +343,61 @@ namespace System.Management.Automation.Remoting
         internal class WSManPluginEntryDelegatesInternal
         {
             /// <summary>
-            /// wsManPluginShutdownPluginCallbackNative
+            /// WsManPluginShutdownPluginCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginShutdownPluginCallbackNative;
 
             /// <summary>
-            /// WSManPluginShellCallbackNative
+            /// WSManPluginShellCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginShellCallbackNative;
 
             /// <summary>
-            /// WSManPluginReleaseShellContextCallbackNative
+            /// WSManPluginReleaseShellContextCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginReleaseShellContextCallbackNative;
 
             /// <summary>
-            /// WSManPluginCommandCallbackNative
+            /// WSManPluginCommandCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginCommandCallbackNative;
 
             /// <summary>
-            /// WSManPluginReleaseCommandContextCallbackNative
+            /// WSManPluginReleaseCommandContextCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginReleaseCommandContextCallbackNative;
 
             /// <summary>
-            /// WSManPluginSendCallbackNative
+            /// WSManPluginSendCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginSendCallbackNative;
 
             /// <summary>
-            /// WSManPluginReceiveCallbackNative
+            /// WSManPluginReceiveCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginReceiveCallbackNative;
 
             /// <summary>
-            /// WSManPluginSignalCallbackNative
+            /// WSManPluginSignalCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginSignalCallbackNative;
 
             /// <summary>
-            /// WSManPluginConnectCallbackNative
+            /// WSManPluginConnectCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginConnectCallbackNative;
 
             /// <summary>
-            /// WSManPluginCommandCallbackNative
+            /// WSManPluginCommandCallbackNative.
             /// </summary>
             [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
             internal IntPtr wsManPluginShutdownCallbackNative;
@@ -438,8 +426,8 @@ namespace System.Management.Automation.Remoting
         /// Called only once after the assembly is loaded..This is used to perform
         /// various initializations.
         /// </summary>
-        /// <param name="wkrPtrs">IntPtr to WSManPluginEntryDelegates.WSManPluginEntryDelegatesInternal</param>
-        /// <returns>0 = Success, 1 = Failure</returns>
+        /// <param name="wkrPtrs">IntPtr to WSManPluginEntryDelegates.WSManPluginEntryDelegatesInternal.</param>
+        /// <returns>0 = Success, 1 = Failure.</returns>
         public static int InitPlugin(
             IntPtr wkrPtrs)
         {
@@ -468,34 +456,33 @@ namespace System.Management.Automation.Remoting
                 // If there are any non-critical exceptions (e.g. we are running on CLR prior to 4.6.2), we won't be able to use long paths
             }
 #endif
-            ClrFacade.StructureToPtr<WSManPluginEntryDelegates.WSManPluginEntryDelegatesInternal>(workerPtrs.UnmanagedStruct, wkrPtrs, false);
+            Marshal.StructureToPtr<WSManPluginEntryDelegates.WSManPluginEntryDelegatesInternal>(workerPtrs.UnmanagedStruct, wkrPtrs, false);
             return WSManPluginConstants.ExitCodeSuccess;
         }
 
         /// <summary>
         /// Called only once during shutdown. This is used to perform various deinitializations.
         /// </summary>
-        /// <param name="pluginContext">PVOID</param>
+        /// <param name="pluginContext">PVOID.</param>
         public static void ShutdownPlugin(
             IntPtr pluginContext)
         {
             WSManPluginInstance.PerformShutdown(pluginContext);
 
-            if (null != workerPtrs)
+            if (workerPtrs != null)
             {
                 workerPtrs.Dispose();
             }
         }
 
         /// <summary>
-        ///
         /// </summary>
-        /// <param name="pluginContext">PVOID</param>
-        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-        /// <param name="flags">DWORD</param>
-        /// <param name="shellContext">PVOID</param>
-        /// <param name="commandContext">PVOID optional</param>
-        /// <param name="inboundConnectInformation">WSMAN_DATA* optional</param>
+        /// <param name="pluginContext">PVOID.</param>
+        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+        /// <param name="flags">DWORD.</param>
+        /// <param name="shellContext">PVOID.</param>
+        /// <param name="commandContext">PVOID optional.</param>
+        /// <param name="inboundConnectInformation">WSMAN_DATA* optional.</param>
         public static void WSManPluginConnect(
             IntPtr pluginContext,
             IntPtr requestDetails,
@@ -521,14 +508,13 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
-        /// <param name="pluginContext">PVOID</param>
-        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-        /// <param name="flags">DWORD</param>
-        /// <param name="extraInfo">PCWSTR</param>
-        /// <param name="startupInfo">WSMAN_SHELL_STARTUP_INFO*</param>
-        /// <param name="inboundShellInformation">WSMAN_DATA*</param>
+        /// <param name="pluginContext">PVOID.</param>
+        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+        /// <param name="flags">DWORD.</param>
+        /// <param name="extraInfo">PCWSTR.</param>
+        /// <param name="startupInfo">WSMAN_SHELL_STARTUP_INFO*.</param>
+        /// <param name="inboundShellInformation">WSMAN_DATA*.</param>
         public static void WSManPluginShell(
             IntPtr pluginContext,
             IntPtr requestDetails,
@@ -566,10 +552,9 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
-        /// <param name="pluginContext">PVOID</param>
-        /// <param name="shellContext">PVOID</param>
+        /// <param name="pluginContext">PVOID.</param>
+        /// <param name="shellContext">PVOID.</param>
         public static void WSManPluginReleaseShellContext(
             IntPtr pluginContext,
             IntPtr shellContext)
@@ -579,14 +564,13 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
-        /// <param name="pluginContext">PVOID</param>
-        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-        /// <param name="flags">DWORD</param>
-        /// <param name="shellContext">PVOID</param>
-        /// <param name="commandLine">PCWSTR</param>
-        /// <param name="arguments">WSMAN_COMMAND_ARG_SET* optional</param>
+        /// <param name="pluginContext">PVOID.</param>
+        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+        /// <param name="flags">DWORD.</param>
+        /// <param name="shellContext">PVOID.</param>
+        /// <param name="commandLine">PCWSTR.</param>
+        /// <param name="arguments">WSMAN_COMMAND_ARG_SET* optional.</param>
         public static void WSManPluginCommand(
             IntPtr pluginContext,
             IntPtr requestDetails,
@@ -614,7 +598,7 @@ namespace System.Management.Automation.Remoting
         /// <summary>
         /// Operation shutdown notification that was registered with the native layer for each of the shellCreate operations.
         /// </summary>
-        /// <param name="shutdownContext">IntPtr</param>
+        /// <param name="shutdownContext">IntPtr.</param>
         public static void WSManPSShutdown(
             IntPtr shutdownContext)
         {
@@ -625,11 +609,10 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
-        /// <param name="pluginContext">PVOID</param>
-        /// <param name="shellContext">PVOID</param>
-        /// <param name="commandContext">PVOID</param>
+        /// <param name="pluginContext">PVOID.</param>
+        /// <param name="shellContext">PVOID.</param>
+        /// <param name="commandContext">PVOID.</param>
         public static void WSManPluginReleaseCommandContext(
             IntPtr pluginContext,
             IntPtr shellContext,
@@ -640,15 +623,14 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
-        /// <param name="pluginContext">PVOID</param>
-        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-        /// <param name="flags">DWORD</param>
-        /// <param name="shellContext">PVOID</param>
-        /// <param name="commandContext">PVOID</param>
-        /// <param name="stream">PCWSTR</param>
-        /// <param name="inboundData">WSMAN_DATA*</param>
+        /// <param name="pluginContext">PVOID.</param>
+        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+        /// <param name="flags">DWORD.</param>
+        /// <param name="shellContext">PVOID.</param>
+        /// <param name="commandContext">PVOID.</param>
+        /// <param name="stream">PCWSTR.</param>
+        /// <param name="inboundData">WSMAN_DATA*.</param>
         public static void WSManPluginSend(
             IntPtr pluginContext,
             IntPtr requestDetails,
@@ -675,14 +657,13 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
-        /// <param name="pluginContext">PVOID</param>
-        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-        /// <param name="flags">DWORD</param>
-        /// <param name="shellContext">PVOID</param>
-        /// <param name="commandContext">PVOID optional</param>
-        /// <param name="streamSet">WSMAN_STREAM_ID_SET* optional</param>
+        /// <param name="pluginContext">PVOID.</param>
+        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+        /// <param name="flags">DWORD.</param>
+        /// <param name="shellContext">PVOID.</param>
+        /// <param name="commandContext">PVOID optional.</param>
+        /// <param name="streamSet">WSMAN_STREAM_ID_SET* optional.</param>
         public static void WSManPluginReceive(
             IntPtr pluginContext,
             IntPtr requestDetails,
@@ -708,14 +689,13 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        ///
         /// </summary>
-        /// <param name="pluginContext">PVOID</param>
-        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*</param>
-        /// <param name="flags">DWORD</param>
-        /// <param name="shellContext">PVOID</param>
-        /// <param name="commandContext">PVOID optional</param>
-        /// <param name="code">PCWSTR</param>
+        /// <param name="pluginContext">PVOID.</param>
+        /// <param name="requestDetails">WSMAN_PLUGIN_REQUEST*.</param>
+        /// <param name="flags">DWORD.</param>
+        /// <param name="shellContext">PVOID.</param>
+        /// <param name="commandContext">PVOID optional.</param>
+        /// <param name="code">PCWSTR.</param>
         public static void WSManPluginSignal(
             IntPtr pluginContext,
             IntPtr requestDetails,
@@ -745,14 +725,14 @@ namespace System.Management.Automation.Remoting
         /// Conforms to:
         ///     public delegate void WaitOrTimerCallback( Object state, bool timedOut )
         /// </summary>
-        /// <param name="operationContext">PVOID</param>
-        /// <param name="timedOut">BOOLEAN</param>
+        /// <param name="operationContext">PVOID.</param>
+        /// <param name="timedOut">BOOLEAN.</param>
         /// <returns></returns>
         public static void PSPluginOperationShutdownCallback(
             object operationContext,
             bool timedOut)
         {
-            if (null == operationContext)
+            if (operationContext == null)
             {
                 return;
             }
@@ -820,7 +800,7 @@ namespace System.Management.Automation.Remoting
         #region Delegate Handling
 
         /// <summary>
-        /// Matches signature for WSManPluginManagedEntryWrapper.InitPlugin
+        /// Matches signature for WSManPluginManagedEntryWrapper.InitPlugin.
         /// </summary>
         /// <param name="wkrPtrs"></param>
         /// <returns></returns>
@@ -845,4 +825,4 @@ namespace System.Management.Automation.Remoting
 
         #endregion
     }
-} // namespace System.Management.Automation.Remoting
+}

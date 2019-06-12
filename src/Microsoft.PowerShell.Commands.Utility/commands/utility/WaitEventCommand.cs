@@ -1,6 +1,5 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Management.Automation;
@@ -18,7 +17,7 @@ namespace Microsoft.PowerShell.Commands
         #region parameters
 
         /// <summary>
-        /// An identifier for this event subscription
+        /// An identifier for this event subscription.
         /// </summary>
         [Parameter(Position = 0, ValueFromPipelineByPropertyName = true)]
         public string SourceIdentifier
@@ -27,12 +26,14 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _sourceIdentifier;
             }
+
             set
             {
                 _sourceIdentifier = value;
                 _matchPattern = WildcardPattern.Get(value, WildcardOptions.IgnoreCase);
             }
         }
+
         private string _sourceIdentifier = null;
 
         /// <summary>
@@ -48,22 +49,24 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _timeoutInSeconds;
             }
+
             set
             {
                 _timeoutInSeconds = value;
             }
         }
+
         private int _timeoutInSeconds = -1; // -1: infinite, this default is to wait for as long as it takes.
 
         #endregion parameters
 
         private AutoResetEvent _eventArrived = new AutoResetEvent(false);
         private PSEventArgs _receivedEvent = null;
-        private Object _receivedEventLock = new Object();
+        private object _receivedEventLock = new Object();
         private WildcardPattern _matchPattern;
 
         /// <summary>
-        /// Wait for the event to arrive
+        /// Wait for the event to arrive.
         /// </summary>
         protected override void ProcessRecord()
         {
@@ -102,7 +105,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Handle Control-C
+        /// Handle Control-C.
         /// </summary>
         protected override void StopProcessing()
         {
@@ -122,7 +125,6 @@ namespace Microsoft.PowerShell.Commands
                 ScanEventQueue();
             }
         }
-
 
         // Go through all the received events. If one matches the subscription identifier,
         // break.

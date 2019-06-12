@@ -1,8 +1,8 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Text;
+
 using Dbg = System.Management.Automation.Diagnostics;
 
 namespace System.Management.Automation.Language
@@ -24,6 +24,7 @@ namespace System.Management.Automation.Language
             {
                 return string.Empty;
             }
+
             StringBuilder sb = new StringBuilder(value.Length);
             foreach (char c in value)
             {
@@ -34,6 +35,7 @@ namespace System.Management.Automation.Language
                     sb.Append(c);
                 }
             }
+
             return sb.ToString();
         }
 
@@ -49,6 +51,7 @@ namespace System.Management.Automation.Language
             {
                 return string.Empty;
             }
+
             return value
                 .Replace("<#", "<`#")
                 .Replace("#>", "#`>");
@@ -58,7 +61,7 @@ namespace System.Management.Automation.Language
         /// Escapes content so that it is safe for inclusion in a string that will later be used as a
         /// format string. If this is to be embedded inside of a single-quoted string, be sure to also
         /// call EscapeSingleQuotedStringContent.
-        /// For example: "'" + EscapeSingleQuotedStringContent(EscapeFormatStringContent(userContent)) + "'" -f $args
+        /// For example: "'" + EscapeSingleQuotedStringContent(EscapeFormatStringContent(userContent)) + "'" -f $args.
         /// </summary>
         /// <param name="value">The content to be included in a format string.</param>
         /// <returns>Content with all curly braces escaped.</returns>
@@ -68,6 +71,7 @@ namespace System.Management.Automation.Language
             {
                 return string.Empty;
             }
+
             StringBuilder sb = new StringBuilder(value.Length);
             foreach (char c in value)
             {
@@ -78,6 +82,7 @@ namespace System.Management.Automation.Language
                     sb.Append(c);
                 }
             }
+
             return sb.ToString();
         }
 
@@ -95,6 +100,7 @@ namespace System.Management.Automation.Language
             {
                 return string.Empty;
             }
+
             return value
                 .Replace("`", "``")
                 .Replace("}", "`}")

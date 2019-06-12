@@ -1,14 +1,14 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
+using System.Globalization;
 using System.IO;
 using System.Management.Automation;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-using System.Globalization;
+
 using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
@@ -28,6 +28,7 @@ namespace Microsoft.PowerShell.Commands
         protected SecureString SecureStringData
         {
             get { return _ss; }
+
             set { _ss = value; }
         }
 
@@ -40,7 +41,6 @@ namespace Microsoft.PowerShell.Commands
         /// Initializes a new instance of the SecureStringCommandBase
         /// class.
         /// </summary>
-        ///
         /// <param name="name">
         /// The command name deriving from this class
         /// </param>
@@ -118,7 +118,7 @@ namespace Microsoft.PowerShell.Commands
     public sealed class ConvertFromSecureStringCommand : ConvertFromToSecureStringCommandBase
     {
         /// <summary>
-        /// Initializes a new instance of the ExportSecureStringCommand class
+        /// Initializes a new instance of the ExportSecureStringCommand class.
         /// </summary>
         public ConvertFromSecureStringCommand() : base("ConvertFrom-SecureString") { }
 
@@ -174,7 +174,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 // The formatted string is Algorithm Version,
                 // Initialization Vector, Encrypted Data
-                string dataPackage = String.Format(
+                string dataPackage = string.Format(
                     System.Globalization.CultureInfo.InvariantCulture,
                     "{0}|{1}|{2}",
                     2,
@@ -199,11 +199,10 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 
-
     /// <summary>
     /// Defines the implementation of the 'ConvertTo-SecureString' cmdlet.
     /// This cmdlet imports a new SecureString from encrypted data --
-    /// one that represents  text that should be kept confidential.
+    /// one that represents text that should be kept confidential.
     /// The text is encrypted for privacy when being used, and deleted
     /// from computer memory when no longer needed.  When no key is
     /// specified, the command uses the DPAPI to decrypt the data.
@@ -222,7 +221,6 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// Gets or sets the unsecured string to be imported.
         /// </summary>
-        ///
         [Parameter(Position = 0, ValueFromPipeline = true, Mandatory = true)]
         public String String
         {
@@ -236,13 +234,13 @@ namespace Microsoft.PowerShell.Commands
                 _s = value;
             }
         }
+
         private string _s;
 
         /// <summary>
         /// Gets or sets the flag that marks the unsecured string as a plain
         /// text string.
         /// </summary>
-        ///
         [Parameter(Position = 1, ParameterSetName = "PlainText")]
         public SwitchParameter AsPlainText
         {
@@ -256,13 +254,13 @@ namespace Microsoft.PowerShell.Commands
                 _asPlainText = value;
             }
         }
+
         private bool _asPlainText;
 
         /// <summary>
         /// Gets or sets the flag that will force the import of a plaintext
         /// unsecured string.
         /// </summary>
-        ///
         [Parameter(Position = 2, ParameterSetName = "PlainText")]
         public SwitchParameter Force
         {
@@ -276,8 +274,8 @@ namespace Microsoft.PowerShell.Commands
                 _force = value;
             }
         }
-        private bool _force;
 
+        private bool _force;
 
         /// <summary>
         /// Processes records from the input pipeline.

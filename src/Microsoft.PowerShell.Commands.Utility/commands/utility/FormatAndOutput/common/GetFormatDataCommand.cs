@@ -1,20 +1,19 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
-using System.Linq;
-using System.Management.Automation;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Management.Automation;
 using System.Management.Automation.Runspaces;
+
 using Microsoft.PowerShell.Commands.Internal.Format;
 
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    /// Gets formatting information from the loading
-    /// format information database
+    /// Gets formatting information from the loading format information database.
     /// </summary>
     /// <remarks>Currently supports only table controls
     /// </remarks>
@@ -26,25 +25,25 @@ namespace Microsoft.PowerShell.Commands
         private WildcardPattern[] _filter = new WildcardPattern[1];
 
         /// <summary>
-        /// Get Formatting information only for the specified
-        /// typename
+        /// Get Formatting information only for the specified typename.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
         [ValidateNotNullOrEmpty]
         [Parameter(Position = 0)]
-        public String[] TypeName
+        public string[] TypeName
         {
             get
             {
                 return _typename;
             }
+
             set
             {
                 _typename = value;
 
                 if (_typename == null)
                 {
-                    _filter = Utils.EmptyArray<WildcardPattern>();
+                    _filter = Array.Empty<WildcardPattern>();
                 }
                 else
                 {
@@ -66,7 +65,7 @@ namespace Microsoft.PowerShell.Commands
         public Version PowerShellVersion { get; set; }
 
         /// <summary>
-        /// set the default filter
+        /// Set the default filter.
         /// </summary>
         protected override void BeginProcessing()
         {
@@ -75,7 +74,6 @@ namespace Microsoft.PowerShell.Commands
                 _filter[0] = WildcardPattern.Get("*", WildcardOptions.None);
             }
         }
-
 
         private static Dictionary<string, List<string>> GetTypeGroupMap(IEnumerable<TypeGroupDefinition> groupDefinitions)
         {
@@ -95,14 +93,13 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Takes out the content from the database and writes them
-        /// out
+        /// Takes out the content from the database and writes them out.
         /// </summary>
         protected override void ProcessRecord()
         {
             bool writeOldWay = PowerShellVersion == null ||
                                PowerShellVersion.Major < 5 ||
-                               PowerShellVersion.Build < 11086;
+                               (PowerShellVersion.Major == 5 && PowerShellVersion.Minor < 1);
 
             TypeInfoDataBase db = this.Context.FormatDBManager.Database;
 
@@ -171,8 +168,9 @@ namespace Microsoft.PowerShell.Commands
                     viewList = new List<FormatViewDefinition>();
                     typedefs.Add(consolidatedTypeName, viewList);
                 }
+
                 viewList.Add(formatdef);
-            }// foreach(ViewDefinition...
+            }
 
             // write out all the available type definitions
             foreach (var pair in typedefs)
@@ -194,6 +192,7 @@ namespace Microsoft.PowerShell.Commands
                     {
                         etd.TypeNames.Add(typeNames[i]);
                     }
+
                     WriteObject(etd);
                 }
             }
@@ -224,6 +223,7 @@ namespace Microsoft.PowerShell.Commands
                     consolidatedTypeName.Add(item.name);
                 }
             }
+
             return consolidatedTypeName;
         }
 
@@ -239,6 +239,7 @@ namespace Microsoft.PowerShell.Commands
                     }
                 }
             }
+
             return false;
         }
     }

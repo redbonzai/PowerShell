@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
 #pragma warning disable 56506
@@ -9,13 +8,7 @@ using System;
 using System.Management.Automation;
 using System.Runtime.Serialization;
 using System.Reflection;
-
-#if CORECLR
-// Use stub for SerializableAttribute, SerializationInfo and ISerializable related types.
-using Microsoft.PowerShell.CoreClr.Stubs;
-#else
 using System.Security.Permissions;
-#endif
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -48,7 +41,7 @@ namespace Microsoft.PowerShell.Commands
         /// Initializes a new instance of the HelpCategoryInvalidException class.
         /// </summary>
         /// <param name="helpCategory">The name of help category that is invalid.</param>
-        /// <param name="innerException">The inner exception of this exception</param>
+        /// <param name="innerException">The inner exception of this exception.</param>
         public HelpCategoryInvalidException(string helpCategory, Exception innerException) :
                 base((innerException != null) ? innerException.Message : string.Empty, innerException)
         {
@@ -62,7 +55,7 @@ namespace Microsoft.PowerShell.Commands
         private void CreateErrorRecord()
         {
             _errorRecord = new ErrorRecord(new ParentContainsErrorRecordException(this), "HelpCategoryInvalid", ErrorCategory.InvalidArgument, null);
-            _errorRecord.ErrorDetails = new ErrorDetails(typeof(HelpCategoryInvalidException).GetTypeInfo().Assembly, "HelpErrors", "HelpCategoryInvalid", _helpCategory);
+            _errorRecord.ErrorDetails = new ErrorDetails(typeof(HelpCategoryInvalidException).Assembly, "HelpErrors", "HelpCategoryInvalid", _helpCategory);
         }
 
         private ErrorRecord _errorRecord;
@@ -109,7 +102,7 @@ namespace Microsoft.PowerShell.Commands
                 return base.Message;
             }
         }
-#if !CORECLR
+
         #region Serialization
         /// <summary>
         /// Initializes a new instance of the HelpCategoryInvalidException class.
@@ -144,7 +137,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         #endregion Serialization
-#endif
     }
 }
 

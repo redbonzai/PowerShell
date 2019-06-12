@@ -1,6 +1,6 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #pragma warning disable 1634, 1691
 
 using System.Collections;
@@ -12,12 +12,6 @@ using System.Management.Automation.Runspaces;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
-
-#if !CORECLR
-// StackFrame and SymbolStore related types are not available in CoreCLR.
-using System.Diagnostics.SymbolStore;
-using System.Diagnostics;
-#endif
 
 namespace System.Management.Automation
 {
@@ -31,7 +25,7 @@ namespace System.Management.Automation
         private int _nextEventId = 1;
 
         /// <summary>
-        /// Returns a sequential event ID
+        /// Returns a sequential event ID.
         /// </summary>
         protected int GetNextEventId()
         {
@@ -50,7 +44,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Creates a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -68,7 +61,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Generate a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -89,7 +81,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Generate a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -120,7 +111,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Adds a forwarded event to the current event manager
+        /// Adds a forwarded event to the current event manager.
         /// </summary>
         internal abstract void AddForwardedEvent(PSEventArgs forwardedEvent);
 
@@ -142,7 +133,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Get the event subscription that corresponds to an identifier
-        ///
         /// <param name="sourceIdentifier">
         /// The identifier that identifies the source of the events
         /// </param>
@@ -151,7 +141,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -179,7 +168,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -211,7 +199,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -237,10 +224,8 @@ namespace System.Management.Automation
         [SuppressMessage("Microsoft.Usage", "CA2208:InstantiateArgumentExceptionsCorrectly")]
         public abstract PSEventSubscriber SubscribeEvent(object source, string eventName, string sourceIdentifier, PSObject data, PSEventReceivedEventHandler handlerDelegate, bool supportEvent, bool forwardEvent);
 
-
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -272,7 +257,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -317,10 +301,8 @@ namespace System.Management.Automation
             return SubscribeEvent(source, eventName, sourceIdentifier, data, handlerDelegate, supportEvent, forwardEvent, maxTriggerCount);
         }
 
-
         /// <summary>
         /// Unsubscribes from an event on an object.
-        ///
         /// <param name="subscriber">
         /// The subscriber associated with the event subscription
         /// </param>
@@ -328,7 +310,7 @@ namespace System.Management.Automation
         public abstract void UnsubscribeEvent(PSEventSubscriber subscriber);
 
         /// <summary>
-        /// This event is raised by the event manager to forward events
+        /// This event is raised by the event manager to forward events.
         /// </summary>
         internal abstract event EventHandler<PSEventArgs> ForwardEvent;
     }
@@ -361,9 +343,6 @@ namespace System.Management.Automation
         private AssemblyBuilder _eventAssembly = null;
         private ModuleBuilder _eventModule = null;
         private int _typeId = 0;
-#if !CORECLR
-        private bool debugMode = false;
-#endif
 
         /// <summary>
         /// Gets the list of event subscribers.
@@ -388,7 +367,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -419,7 +397,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -459,7 +436,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -508,7 +484,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -537,10 +512,8 @@ namespace System.Management.Automation
             return SubscribeEvent(source, eventName, sourceIdentifier, data, handlerDelegate, supportEvent, forwardEvent, 0);
         }
 
-
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -578,14 +551,12 @@ namespace System.Management.Automation
             return subscriber;
         }
 
-
         #region OnIdleProcessing
 
         private Timer _timer = null;
         private bool _timerInitialized = false;
         private bool _isTimerActive = false;
         /// <summary>
-        ///
         /// We sample every 100ms to check if the engine is idle (currentlyRunningPipeline == null). If it's "idle"
         /// in four consecutive samples, then we believe it's actually idle. In this way we can avoid capturing possible
         /// pipeline transitions.
@@ -593,12 +564,11 @@ namespace System.Management.Automation
         private int _consecutiveIdleSamples = 0;
 
         /// <summary>
-        ///
         /// Send on-idle event if the engine is idle. The property "AutoReset" of the timer is always false,
         /// so only one handler will be running at anytime. The timer will be enabled again if we can meet
         /// the following two conditions.
         ///   1. No PowerShell.OnIdle event is sent out
-        ///   2. A PowerShell.OnIdle event is sent out, and there are still subscribers to the on-idle event
+        ///   2. A PowerShell.OnIdle event is sent out, and there are still subscribers to the on-idle event.
         /// </summary>
         private void OnElapsedEvent(object source)
         {
@@ -671,28 +641,16 @@ namespace System.Management.Automation
         #endregion OnIdleProcessing
 
         private static Dictionary<string, Type> s_generatedEventHandlers = new Dictionary<string, Type>();
-        private void ProcessNewSubscriber(PSEventSubscriber subscriber, Object source, string eventName, string sourceIdentifier, PSObject data, bool supportEvent, bool forwardEvent)
+        private void ProcessNewSubscriber(PSEventSubscriber subscriber, object source, string eventName, string sourceIdentifier, PSObject data, bool supportEvent, bool forwardEvent)
         {
             Delegate handlerDelegate = null;
 
             if (_eventAssembly == null)
             {
-#if !CORECLR
-                // Define the assembly that will hold our event handlers
-                StackFrame callStack = new StackFrame(0, true);
-                debugMode = (callStack.GetFileName() != null);
-#endif
                 _eventAssembly = AssemblyBuilder.DefineDynamicAssembly(
                     new AssemblyName("PSEventHandler"),
                     AssemblyBuilderAccess.Run);
-            }
-            if (_eventModule == null)
-            {
-#if CORECLR
                 _eventModule = _eventAssembly.DefineDynamicModule("PSGenericEventModule");
-#else
-                _eventModule = _eventAssembly.DefineDynamicModule("PSGenericEventModule", debugMode);
-#endif
             }
 
             string engineEventSourceIdentifier = null;
@@ -714,7 +672,7 @@ namespace System.Management.Automation
                 EventInfo eventInfo = null;
                 Type sourceType = source as Type ?? source.GetType();
 
-                //PowerShell does not support WinRT events.
+                // PowerShell does not support WinRT events.
                 if (WinRTHelper.IsWinRTType(sourceType))
                 {
                     throw new InvalidOperationException(EventingResources.WinRTEventsNotSupported);
@@ -752,14 +710,7 @@ namespace System.Management.Automation
                         }
                     }
                 }
-#if !CORECLR
-                // If it is a ManagementEventWatcher, enable it
-                ManagementEventWatcher eventWatcher = source as ManagementEventWatcher;
-                if (eventWatcher != null)
-                {
-                    eventWatcher.Start();
-                }
-#endif
+
                 // Get its invoke method, and register ourselves as a handler
                 MethodInfo invokeMethod = eventInfo.EventHandlerType.GetMethod("Invoke");
 
@@ -771,7 +722,6 @@ namespace System.Management.Automation
                 if (invokeMethod.ReturnType != typeof(void))
                 {
                     string errorMessage = EventingResources.NonVoidDelegateNotSupported;
-
                     throw new ArgumentException(errorMessage, "eventName");
                 }
 
@@ -793,7 +743,7 @@ namespace System.Management.Automation
                 // And create an instance of the type
                 ConstructorInfo constructor =
                     handlerType.GetConstructor(new Type[] { typeof(PSEventManager), typeof(Object), typeof(string), typeof(PSObject) });
-                Object handler = constructor.Invoke(new object[] { this, source, sourceIdentifier, data });
+                object handler = constructor.Invoke(new object[] { this, source, sourceIdentifier, data });
                 MethodInfo eventDelegate = handlerType.GetMethod("EventDelegate", BindingFlags.Public | BindingFlags.Instance);
                 handlerDelegate = eventDelegate.CreateDelegate(eventInfo.EventHandlerType, handler);
 
@@ -804,7 +754,7 @@ namespace System.Management.Automation
                 if (PSEngineEvent.EngineEvents.Contains(sourceIdentifier))
                 {
                     engineEventSourceIdentifier = sourceIdentifier;
-                    isOnIdleEvent = String.Equals(engineEventSourceIdentifier, PSEngineEvent.OnIdle, StringComparison.OrdinalIgnoreCase);
+                    isOnIdleEvent = string.Equals(engineEventSourceIdentifier, PSEngineEvent.OnIdle, StringComparison.OrdinalIgnoreCase);
                 }
             }
 
@@ -830,6 +780,7 @@ namespace System.Management.Automation
                         subscribers = new List<PSEventSubscriber>();
                         _engineEventSubscribers.Add(engineEventSourceIdentifier, subscribers);
                     }
+
                     subscribers.Add(subscriber);
 
                     // This subscriber is the only one in the idle event list, we enable the timer
@@ -843,10 +794,8 @@ namespace System.Management.Automation
             }
         }
 
-
         /// <summary>
         /// Unsubscribes from an event on an object.
-        ///
         /// <param name="subscriber">
         /// The subscriber associated with the event subscription
         /// </param>
@@ -856,10 +805,8 @@ namespace System.Management.Automation
             UnsubscribeEvent(subscriber, false);
         }
 
-
         /// <summary>
         /// Unsubscribes from an event on an object.
-        ///
         /// <param name="subscriber">
         /// The subscriber associated with the event subscription
         /// </param>
@@ -882,6 +829,7 @@ namespace System.Management.Automation
                     // Already unsubscribed by another thread or the subscriber doesn't exist
                     return;
                 }
+
                 subscriber.IsBeingUnsubscribed = true;
             }
 
@@ -933,7 +881,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Creates a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -953,7 +900,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Adds a forwarded event to the current event manager
+        /// Adds a forwarded event to the current event manager.
         /// </summary>
         internal override void AddForwardedEvent(PSEventArgs forwardedEvent)
         {
@@ -991,7 +938,7 @@ namespace System.Management.Automation
                     // invocation to the current runspace, we took dependency on eventing infrastructure and
                     // this required ensuring the event and associated action be processed in the current thread
                     // synchronously. The below while loop was added for that (win8: 530495). However, fix for
-                    // 530495 resulted in hang for icm | % { icm } case and dynamic event/subscriptions scenarios.
+                    // 530495 resulted in not responding for icm | % { icm } case and dynamic event/subscriptions scenarios.
                     // To overcome that, changed "processSynchronously" parameter to "processInCurrentThread" and added
                     // a new parameter "waitForCompletionWhenInCurrentThread" to trigger blocking for ScriptBlock
                     // case.
@@ -999,6 +946,7 @@ namespace System.Management.Automation
                     {
                         this.ProcessPendingActions();
                     }
+
                     waitHandle.Dispose();
                 }
             }
@@ -1013,7 +961,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Called from  ProcessNewEvent to actually process the event.
+        /// Called from ProcessNewEvent to actually process the event.
         /// </summary>
         private void ProcessNewEventImplementation(PSEventArgs newEvent, bool processSynchronously)
         {
@@ -1041,6 +989,7 @@ namespace System.Management.Automation
                     {
                         actionsHandledInCurrentThread.Add(subscriber);
                     }
+
                     capturedEvent = true;
                 }
                 else
@@ -1085,6 +1034,7 @@ namespace System.Management.Automation
                 // This mutex will get set after the event is processed.
                 action.Args.EventProcessed = new ManualResetEventSlim();
             }
+
             lock (((System.Collections.ICollection)_actionQueue).SyncRoot)
             {
                 // If the engine isn't active, pulse the pipeline.
@@ -1116,7 +1066,6 @@ namespace System.Management.Automation
         /// To prevent starvation of the foreground script, we throttle the number of events
         /// that we process while the parser is waiting. If the parser is not waiting, we
         /// do not throttle the event processing.
-        ///
         /// </summary>
         internal void ProcessPendingActions()
         {
@@ -1197,7 +1146,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Auto unregister the subscriber if both 'RemainingTriggerCount' and 'RemainingActionsToProcess' become zero
+        /// Auto unregister the subscriber if both 'RemainingTriggerCount' and 'RemainingActionsToProcess' become zero.
         /// </summary>
         private void AutoUnregisterEventIfNecessary(PSEventSubscriber subscriber)
         {
@@ -1292,6 +1241,7 @@ namespace System.Management.Automation
                 {
                     _context.EngineSessionState = nextAction.Sender.Action.ScriptBlock.SessionStateInternal;
                 }
+
                 Runspace oldDefault = Runspace.DefaultRunspace;
 
                 try
@@ -1331,13 +1281,13 @@ namespace System.Management.Automation
                     {
                         eventProcessed.Set();
                     }
+
                     Runspace.DefaultRunspace = oldDefault;
                     _context.EngineSessionState = oldSessionState;
                     _processingAction = null;
                 }
             }
         }
-
 
         internal bool IsExecutingEventAction
         {
@@ -1346,7 +1296,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Get the event subscription that corresponds to an identifier
-        ///
         /// <param name="sourceIdentifier">
         /// The identifier that identifies the source of the events
         /// </param>
@@ -1370,7 +1319,7 @@ namespace System.Management.Automation
                 foreach (PSEventSubscriber currentSubscriber in _eventSubscribers.Keys)
                 {
                     bool takeActionForEvent = false;
-                    if (String.Equals(currentSubscriber.SourceIdentifier, sourceIdentifier, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(currentSubscriber.SourceIdentifier, sourceIdentifier, StringComparison.OrdinalIgnoreCase))
                     {
                         if (forNewEventProcessing)
                         {
@@ -1430,16 +1379,7 @@ namespace System.Management.Automation
         private Type GenerateEventHandler(MethodInfo invokeSignature)
         {
             int parameterCount = invokeSignature.GetParameters().Length;
-#if !CORECLR
-            StackFrame callStack = new StackFrame(0, true);
 
-            // Get the filename to associate with the debug symbols
-            ISymbolDocumentWriter doc = null;
-            if (debugMode)
-            {
-                doc = _eventModule.DefineDocument(callStack.GetFileName(), Guid.Empty, Guid.Empty, Guid.Empty);
-            }
-#endif
             // Define the type that will respond to the event. It
             // derives from PSEventHandler so that complex
             // functionality can go into its base class.
@@ -1452,21 +1392,6 @@ namespace System.Management.Automation
                 typeof(PSEventHandler).GetConstructor(
                     new Type[] { typeof(PSEventManager), typeof(Object), typeof(string), typeof(PSObject) });
 
-#if !CORECLR
-            if (debugMode)
-            {
-                // Mark as debuggable
-                Type debugAttributeType = typeof(DebuggableAttribute);
-                ConstructorInfo debugAttributeCtor = debugAttributeType.GetConstructor(new Type[] { typeof(DebuggableAttribute.DebuggingModes) });
-
-                CustomAttributeBuilder debugAttributeBuilder = new CustomAttributeBuilder(debugAttributeCtor,
-                    new object[] {
-                        DebuggableAttribute.DebuggingModes.DisableOptimizations |
-                        DebuggableAttribute.DebuggingModes.Default
-                    });
-                _eventAssembly.SetCustomAttribute(debugAttributeBuilder);
-            }
-#endif
             // Define the new constructor
             // public TestEventHandler(PSEventManager eventManager, Object sender, string sourceIdentifier, PSObject extraData)
             // : base(eventManager, sender, sourceIdentifier, extraData)
@@ -1506,41 +1431,25 @@ namespace System.Management.Automation
 
             ILGenerator methodContents = eventMethod.GetILGenerator();
 
-            // Object[] args =
-            LocalBuilder argsBuilder = methodContents.DeclareLocal(typeof(object[]));
+            // Declare a local variable of the type 'object[]' at index 0, say 'object[] args'
+            methodContents.DeclareLocal(typeof(object[]));
 
-#if !CORECLR
-            if (debugMode)
-            {
-                argsBuilder.SetLocalSymInfo("args");
-
-                //     new Object[ invokeSignature.GetParameters().Length ]
-                methodContents.MarkSequencePoint(doc, callStack.GetFileLineNumber() - 1, 1, callStack.GetFileLineNumber(), 100);
-            }
-#endif
             methodContents.Emit(OpCodes.Ldc_I4, parameterCount);
             methodContents.Emit(OpCodes.Newarr, typeof(Object));
 
-            // Retrieve the args variable from local variable index 0
+            // Store the new array to the local variable 'args'
             methodContents.Emit(OpCodes.Stloc_0);
 
             // Inline, this converts into a series of setting args[n] to
             // the argument at the same parameter index
             for (int counter = 1; counter <= parameterCount; counter++)
             {
-#if !CORECLR
-                if (debugMode)
-                {
-                    // args[n] = argument[n]
-                    methodContents.MarkSequencePoint(doc, callStack.GetFileLineNumber() - 1, 1, callStack.GetFileLineNumber(), 100);
-                }
-#endif
                 methodContents.Emit(OpCodes.Ldloc_0);
                 methodContents.Emit(OpCodes.Ldc_I4, counter - 1);
                 methodContents.Emit(OpCodes.Ldarg, counter);
 
                 // Box the value type if necessary
-                if (parameterTypes[counter - 1].GetTypeInfo().IsValueType)
+                if (parameterTypes[counter - 1].IsValueType)
                 {
                     methodContents.Emit(OpCodes.Box, parameterTypes[counter - 1]);
                 }
@@ -1579,16 +1488,9 @@ namespace System.Management.Automation
 
             // Finally, invoke the method
             MethodInfo generateEventMethod = typeof(PSEventManager).GetMethod(
-                "GenerateEvent",
-                new Type[] { typeof(string), typeof(object), typeof(object[]), typeof(PSObject) }
-                );
-#if !CORECLR
-            if (debugMode)
-            {
-                // GenerateEvent(sourceIdentifier, args, extraData);
-                methodContents.MarkSequencePoint(doc, callStack.GetFileLineNumber() - 1, 1, callStack.GetFileLineNumber(), 100);
-            }
-#endif
+                nameof(PSEventManager.GenerateEvent),
+                new Type[] { typeof(string), typeof(object), typeof(object[]), typeof(PSObject) });
+
             methodContents.Emit(OpCodes.Callvirt, generateEventMethod);
 
             // Discard the return value, and return
@@ -1599,12 +1501,12 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// This event is raised by the event manager to forward events
+        /// This event is raised by the event manager to forward events.
         /// </summary>
         internal override event EventHandler<PSEventArgs> ForwardEvent;
 
         /// <summary>
-        /// Raises the ForwardEvent event
+        /// Raises the ForwardEvent event.
         /// </summary>
         protected virtual void OnForwardEvent(PSEventArgs e)
         {
@@ -1617,9 +1519,8 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Destructor for the EventManager class
+        /// Destructor for the EventManager class.
         /// </summary>
-        ///
         ~PSLocalEventManager()
         {
             Dispose(false);
@@ -1628,7 +1529,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Disposes the EventManager class.
         /// </summary>
-        ///
         public void Dispose()
         {
             Dispose(true);
@@ -1638,12 +1538,10 @@ namespace System.Management.Automation
         /// <summary>
         /// Stop the timer if it's not null.
         /// Unsubscribes from all events.
-        ///
         /// <param name="disposing">
         /// Whether to actually dispose the object.
         /// </param>
         /// </summary>
-        ///
         public void Dispose(bool disposing)
         {
             if (disposing)
@@ -1665,7 +1563,7 @@ namespace System.Management.Automation
     }
 
     /// <summary>
-    /// Implementation of PSEventManager for remote runspaces
+    /// Implementation of PSEventManager for remote runspaces.
     /// </summary>
     internal class PSRemoteEventManager : PSEventManager
     {
@@ -1676,10 +1574,10 @@ namespace System.Management.Automation
         private Guid _runspaceId;
 
         /// <summary>
-        /// Creates an event manager for the given runspace
+        /// Creates an event manager for the given runspace.
         /// </summary>
-        /// <param name="computerName">Computer on which the event was generated</param>
-        /// <param name="runspaceId">Runspace on which the event was generated</param>
+        /// <param name="computerName">Computer on which the event was generated.</param>
+        /// <param name="runspaceId">Runspace on which the event was generated.</param>
         internal PSRemoteEventManager(string computerName, Guid runspaceId)
         {
             _computerName = computerName;
@@ -1699,7 +1597,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Creates a PowerShell event.
-        ///
         /// <param name="sourceIdentifier">
         /// An optional identifier that identifies the source event
         /// </param>
@@ -1720,7 +1617,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Adds a forwarded event to the current event manager
+        /// Adds a forwarded event to the current event manager.
         /// </summary>
         internal override void AddForwardedEvent(PSEventArgs forwardedEvent)
         {
@@ -1768,7 +1665,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Get the event subscription that corresponds to an identifier
-        ///
         /// <param name="sourceIdentifier">
         /// The identifier that identifies the source of the events
         /// </param>
@@ -1780,7 +1676,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -1811,7 +1706,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -1846,7 +1740,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -1877,7 +1770,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Subscribes to an event on an object.
-        ///
         /// <param name="source">
         /// The source object that defines the event
         /// </param>
@@ -1912,7 +1804,6 @@ namespace System.Management.Automation
 
         /// <summary>
         /// Unsubscribes from an event on an object.
-        ///
         /// <param name="subscriber">
         /// The subscriber associated with the event subscription
         /// </param>
@@ -1923,12 +1814,12 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// This event is raised by the event manager to forward events
+        /// This event is raised by the event manager to forward events.
         /// </summary>
         internal override event EventHandler<PSEventArgs> ForwardEvent;
 
         /// <summary>
-        /// Raises the ForwardEvent event
+        /// Raises the ForwardEvent event.
         /// </summary>
         protected virtual void OnForwardEvent(PSEventArgs e)
         {
@@ -1942,7 +1833,7 @@ namespace System.Management.Automation
     }
 
     /// <summary>
-    /// Constants that represent PowerShell engine events
+    /// Constants that represent PowerShell engine events.
     /// </summary>
     // Note: If you generate a new engine event that happens frequently,
     // (i.e.: variable changes), the user should be required to enable
@@ -1952,12 +1843,12 @@ namespace System.Management.Automation
         private PSEngineEvent() { }
 
         /// <summary>
-        /// Called when the PowerShell engine is exiting
+        /// Called when the PowerShell engine is exiting.
         /// </summary>
         public const string Exiting = "PowerShell.Exiting";
 
         /// <summary>
-        /// Call when the PowerShell engine is idle
+        /// Call when the PowerShell engine is idle.
         /// </summary>
         public const string OnIdle = "PowerShell.OnIdle";
 
@@ -1967,32 +1858,31 @@ namespace System.Management.Automation
         public const string WorkflowJobStartEvent = "PowerShell.WorkflowJobStartEvent";
 
         /// <summary>
-        /// Called during scriptblock invocation
+        /// Called during scriptblock invocation.
         /// </summary>
         internal const string OnScriptBlockInvoke = "PowerShell.OnScriptBlockInvoke";
 
         /// <summary>
-        /// Called during scriptblock invocation
+        /// Called during scriptblock invocation.
         /// </summary>
         internal const string GetCommandInfoParameterMetadata = "PowerShell.GetCommandInfoParameterMetadata";
 
         /// <summary>
-        /// A HashSet that contains all engine event names
+        /// A HashSet that contains all engine event names.
         /// </summary>
         internal static readonly HashSet<string> EngineEvents = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { Exiting, OnIdle, OnScriptBlockInvoke };
     }
 
-
     /// <summary>
-    /// Represents a subscriber to an event
+    /// Represents a subscriber to an event.
     /// </summary>
     public class PSEventSubscriber : IEquatable<PSEventSubscriber>
     {
         /// <summary>
         /// Creates an instance of the PSEventSubscriber class for a given source object, event name,
-        /// and optional source identifier
+        /// and optional source identifier.
         /// </summary>
-        internal PSEventSubscriber(ExecutionContext context, int id, Object source,
+        internal PSEventSubscriber(ExecutionContext context, int id, object source,
             string eventName, string sourceIdentifier, bool supportEvent, bool forwardEvent, int maxTriggerCount)
         {
             _context = context;
@@ -2023,7 +1913,7 @@ namespace System.Management.Automation
         /// Creates an instance of the PSEventSubscriber
         /// class. Additionally supports an Action scriptblock.
         /// </summary>
-        internal PSEventSubscriber(ExecutionContext context, int id, Object source,
+        internal PSEventSubscriber(ExecutionContext context, int id, object source,
             string eventName, string sourceIdentifier, ScriptBlock action, bool supportEvent, bool forwardEvent, int maxTriggerCount) :
             this(context, id, source, eventName, sourceIdentifier, supportEvent, forwardEvent, maxTriggerCount)
         {
@@ -2037,7 +1927,7 @@ namespace System.Management.Automation
 
         internal void RegisterJob()
         {
-            // And this event subscriber to the job repository if it's not a support event.
+            // Add this event subscriber to the job repository if it's not a support event.
             if (!SupportEvent)
             {
                 if (this.Action != null)
@@ -2052,7 +1942,7 @@ namespace System.Management.Automation
         /// Creates an instance of the PSEventSubscriber
         /// class. Additionally supports an Action scriptblock.
         /// </summary>
-        internal PSEventSubscriber(ExecutionContext context, int id, Object source,
+        internal PSEventSubscriber(ExecutionContext context, int id, object source,
             string eventName, string sourceIdentifier, PSEventReceivedEventHandler handlerDelegate, bool supportEvent, bool forwardEvent, int maxTriggerCount) :
             this(context, id, source, eventName, sourceIdentifier, supportEvent, forwardEvent, maxTriggerCount)
         {
@@ -2062,7 +1952,7 @@ namespace System.Management.Automation
         private ExecutionContext _context;
 
         /// <summary>
-        /// Create a bound script block
+        /// Create a bound script block.
         /// </summary>
         private ScriptBlock CreateBoundScriptBlock(ScriptBlock scriptAction)
         {
@@ -2078,43 +1968,42 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Get the identifier of this event subscription
+        /// Get the identifier of this event subscription.
         /// </summary>
         public int SubscriptionId { get; set; }
 
         /// <summary>
-        /// The object to which this event subscription applies
+        /// The object to which this event subscription applies.
         /// </summary>
-        public Object SourceObject { get; }
+        public object SourceObject { get; }
 
         /// <summary>
-        /// The event object to which this event subscription applies
+        /// The event object to which this event subscription applies.
         /// </summary>
         public string EventName { get; }
 
         /// <summary>
-        /// The identifier that identifies the source of these events
+        /// The identifier that identifies the source of these events.
         /// </summary>
         public string SourceIdentifier { get; }
 
         /// <summary>
-        /// The action invoked when this event arrives
+        /// The action invoked when this event arrives.
         /// </summary>
         public PSEventJob Action { get; }
 
         /// <summary>
-        /// The delegate invoked when this event arrives
+        /// The delegate invoked when this event arrives.
         /// </summary>
         public PSEventReceivedEventHandler HandlerDelegate { get; } = null;
 
-
         /// <summary>
-        /// Get the flag that marks this event as a supporting event
+        /// Get the flag that marks this event as a supporting event.
         /// </summary>
         public bool SupportEvent { get; }
 
         /// <summary>
-        /// Gets whether to forward the event to the PowerShell client during a remote execution
+        /// Gets whether to forward the event to the PowerShell client during a remote execution.
         /// </summary>
         public bool ForwardEvent { get; }
 
@@ -2124,12 +2013,12 @@ namespace System.Management.Automation
         internal bool ShouldProcessInExecutionThread { get; set; }
 
         /// <summary>
-        /// Gets whether the event should be unregistered
+        /// Gets whether the event should be unregistered.
         /// </summary>
         internal bool AutoUnregister { get; private set; }
 
         /// <summary>
-        /// Indicate how many new  should be added to the action queue.
+        /// Indicate how many new should be added to the action queue.
         /// e.g. NumberOfTimesToBeInvoked = 3 means that this subscriber only responses to
         /// the first triggered event. So three new actions will be added to the action
         /// queue, and the following events will be ignored.
@@ -2144,12 +2033,12 @@ namespace System.Management.Automation
         internal int RemainingActionsToProcess { get; set; }
 
         /// <summary>
-        /// Indicate if the subscriber is being subscribed by a thread
+        /// Indicate if the subscriber is being subscribed by a thread.
         /// </summary>
         internal bool IsBeingUnsubscribed { get; set; }
 
         /// <summary>
-        /// The event generated when this event subscriber is unregistered
+        /// The event generated when this event subscriber is unregistered.
         /// </summary>
         public event PSEventUnsubscribedEventHandler Unsubscribed;
 
@@ -2168,11 +2057,11 @@ namespace System.Management.Automation
                 return false;
             }
 
-            return (String.Equals(SubscriptionId, other.SubscriptionId));
+            return (string.Equals(SubscriptionId, other.SubscriptionId));
         }
 
         /// <summary>
-        /// Gets the hashcode that represents this PSEventSubscriber instance
+        /// Gets the hashcode that represents this PSEventSubscriber instance.
         /// </summary>
         public override int GetHashCode()
         {
@@ -2189,7 +2078,6 @@ namespace System.Management.Automation
         }
     }
 
-
     /// <summary>
     /// The generic event handler from which specific event handlers extend. When possible,
     /// add functionality to this class instead of the IL generated by the GenerateEventHandler()
@@ -2199,7 +2087,7 @@ namespace System.Management.Automation
     public class PSEventHandler
     {
         /// <summary>
-        /// Creates a new instance of the PsEventHandler class
+        /// Creates a new instance of the PsEventHandler class.
         /// </summary>
         public PSEventHandler()
         {
@@ -2208,7 +2096,6 @@ namespace System.Management.Automation
         /// <summary>
         /// Creates a new instance of the PsEventHandler class for a given
         /// event manager, source identifier, and extra data
-        ///
         /// <param name="eventManager">
         /// The event manager to which we forward events.
         /// </param>
@@ -2223,7 +2110,7 @@ namespace System.Management.Automation
         /// Any additional data you wish to attach to the event
         /// </param>
         /// </summary>
-        public PSEventHandler(PSEventManager eventManager, Object sender, string sourceIdentifier, PSObject extraData)
+        public PSEventHandler(PSEventManager eventManager, object sender, string sourceIdentifier, PSObject extraData)
         {
             this.eventManager = eventManager;
             this.sender = sender;
@@ -2232,25 +2119,25 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// The event manager to which we forward events
+        /// The event manager to which we forward events.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
         protected PSEventManager eventManager;
 
         /// <summary>
-        /// The sender of the event
+        /// The sender of the event.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
-        protected Object sender;
+        protected object sender;
 
         /// <summary>
-        /// An optional identifier that identifies the source of the event
+        /// An optional identifier that identifies the source of the event.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
         protected string sourceIdentifier = null;
 
         /// <summary>
-        /// Any additional data you wish to attach to the event
+        /// Any additional data you wish to attach to the event.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
         protected PSObject extraData = null;
@@ -2267,7 +2154,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Serialized event arguments from the event fired in a remote runspace
+        /// Serialized event arguments from the event fired in a remote runspace.
         /// </summary>
         public PSObject SerializedRemoteEventArgs { get; }
 
@@ -2285,14 +2172,14 @@ namespace System.Management.Automation
     internal class PSEventArgs<T> : EventArgs
     {
         /// <summary>
-        /// Event arguments
+        /// Event arguments.
         /// </summary>
         internal T Args;
 
         /// <summary>
-        /// Class constructor
+        /// Class constructor.
         /// </summary>
-        /// <param name="args">event arguments</param>
+        /// <param name="args">Event arguments.</param>
         public PSEventArgs(T args)
         {
             Args = args;
@@ -2300,14 +2187,13 @@ namespace System.Management.Automation
     }
 
     /// <summary>
-    /// The event arguments associated with an event
+    /// The event arguments associated with an event.
     /// </summary>
     public class PSEventArgs : EventArgs
     {
         /// <summary>
-        /// Create a new instance of the PSEventArgs type
+        /// Create a new instance of the PSEventArgs type.
         /// </summary>
-        ///
         /// <param name="computerName">
         /// Computer on which this event was generated
         /// </param>
@@ -2329,7 +2215,7 @@ namespace System.Management.Automation
         /// <param name="additionalData">
         /// Additional data attached by the user to this event.
         /// </param>
-        internal PSEventArgs(string computerName, Guid runspaceId, int eventIdentifier, string sourceIdentifier, Object sender, Object[] originalArgs, PSObject additionalData)
+        internal PSEventArgs(string computerName, Guid runspaceId, int eventIdentifier, string sourceIdentifier, Object sender, object[] originalArgs, PSObject additionalData)
         {
             // Capture the first EventArgs as SourceEventArgs
             if (originalArgs != null)
@@ -2368,52 +2254,54 @@ namespace System.Management.Automation
         public string ComputerName { get; internal set; }
 
         /// <summary>
-        /// Gets the unique identifier of this event
+        /// Gets the unique identifier of this event.
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Runspace")]
         public Guid RunspaceId { get; internal set; }
 
         /// <summary>
-        /// Gets the unique identifier of this event
+        /// Gets the unique identifier of this event.
         /// </summary>
         public int EventIdentifier { get; internal set; }
 
         /// <summary>
-        /// Gets the object that generated this event
+        /// Gets the object that generated this event.
         /// </summary>
-        public Object Sender { get; }
+        public object Sender { get; }
 
         /// <summary>
         /// Gets the first argument from the original event source that
-        /// derives from EventArgs
+        /// derives from EventArgs.
         /// </summary>
         public EventArgs SourceEventArgs { get; }
 
         /// <summary>
-        /// Gets the list of arguments captured by the original event source
+        /// Gets the list of arguments captured by the original event source.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public Object[] SourceArgs { get; }
+        public object[] SourceArgs { get; }
 
         /// <summary>
-        /// Gets the identifier associated with the source of this event
+        /// Gets the identifier associated with the source of this event.
         /// </summary>
-        public String SourceIdentifier { get; }
+        public string SourceIdentifier { get; }
 
         /// <summary>
-        /// Gets the time and date that this event was generated
+        /// Gets the time and date that this event was generated.
         /// </summary>
-        public DateTime TimeGenerated { get; internal set;
-// internal setter using during deserialization
+        public DateTime TimeGenerated
+        {
+            // internal setter using during deserialization
+            get; internal set;
         }
 
         /// <summary>
-        /// Gets the additional user data associated with this event
+        /// Gets the additional user data associated with this event.
         /// </summary>
         public PSObject MessageData { get; }
 
         /// <summary>
-        /// Gets whether to forward the event to the PowerShell client during a remote execution
+        /// Gets whether to forward the event to the PowerShell client during a remote execution.
         /// </summary>
         internal bool ForwardEvent { get; set; }
 
@@ -2425,20 +2313,18 @@ namespace System.Management.Automation
 
     /// <summary>
     /// The delegate that handles notifications of new events
-    /// added to the collection
+    /// added to the collection.
     /// </summary>
     public delegate void PSEventReceivedEventHandler(Object sender, PSEventArgs e);
 
-
     /// <summary>
-    /// The event arguments associated with unsubscribing from an event
+    /// The event arguments associated with unsubscribing from an event.
     /// </summary>
     public class PSEventUnsubscribedEventArgs : EventArgs
     {
         /// <summary>
-        /// Create a new instance of the PSEventUnsubscribedEventArgs type
+        /// Create a new instance of the PSEventUnsubscribedEventArgs type.
         /// </summary>
-        ///
         /// <param name="eventSubscriber">
         /// The event subscriber being unregistered
         /// </param>
@@ -2448,16 +2334,15 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// The event subscriber being unregistered
+        /// The event subscriber being unregistered.
         /// </summary>
         public PSEventSubscriber EventSubscriber { get; internal set; }
     }
 
     /// <summary>
-    /// The delegate that handles notifications of the event being unsubscribed
+    /// The delegate that handles notifications of the event being unsubscribed.
     /// </summary>
     public delegate void PSEventUnsubscribedEventHandler(Object sender, PSEventUnsubscribedEventArgs e);
-
 
     /// <summary>
     /// This class contains the collection of events received by the
@@ -2466,15 +2351,14 @@ namespace System.Management.Automation
     public class PSEventArgsCollection : IEnumerable<PSEventArgs>
     {
         /// <summary>
-        /// The event generated when a new event is received
+        /// The event generated when a new event is received.
         /// </summary>
         public event PSEventReceivedEventHandler PSEventReceived;
         private List<PSEventArgs> _eventCollection = new List<PSEventArgs>();
 
         /// <summary>
-        /// Add add an event to the collection
+        /// Add add an event to the collection.
         /// </summary>
-        ///
         /// <param name="eventToAdd">
         /// The PSEventArgs instance that represents this event
         /// </param>
@@ -2492,7 +2376,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Removes an item at a specific index from the collection
+        /// Removes an item at a specific index from the collection.
         /// </summary>
         public int Count
         {
@@ -2503,7 +2387,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Removes an item at a specific index from the collection
+        /// Removes an item at a specific index from the collection.
         /// </summary>
         public void RemoveAt(int index)
         {
@@ -2511,7 +2395,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Gets an item at a specific index from the collection
+        /// Gets an item at a specific index from the collection.
         /// </summary>
         public PSEventArgs this[int index]
         {
@@ -2531,7 +2415,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Get the enumerator of this collection
+        /// Get the enumerator of this collection.
         /// </summary>
         public IEnumerator<PSEventArgs> GetEnumerator()
         {
@@ -2539,7 +2423,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Get the enumerator of this collection
+        /// Get the enumerator of this collection.
         /// </summary>
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
@@ -2547,7 +2431,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Get the synchronization root for this collection
+        /// Get the synchronization root for this collection.
         /// </summary>
         public object SyncRoot { get; } = new object();
     }
@@ -2555,7 +2439,7 @@ namespace System.Management.Automation
     /// <summary>
     /// The combination of an event subscriber, and the event that was fired.
     /// This is to support the arguments to script blocks that we invoke automatically
-    /// as a response to some events
+    /// as a response to some events.
     /// </summary>
     internal class EventAction
     {
@@ -2577,13 +2461,12 @@ namespace System.Management.Automation
     }
 
     /// <summary>
-    /// A class to give a job-like interface to event actions
+    /// A class to give a job-like interface to event actions.
     /// </summary>
     public class PSEventJob : Job
     {
         /// <summary>
         /// Creates a new instance of the PSEventJob class.
-        ///
         /// <param name="eventManager">
         /// The event manager that controls the event subscriptions
         /// </param>
@@ -2616,7 +2499,7 @@ namespace System.Management.Automation
         private int _highestErrorIndex = 0;
 
         /// <summary>
-        /// Gets dynamic module where the action is invoked
+        /// Gets dynamic module where the action is invoked.
         /// </summary>
         public PSModuleInfo Module
         {
@@ -2624,7 +2507,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Stop Job
+        /// Stop Job.
         /// </summary>
         public override void StopJob()
         {
@@ -2632,12 +2515,12 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Message indicating status of the job
+        /// Message indicating status of the job.
         /// </summary>
         public override string StatusMessage { get; } = null;
 
         /// <summary>
-        /// indicates if more data is available
+        /// Indicates if more data is available.
         /// </summary>
         /// <remarks>
         /// This has more data if any of the child jobs have more data.
@@ -2649,11 +2532,11 @@ namespace System.Management.Automation
                 return _moreData;
             }
         }
+
         private bool _moreData = false;
 
-
         /// <summary>
-        /// Location in which this job is running
+        /// Location in which this job is running.
         /// </summary>
         public override string Location
         {
@@ -2664,13 +2547,12 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// The scriptblock that defines the action
+        /// The scriptblock that defines the action.
         /// </summary>
         internal ScriptBlock ScriptBlock { get; }
 
         /// <summary>
         /// Invoke the script block
-        ///
         /// <param name="eventSubscriber">
         /// The subscriber that generated this event
         /// </param>

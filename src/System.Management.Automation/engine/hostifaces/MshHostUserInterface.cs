@@ -1,26 +1,26 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System.IO;
-using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Security;
 using System.Globalization;
+using System.IO;
+using System.Management.Automation.Configuration;
 using System.Management.Automation.Runspaces;
-using Microsoft.PowerShell.Commands;
+using System.Security;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.PowerShell.Commands;
 
 namespace System.Management.Automation.Host
 {
     /// <summary>
-    ///
     /// Defines the properties and facilities providing by an hosting application deriving from
     /// <see cref="System.Management.Automation.Host.PSHost"/> that offers dialog-oriented and
     /// line-oriented interactive features.
-    ///
     /// </summary>
     /// <seealso cref="System.Management.Automation.Host.PSHost"/>
     /// <seealso cref="System.Management.Automation.Host.PSHostRawUserInterface"/>
@@ -120,7 +120,7 @@ namespace System.Management.Automation.Host
         /// </summary>
         public virtual void WriteLine()
         {
-            WriteLine("");
+            WriteLine(string.Empty);
         }
 
         /// <summary>
@@ -267,10 +267,11 @@ namespace System.Management.Automation.Host
                 return temporaryTranscriptionData;
             }
         }
+
         private TranscriptionData _volatileTranscriptionData;
 
         /// <summary>
-        /// Transcribes a command being invoked
+        /// Transcribes a command being invoked.
         /// </summary>
         /// <param name="commandText">The text of the command being invoked.</param>
         /// <param name="invocation">The invocation info of the command being transcribed.</param>
@@ -300,7 +301,7 @@ namespace System.Management.Automation.Host
                                 {
                                     transcript.OutputToLog.Add("**********************");
                                     transcript.OutputToLog.Add(
-                                        String.Format(
+                                        string.Format(
                                             Globalization.CultureInfo.InvariantCulture, InternalHostUserInterfaceStrings.CommandStartTime,
                                             DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture)));
                                     transcript.OutputToLog.Add("**********************");
@@ -350,7 +351,7 @@ namespace System.Management.Automation.Host
             string[] helperCommands = { "TabExpansion2", "prompt", "TabExpansion", "PSConsoleHostReadline" };
             foreach (string helperCommand in helperCommands)
             {
-                if (String.Equals(helperCommand, commandName, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(helperCommand, commandName, StringComparison.OrdinalIgnoreCase))
                 {
                     IgnoreCommand(logElement, invocation);
 
@@ -390,7 +391,31 @@ namespace System.Management.Automation.Host
         /// so that when content is sent through Out-Default it doesn't
         /// make it to the actual host.
         /// </summary>
-        internal bool TranscribeOnly { get; set; }
+        internal bool TranscribeOnly => Interlocked.CompareExchange(ref _transcribeOnlyCount, 0, 0) != 0;
+        private int _transcribeOnlyCount = 0;
+        internal IDisposable SetTranscribeOnly() => new TranscribeOnlyCookie(this);
+        private sealed class TranscribeOnlyCookie : IDisposable
+        {
+            private PSHostUserInterface _ui;
+            private bool _disposed = false;
+            public TranscribeOnlyCookie(PSHostUserInterface ui)
+            {
+                _ui = ui;
+                Interlocked.Increment(ref _ui._transcribeOnlyCount);
+            }
+
+            public void Dispose()
+            {
+                if (!_disposed)
+                {
+                    Interlocked.Decrement(ref _ui._transcribeOnlyCount);
+                    _disposed = true;
+                    GC.SuppressFinalize(this);
+                }
+            }
+
+            ~TranscribeOnlyCookie() => Dispose();
+        }
 
         /// <summary>
         /// Flag to determine whether the host is transcribing.
@@ -419,61 +444,79 @@ namespace System.Management.Automation.Host
             }
         }
 
-        internal void StartTranscribing(string path, System.Management.Automation.Remoting.PSSenderInfo senderInfo, bool includeInvocationHeader)
+        internal void StartTranscribing(string path, System.Management.Automation.Remoting.PSSenderInfo senderInfo, bool includeInvocationHeader, bool useMinimalHeader)
         {
             TranscriptionOption transcript = new TranscriptionOption();
             transcript.Path = path;
             transcript.IncludeInvocationHeader = includeInvocationHeader;
             TranscriptionData.Transcripts.Add(transcript);
 
-            LogTranscriptHeader(senderInfo, transcript);
+            LogTranscriptHeader(senderInfo, transcript, useMinimalHeader);
         }
 
-        private void LogTranscriptHeader(System.Management.Automation.Remoting.PSSenderInfo senderInfo, TranscriptionOption transcript)
+        private void LogTranscriptHeader(System.Management.Automation.Remoting.PSSenderInfo senderInfo, TranscriptionOption transcript, bool useMinimalHeader = false)
         {
-            string username = Environment.UserDomainName + "\\" + Environment.UserName;
-            string runAsUser = username;
-
-            if (senderInfo != null)
-            {
-                username = senderInfo.UserInfo.Identity.Name;
-            }
-
-            // Add bits from PSVersionTable
-            StringBuilder psVersionInfo = new StringBuilder();
-            Hashtable versionInfo = PSVersionInfo.GetPSVersionTable();
-            foreach (string versionKey in versionInfo.Keys)
-            {
-                Object value = versionInfo[versionKey];
-
-                if (value != null)
-                {
-                    var arrayValue = value as object[];
-                    string valueString = arrayValue != null ? string.Join(", ", arrayValue) : value.ToString();
-                    psVersionInfo.AppendLine(versionKey + ": " + valueString);
-                }
-            }
-
             // Transcribe the transcript header
-            string format = InternalHostUserInterfaceStrings.TranscriptPrologue;
-            string line =
-                String.Format(
-                    Globalization.CultureInfo.InvariantCulture,
-                    format,
-                    DateTime.Now,
-                    username,
-                    runAsUser,
-                    Environment.MachineName,
-                    Environment.OSVersion.VersionString,
-                    String.Join(" ", Environment.GetCommandLineArgs()),
-                    System.Diagnostics.Process.GetCurrentProcess().Id,
-                    psVersionInfo.ToString().TrimEnd()
-                    );
+            string line;
+            if (useMinimalHeader)
+            {
+                line =
+                    string.Format(
+                        Globalization.CultureInfo.InvariantCulture,
+                        InternalHostUserInterfaceStrings.MinimalTranscriptPrologue,
+                        DateTime.Now);
+            }
+            else
+            {
+                string username = Environment.UserDomainName + "\\" + Environment.UserName;
+                string runAsUser = username;
+
+                if (senderInfo != null)
+                {
+                    username = senderInfo.UserInfo.Identity.Name;
+                }
+
+                // Add bits from PSVersionTable
+                StringBuilder versionInfoFooter = new StringBuilder();
+                Hashtable versionInfo = PSVersionInfo.GetPSVersionTable();
+                foreach (string versionKey in versionInfo.Keys)
+                {
+                    object value = versionInfo[versionKey];
+
+                    if (value != null)
+                    {
+                        var arrayValue = value as object[];
+                        string valueString = arrayValue != null ? string.Join(", ", arrayValue) : value.ToString();
+                        versionInfoFooter.AppendLine(versionKey + ": " + valueString);
+                    }
+                }
+
+                string configurationName = string.Empty;
+                if (senderInfo != null && !string.IsNullOrEmpty(senderInfo.ConfigurationName))
+                {
+                    configurationName = senderInfo.ConfigurationName;
+                }
+
+                line =
+                    string.Format(
+                        Globalization.CultureInfo.InvariantCulture,
+                        InternalHostUserInterfaceStrings.TranscriptPrologue,
+                        DateTime.Now,
+                        username,
+                        runAsUser,
+                        configurationName,
+                        Environment.MachineName,
+                        Environment.OSVersion.VersionString,
+                        string.Join(" ", Environment.GetCommandLineArgs()),
+                        System.Diagnostics.Process.GetCurrentProcess().Id,
+                        versionInfoFooter.ToString().TrimEnd());
+            }
 
             lock (transcript.OutputToLog)
             {
                 transcript.OutputToLog.Add(line);
             }
+
             TranscribeCommandComplete(null);
         }
 
@@ -497,7 +540,7 @@ namespace System.Management.Automation.Host
             // Transcribe the transcript epilogue
             try
             {
-                string message = String.Format(
+                string message = string.Format(
                     Globalization.CultureInfo.InvariantCulture,
                     InternalHostUserInterfaceStrings.TranscriptEpilogue, DateTime.Now);
 
@@ -505,6 +548,7 @@ namespace System.Management.Automation.Host
                 {
                     stoppedTranscript.OutputToLog.Add(message);
                 }
+
                 TranscribeCommandComplete(null);
             }
             catch (Exception)
@@ -563,7 +607,7 @@ namespace System.Management.Automation.Host
                     if (TranscriptionData.CommandBeingIgnored != null)
                     {
                         // If we're ignoring a prompt, capture the value
-                        if (String.Equals("prompt", TranscriptionData.CommandBeingIgnored, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals("prompt", TranscriptionData.CommandBeingIgnored, StringComparison.OrdinalIgnoreCase))
                         {
                             TranscriptionData.PromptText = resultText;
                         }
@@ -603,7 +647,7 @@ namespace System.Management.Automation.Host
         }
 
         /// <summary>
-        /// Transcribes / records the completion of a command
+        /// Transcribes / records the completion of a command.
         /// </summary>
         /// <param name="invocation"></param>
         internal void TranscribeCommandComplete(InvocationInfo invocation)
@@ -624,7 +668,7 @@ namespace System.Management.Automation.Host
                 // If we're completing a command that we were ignoring, start transcribing results / etc. again.
                 if ((TranscriptionData.CommandBeingIgnored != null) &&
                     (invocation != null) && (invocation.MyCommand != null) &&
-                    String.Equals(commandNameToCheck, invocation.MyCommand.Name, StringComparison.OrdinalIgnoreCase))
+                    string.Equals(commandNameToCheck, invocation.MyCommand.Name, StringComparison.OrdinalIgnoreCase))
                 {
                     TranscriptionData.CommandBeingIgnored = null;
                     TranscriptionData.IsHelperCommand = false;
@@ -673,19 +717,21 @@ namespace System.Management.Automation.Host
                     // Transcription should begin only if file generation is successful.
                     // If there is an error in file generation, throw the exception.
                     string baseDirectory = Path.GetDirectoryName(transcript.Path);
-                    if (Directory.Exists(transcript.Path) || (String.Equals(baseDirectory, transcript.Path.TrimEnd(Path.DirectorySeparatorChar), StringComparison.Ordinal)))
+                    if (Directory.Exists(transcript.Path) || (string.Equals(baseDirectory, transcript.Path.TrimEnd(Path.DirectorySeparatorChar), StringComparison.Ordinal)))
                     {
-                        string errorMessage = String.Format(
+                        string errorMessage = string.Format(
                             System.Globalization.CultureInfo.CurrentCulture,
                             InternalHostUserInterfaceStrings.InvalidTranscriptFilePath,
                             transcript.Path);
                         throw new ArgumentException(errorMessage);
                     }
-                    if(!Directory.Exists(baseDirectory))
+
+                    if (!Directory.Exists(baseDirectory))
                     {
                         Directory.CreateDirectory(baseDirectory);
                     }
-                    if(!File.Exists(transcript.Path))
+
+                    if (!File.Exists(transcript.Path))
                     {
                         File.Create(transcript.Path).Dispose();
                     }
@@ -729,7 +775,7 @@ namespace System.Management.Automation.Host
 
         #endregion Line-oriented interaction
 
-        # region Dialog-oriented Interaction
+        #region Dialog-oriented Interaction
 
         /// <summary>
         /// Constructs a 'dialog' where the user is presented with a number of fields for which to supply values.
@@ -754,7 +800,7 @@ namespace System.Management.Automation.Host
         /// <seealso cref="System.Management.Automation.Host.PSHostUserInterface.PromptForChoice"/>
         /// <seealso cref="System.Management.Automation.Host.PSHostUserInterface.PromptForCredential(string, string, string, string)"/>
         /// <seealso cref="System.Management.Automation.Host.PSHostUserInterface.PromptForCredential(string, string, string, string, System.Management.Automation.PSCredentialTypes, System.Management.Automation.PSCredentialUIOptions)"/>
-        public abstract Dictionary<String, PSObject> Prompt(string caption, string message, Collection<FieldDescription> descriptions);
+        public abstract Dictionary<string, PSObject> Prompt(string caption, string message, Collection<FieldDescription> descriptions);
 
         /// <summary>
         /// Prompt for credentials.
@@ -854,7 +900,7 @@ namespace System.Management.Automation.Host
         #endregion Dialog-oriented interaction
 
         /// <summary>
-        /// Creates a new instance of the PSHostUserInterface class
+        /// Creates a new instance of the PSHostUserInterface class.
         /// </summary>
         protected PSHostUserInterface()
         {
@@ -864,9 +910,9 @@ namespace System.Management.Automation.Host
         /// <summary>
         /// Helper to transcribe an error through formatting and output.
         /// </summary>
-        /// <param name="context">The Execution Context</param>
-        /// <param name="invocation">The invocation info associated with the record</param>
-        /// <param name="errorWrap">The error record</param>
+        /// <param name="context">The Execution Context.</param>
+        /// <param name="invocation">The invocation info associated with the record.</param>
+        /// <param name="errorWrap">The error record.</param>
         internal void TranscribeError(ExecutionContext context, InvocationInfo invocation, PSObject errorWrap)
         {
             context.InternalHost.UI.TranscribeCommandComplete(invocation);
@@ -881,9 +927,8 @@ namespace System.Management.Automation.Host
         /// </summary>
         internal static TranscriptionOption GetSystemTranscriptOption(TranscriptionOption currentTranscript)
         {
-            Dictionary<string, object> groupPolicySettings = Utils.GetGroupPolicySetting("Transcription", Utils.RegLocalMachineThenCurrentUser);
-
-            if (groupPolicySettings != null)
+            var transcription = Utils.GetPolicySetting<Transcription>(Utils.SystemWideThenCurrentUserConfig);
+            if (transcription != null)
             {
                 // If we have an existing system transcript for this process, use that.
                 // Otherwise, populate the static variable with the result of the group policy setting.
@@ -893,54 +938,42 @@ namespace System.Management.Automation.Host
                 {
                     if (systemTranscript == null)
                     {
-                        systemTranscript = PSHostUserInterface.GetTranscriptOptionFromSettings(groupPolicySettings, currentTranscript);
+                        systemTranscript = PSHostUserInterface.GetTranscriptOptionFromSettings(transcription, currentTranscript);
                     }
                 }
             }
 
             return systemTranscript;
         }
-        internal static TranscriptionOption systemTranscript = null;
-        private static Object s_systemTranscriptLock = new Object();
 
-        private static TranscriptionOption GetTranscriptOptionFromSettings(Dictionary<string, object> settings, TranscriptionOption currentTranscript)
+        internal static TranscriptionOption systemTranscript = null;
+        private static object s_systemTranscriptLock = new Object();
+
+        private static TranscriptionOption GetTranscriptOptionFromSettings(Transcription transcriptConfig, TranscriptionOption currentTranscript)
         {
             TranscriptionOption transcript = null;
 
-            object keyValue = null;
-            if (settings.TryGetValue("EnableTranscripting", out keyValue))
+            if (transcriptConfig.EnableTranscripting == true)
             {
-                if (String.Equals(keyValue.ToString(), "1", StringComparison.OrdinalIgnoreCase))
+                if (currentTranscript != null)
                 {
-                    if (currentTranscript != null)
-                    {
-                        return currentTranscript;
-                    }
-
-                    transcript = new TranscriptionOption();
-
-                    // Pull out the transcript path
-                    object outputDirectoryValue = null;
-                    if (settings.TryGetValue("OutputDirectory", out outputDirectoryValue))
-                    {
-                        string outputDirectoryString = outputDirectoryValue as string;
-                        transcript.Path = GetTranscriptPath(outputDirectoryString, true);
-                    }
-                    else
-                    {
-                        transcript.Path = GetTranscriptPath();
-                    }
-
-                    // Pull out the "enable invocation header"
-                    object enableInvocationHeaderValue = null;
-                    if (settings.TryGetValue("EnableInvocationHeader", out enableInvocationHeaderValue))
-                    {
-                        if (String.Equals("1", enableInvocationHeaderValue.ToString(), StringComparison.OrdinalIgnoreCase))
-                        {
-                            transcript.IncludeInvocationHeader = true;
-                        }
-                    }
+                    return currentTranscript;
                 }
+
+                transcript = new TranscriptionOption();
+
+                // Pull out the transcript path
+                if (transcriptConfig.OutputDirectory != null)
+                {
+                    transcript.Path = GetTranscriptPath(transcriptConfig.OutputDirectory, true);
+                }
+                else
+                {
+                    transcript.Path = GetTranscriptPath();
+                }
+
+                // Pull out the "enable invocation header"
+                transcript.IncludeInvocationHeader = transcriptConfig.EnableInvocationHeader == true;
             }
 
             return transcript;
@@ -948,22 +981,22 @@ namespace System.Management.Automation.Host
 
         internal static string GetTranscriptPath()
         {
-            string baseDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            string baseDirectory = Platform.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             return GetTranscriptPath(baseDirectory, false);
         }
 
         internal static string GetTranscriptPath(string baseDirectory, bool includeDate)
         {
-            if (String.IsNullOrEmpty(baseDirectory))
+            if (string.IsNullOrEmpty(baseDirectory))
             {
-                baseDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                baseDirectory = Platform.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             }
             else
             {
                 if (!Path.IsPathRooted(baseDirectory))
                 {
                     baseDirectory = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                        Platform.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                         baseDirectory);
                 }
             }
@@ -981,7 +1014,7 @@ namespace System.Management.Automation.Host
             // (5 bytes = 3 years, 4 bytes = about a month)
             byte[] randomBytes = new byte[6];
             System.Security.Cryptography.RandomNumberGenerator.Create().GetBytes(randomBytes);
-            string filename = String.Format(
+            string filename = string.Format(
                         Globalization.CultureInfo.InvariantCulture,
                         "PowerShell_transcript.{0}.{1}.{2:yyyyMMddHHmmss}.txt",
                         Environment.MachineName,
@@ -1017,7 +1050,6 @@ namespace System.Management.Automation.Host
         internal string PromptText { get; set; }
     }
 
-
     // Holds options for PowerShell transcription
     internal class TranscriptionOption : IDisposable
     {
@@ -1040,16 +1072,11 @@ namespace System.Management.Automation.Host
             set
             {
                 _path = value;
-
-                Encoding = Encoding.UTF8;
-                FileSystemCmdletProviderEncoding fileEncoding = Utils.GetEncoding(value);
-
-                if (fileEncoding != FileSystemCmdletProviderEncoding.Default)
-                {
-                    Encoding = Utils.GetEncodingFromEnum(fileEncoding);
-                }
+                // Get the encoding from the file, or default (UTF8-NoBom)
+                Encoding = Utils.GetEncoding(value);
             }
         }
+
         private string _path;
 
         /// <summary>
@@ -1104,6 +1131,7 @@ namespace System.Management.Automation.Host
                                 new FileStream(this.Path, FileMode.Append, FileAccess.Write, FileShare.Read),
                                 this.Encoding);
                         }
+
                         _contentWriter.AutoFlush = true;
                     }
 
@@ -1116,6 +1144,7 @@ namespace System.Management.Automation.Host
                 OutputBeingLogged.Clear();
             }
         }
+
         private StreamWriter _contentWriter = null;
 
         /// <summary>
@@ -1145,6 +1174,7 @@ namespace System.Management.Automation.Host
 
             _disposed = true;
         }
+
         private bool _disposed = false;
     }
 
@@ -1214,6 +1244,7 @@ namespace System.Management.Automation.Host
                         splitLabel.Append(choices[i].Label.Substring(andPos + 1));
                         hotkeysAndPlainLabels[0, i] = CultureInfo.CurrentCulture.TextInfo.ToUpper(choices[i].Label.Substring(andPos + 1, 1).Trim());
                     }
+
                     hotkeysAndPlainLabels[1, i] = splitLabel.ToString().Trim();
                 }
                 else
@@ -1226,7 +1257,7 @@ namespace System.Management.Automation.Host
                 if (string.Compare(hotkeysAndPlainLabels[0, i], "?", StringComparison.Ordinal) == 0)
                 {
                     Exception e = PSTraceSource.NewArgumentException(
-                        String.Format(Globalization.CultureInfo.InvariantCulture, "choices[{0}].Label", i),
+                        string.Format(Globalization.CultureInfo.InvariantCulture, "choices[{0}].Label", i),
                         InternalHostUserInterfaceStrings.InvalidChoiceHotKeyError);
                     throw e;
                 }
@@ -1282,6 +1313,5 @@ namespace System.Management.Automation.Host
             return result;
         }
     }
-} // namespace System.Management.Automation.Host
-
+}
 

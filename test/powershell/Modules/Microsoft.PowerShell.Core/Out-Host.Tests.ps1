@@ -1,7 +1,5 @@
-# this is sensitive to the location of this test and the common directory"
-$hostmodule = Join-Path $PSScriptRoot "../../Common/TestHostCS.psm1"
-import-module $hostmodule -ErrorAction SilentlyContinue
-
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
 Describe "Out-Host Tests" -tag CI {
     BeforeAll {
         $th = New-TestHost
@@ -23,7 +21,7 @@ Describe "Out-Host Tests" -tag CI {
         $stringToWrite = "thing to write"
         $stringExpected = "::$($stringToWrite):NewLine"
         $result = $ps.AddScript("Out-Host -inputobject '$stringToWrite'").Invoke()
-        $th.UI.Streams.ConsoleOutput.Count | should be 1
-        $th.UI.Streams.ConsoleOutput[0] | should be $stringExpected
+        $th.UI.Streams.ConsoleOutput.Count | Should -Be 1
+        $th.UI.Streams.ConsoleOutput[0] | Should -BeExactly $stringExpected
     }
 }

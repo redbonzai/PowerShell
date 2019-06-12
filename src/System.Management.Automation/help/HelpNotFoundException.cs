@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #pragma warning disable 1634, 1691
 #pragma warning disable 56506
@@ -9,13 +8,7 @@ using System;
 using System.Management.Automation;
 using System.Runtime.Serialization;
 using System.Reflection;
-
-#if CORECLR
-// Use stub for SerializableAttribute, SerializationInfo and ISerializable related types.
-using Microsoft.PowerShell.CoreClr.Stubs;
-#else
 using System.Security.Permissions;
-#endif
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -67,7 +60,7 @@ namespace Microsoft.PowerShell.Commands
             // Don't do ParentContainsErrorRecordException(this), as this causes recursion, and creates a
             // segmentation fault on Linux
             _errorRecord = new ErrorRecord(new ParentContainsErrorRecordException(errMessage), "HelpNotFound", ErrorCategory.ResourceUnavailable, null);
-            _errorRecord.ErrorDetails = new ErrorDetails(typeof(HelpNotFoundException).GetTypeInfo().Assembly, "HelpErrors", "HelpNotFound", _helpTopic);
+            _errorRecord.ErrorDetails = new ErrorDetails(typeof(HelpNotFoundException).Assembly, "HelpErrors", "HelpNotFound", _helpTopic);
         }
 
         private ErrorRecord _errorRecord;
@@ -84,7 +77,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-        private string _helpTopic = "";
+        private string _helpTopic = string.Empty;
 
         /// <summary>
         /// Gets help topic for which help is not found.
@@ -115,7 +108,6 @@ namespace Microsoft.PowerShell.Commands
             }
         }
 
-#if !CORECLR
         #region Serialization
 
         /// <summary>
@@ -151,7 +143,6 @@ namespace Microsoft.PowerShell.Commands
         }
 
         #endregion Serialization
-#endif
     }
 }
 

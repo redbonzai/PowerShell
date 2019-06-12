@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #region Using directives
 using System;
 using System.Collections.Generic;
@@ -10,7 +13,6 @@ using System.Management.Automation.SecurityAccountsManager.Extensions;
 using Microsoft.PowerShell.LocalAccounts;
 using System.Diagnostics.CodeAnalysis;
 #endregion
-
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -40,8 +42,10 @@ namespace Microsoft.PowerShell.Commands
         public Microsoft.PowerShell.Commands.LocalGroup Group
         {
             get { return this.group;}
+
             set { this.group = value; }
         }
+
         private Microsoft.PowerShell.Commands.LocalGroup group;
 
         /// <summary>
@@ -59,8 +63,10 @@ namespace Microsoft.PowerShell.Commands
         public Microsoft.PowerShell.Commands.LocalPrincipal[] Member
         {
             get { return this.member;}
+
             set { this.member = value; }
         }
+
         private Microsoft.PowerShell.Commands.LocalPrincipal[] member;
 
         /// <summary>
@@ -74,8 +80,10 @@ namespace Microsoft.PowerShell.Commands
         public string Name
         {
             get { return this.name;}
+
             set { this.name = value; }
         }
+
         private string name;
 
         /// <summary>
@@ -89,11 +97,12 @@ namespace Microsoft.PowerShell.Commands
         public System.Security.Principal.SecurityIdentifier SID
         {
             get { return this.sid;}
+
             set { this.sid = value; }
         }
+
         private System.Security.Principal.SecurityIdentifier sid;
         #endregion Parameter Properties
-
 
         #region Cmdlet Overrides
         /// <summary>
@@ -103,7 +112,6 @@ namespace Microsoft.PowerShell.Commands
         {
             sam = new Sam();
         }
-
 
         /// <summary>
         /// ProcessRecord method.
@@ -124,7 +132,6 @@ namespace Microsoft.PowerShell.Commands
                 WriteError(ex.MakeErrorRecord());
             }
         }
-
 
         /// <summary>
         /// EndProcessing method.
@@ -244,10 +251,10 @@ namespace Microsoft.PowerShell.Commands
             foreach (var member in this.Member)
             {
                 LocalPrincipal principal = MakePrincipal(groupId, member);
-                if (null != principal)
+                if (principal != null)
                 {
                     var ex = sam.RemoveLocalGroupMember(group, principal);
-                    if (null != ex)
+                    if (ex != null)
                     {
                         WriteError(ex.MakeErrorRecord());
                     }
@@ -278,10 +285,10 @@ namespace Microsoft.PowerShell.Commands
             foreach (var member in this.Member)
             {
                 LocalPrincipal principal = MakePrincipal(groupSid.ToString(), member);
-                if (null != principal)
+                if (principal != null)
                 {
                     var ex = sam.RemoveLocalGroupMember(groupSid, principal);
-                    if (null != ex)
+                    if (ex != null)
                     {
                         WriteError(ex.MakeErrorRecord());
                     }
@@ -289,7 +296,7 @@ namespace Microsoft.PowerShell.Commands
             }
         }
         #endregion Private Methods
-    }//End Class
+    }
 
-}//End namespace
+}
 

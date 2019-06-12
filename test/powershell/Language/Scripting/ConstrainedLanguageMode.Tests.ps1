@@ -1,11 +1,11 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
 
 Describe "Test constrained language mode" -Tags "CI" {
     It "dynamic invocation on non-PowerShell thread should work" {
-        $refAssemblies = if ($IsCoreCLR) {
-            "Microsoft.CSharp","System.Dynamic.Runtime","System.Management.Automation"
-        }
-        else {
-            "Microsoft.CSharp"
+        $refAssemblies = @()
+        if (!$IsCoreCLR) {
+            $refAssemblies += "Microsoft.CSharp"
         }
 
         $t,$null = Add-Type -ReferencedAssemblies $refAssemblies -WarningAction Ignore -PassThru @"
@@ -23,7 +23,7 @@ Describe "Test constrained language mode" -Tags "CI" {
 "@
 
         $o = [powershell]::Create()
-        $t::Test($o) | Should Be $o
+        $t::Test($o) | Should -BeExactly $o
 
         try
         {
@@ -32,7 +32,7 @@ Describe "Test constrained language mode" -Tags "CI" {
             $null = $ps.AddScript('$ExecutionContext.SessionState.LanguageMode = "ConstrainedLanguage"')
             $null = $ps.Invoke()
 
-            $t::Test($o) | Should Be $o
+            $t::Test($o) | Should -BeExactly $o
         }
         finally
         {

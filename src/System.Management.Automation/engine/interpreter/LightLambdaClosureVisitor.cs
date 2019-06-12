@@ -4,7 +4,7 @@
  *
  * This source code is subject to terms and conditions of the Apache License, Version 2.0. A
  * copy of the license can be found in the License.html file at the root of this distribution. If
- * you cannot locate the  Apache License, Version 2.0, please send an email to
+ * you cannot locate the Apache License, Version 2.0, please send an email to
  * dlr@microsoft.com. By using this source code in any fashion, you are agreeing to be bound
  * by the terms of the Apache License, Version 2.0.
  *
@@ -21,11 +21,6 @@ using Microsoft.Scripting.Ast;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using AstUtils = System.Management.Automation.Interpreter.Utils;
-
-#if CORECLR
-// Use stub for IRuntimeVariables.
-using Microsoft.PowerShell.CoreClr.Stubs;
-#endif
 
 namespace System.Management.Automation.Interpreter
 {
@@ -46,7 +41,7 @@ namespace System.Management.Automation.Interpreter
 
         /// <summary>
         /// The variable that holds onto the StrongBox{object}[] closure from
-        /// the interpreter
+        /// the interpreter.
         /// </summary>
         private readonly ParameterExpression _closureArray;
 
@@ -98,6 +93,7 @@ namespace System.Management.Automation.Interpreter
             {
                 return node;
             }
+
             return Expression.Lambda<T>(b, node.Name, node.TailCall, node.Parameters);
         }
 
@@ -107,15 +103,18 @@ namespace System.Management.Automation.Interpreter
             {
                 _shadowedVars.Push(new HashSet<ParameterExpression>(node.Variables));
             }
+
             var b = Visit(node.Expressions);
             if (node.Variables.Count > 0)
             {
                 _shadowedVars.Pop();
             }
+
             if (b == node.Expressions)
             {
                 return node;
             }
+
             return Expression.Block(node.Variables, b);
         }
 
@@ -125,16 +124,19 @@ namespace System.Management.Automation.Interpreter
             {
                 _shadowedVars.Push(new HashSet<ParameterExpression>(new[] { node.Variable }));
             }
+
             Expression b = Visit(node.Body);
             Expression f = Visit(node.Filter);
             if (node.Variable != null)
             {
                 _shadowedVars.Pop();
             }
+
             if (b == node.Body && f == node.Filter)
             {
                 return node;
             }
+
             return Expression.MakeCatchBlock(node.Test, node.Variable, b, f);
         }
 
@@ -211,6 +213,7 @@ namespace System.Management.Automation.Interpreter
                     );
                 }
             }
+
             return base.VisitBinary(node);
         }
 
@@ -241,11 +244,10 @@ namespace System.Management.Automation.Interpreter
             return Visit(node.ReduceExtensions());
         }
 
-
         #region MergedRuntimeVariables
 
         /// <summary>
-        /// Provides a list of variables, supporting read/write of the values
+        /// Provides a list of variables, supporting read/write of the values.
         /// </summary>
         private sealed class MergedRuntimeVariables : IRuntimeVariables
         {
@@ -280,6 +282,7 @@ namespace System.Management.Automation.Interpreter
                     index = _indexes[index];
                     return (index >= 0) ? _first[index] : _second[-1 - index];
                 }
+
                 set
                 {
                     index = _indexes[index];

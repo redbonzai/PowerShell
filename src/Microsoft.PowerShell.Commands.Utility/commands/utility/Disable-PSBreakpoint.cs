@@ -1,13 +1,12 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
     /// <summary>
-    /// This class implements Disable-PSBreakpoint
+    /// This class implements Disable-PSBreakpoint.
     /// </summary>
     [Cmdlet(VerbsLifecycle.Disable, "PSBreakpoint", SupportsShouldProcess = true, DefaultParameterSetName = "Breakpoint", HelpUri = "https://go.microsoft.com/fwlink/?LinkID=113294")]
     [OutputType(typeof(Breakpoint))]
@@ -24,6 +23,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _passThru;
             }
+
             set
             {
                 _passThru = value;
@@ -33,7 +33,7 @@ namespace Microsoft.PowerShell.Commands
         private bool _passThru;
 
         /// <summary>
-        /// Disables the given breakpoint
+        /// Disables the given breakpoint.
         /// </summary>
         protected override void ProcessBreakpoint(Breakpoint breakpoint)
         {

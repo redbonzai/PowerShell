@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #if !SILVERLIGHT
 
@@ -82,6 +81,7 @@ namespace System.Management.Automation.ComInterop
                 nestedArgs.Add(Expression.ArrayAccess(array, Expression.Constant(i)));
                 delegateArgs[i + 2] = typeof(object).MakeByRefType();
             }
+
             delegateArgs[delegateArgs.Length - 1] = typeof(object);
 
             return Expression.IfThen(

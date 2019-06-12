@@ -1,24 +1,18 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using Dbg = System.Management.Automation;
 using System;
-using System.Management.Automation;
-using System.Management.Automation.Security;
-using System.Management.Automation.Internal;
-using System.IO;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Management.Automation;
 using System.Management.Automation.Host;
+using System.Management.Automation.Internal;
 using System.Management.Automation.Language;
+using System.Management.Automation.Security;
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
 
-#if CORECLR
-// Use stub for SecurityZone
-using Microsoft.PowerShell.CoreClr.Stubs;
-using Environment = System.Management.Automation.Environment;
-#endif
+using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell
 {
@@ -54,9 +48,8 @@ namespace Microsoft.PowerShell
     /// Unrestricted - No files must be signed.  If a file originates from the
     ///    internet, Monad provides a warning prompt to alert the user.  To
     ///    suppress this warning message, right-click on the file in File Explorer,
-    ///    select "Properties," and then "Unblock."
-    /// Bypass - No files must be signed, and internet origin is not verified
-    ///
+    ///    select "Properties," and then "Unblock."  Requires Shell.
+    /// Bypass - No files must be signed, and internet origin is not verified.
     /// </summary>
     public sealed class PSAuthorizationManager : AuthorizationManager
     {
@@ -74,7 +67,7 @@ namespace Microsoft.PowerShell
         // execution policy that dictates what can run in msh
         private ExecutionPolicy _executionPolicy;
 
-        //shellId supplied by runspace configuration
+        // shellId supplied by runspace configuration
         private string _shellId;
 
         /// <summary>
@@ -92,6 +85,7 @@ namespace Microsoft.PowerShell
             {
                 throw PSTraceSource.NewArgumentNullException("shellId");
             }
+
             _shellId = shellId;
         }
 
@@ -142,17 +136,13 @@ namespace Microsoft.PowerShell
             if (!IsSupportedExtension(fi.Extension))
                 return true;
 
-            // Product binaries are always trusted
-            if (SecuritySupport.IsProductBinary(path))
-                return true;
-
             // Get the execution policy
             _executionPolicy = SecuritySupport.GetExecutionPolicy(_shellId);
 
             // See if they want to bypass the authorization manager
             if (_executionPolicy == ExecutionPolicy.Bypass)
                 return true;
-#if !CORECLR
+
             // Always check the SAFER APIs if code integrity isn't being handled system-wide through
             // WLDP or AppLocker. In those cases, the scripts will be run in ConstrainedLanguage.
             // Otherwise, block.
@@ -192,15 +182,20 @@ namespace Microsoft.PowerShell
                     return false;
                 }
             }
-#endif
+
             if (_executionPolicy == ExecutionPolicy.Unrestricted)
             {
+                // Product binaries are always trusted
+                // This avoids signature and security zone checks
+                if (SecuritySupport.IsProductBinary(path))
+                    return true;
+
                 // We need to give the "Remote File" warning
                 // if the file originated from the internet
                 if (!IsLocalFile(fi.FullName))
                 {
                     // Get the signature of the file.
-                    if (String.IsNullOrEmpty(script.ScriptContents))
+                    if (string.IsNullOrEmpty(script.ScriptContents))
                     {
                         reasonMessage = StringUtil.Format(Authenticode.Reason_FileContentUnavailable, path);
                         reason = new UnauthorizedAccessException(reasonMessage);
@@ -271,7 +266,7 @@ namespace Microsoft.PowerShell
                 // make it so.
 
                 // Get the signature of the file.
-                if (String.IsNullOrEmpty(script.ScriptContents))
+                if (string.IsNullOrEmpty(script.ScriptContents))
                 {
                     reasonMessage = StringUtil.Format(Authenticode.Reason_FileContentUnavailable, path);
                     reason = new UnauthorizedAccessException(reasonMessage);
@@ -326,11 +321,11 @@ namespace Microsoft.PowerShell
                 // But accept mshxml files from publishers that we
                 // trust, or files in the system protected directories
                 bool reasonSet = false;
-                if (String.Equals(fi.Extension, ".ps1xml", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(fi.Extension, ".ps1xml", StringComparison.OrdinalIgnoreCase))
                 {
                     string[] trustedDirectories = new string[]
-                        { Environment.GetFolderPath(Environment.SpecialFolder.System),
-                          Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+                        { Platform.GetFolderPath(Environment.SpecialFolder.System),
+                          Platform.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
                         };
 
                     foreach (string trustedDirectory in trustedDirectories)
@@ -408,6 +403,9 @@ namespace Microsoft.PowerShell
 
         private bool IsLocalFile(string filename)
         {
+#if UNIX
+            return true;
+#else
             SecurityZone zone = ClrFacade.GetFileSecurityZone(filename);
 
             if (zone == SecurityZone.MyComputer ||
@@ -418,6 +416,7 @@ namespace Microsoft.PowerShell
             }
 
             return false;
+#endif
         }
 
         // Checks that a publisher is trusted by the system or is one of
@@ -434,7 +433,7 @@ namespace Microsoft.PowerShell
 
             foreach (X509Certificate2 trustedCertificate in trustedPublishers.Certificates)
             {
-                if (String.Equals(trustedCertificate.Thumbprint, thumbprint, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(trustedCertificate.Thumbprint, thumbprint, StringComparison.OrdinalIgnoreCase))
                     if (!IsUntrustedPublisher(signature, file)) return true;
             }
 
@@ -453,7 +452,7 @@ namespace Microsoft.PowerShell
 
             foreach (X509Certificate2 trustedCertificate in trustedPublishers.Certificates)
             {
-                if (String.Equals(trustedCertificate.Thumbprint, thumbprint, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(trustedCertificate.Thumbprint, thumbprint, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
 
@@ -461,7 +460,7 @@ namespace Microsoft.PowerShell
         }
 
         /// <summary>
-        /// Trust a publisher by adding it to the "Trusted Publishers" store
+        /// Trust a publisher by adding it to the "Trusted Publishers" store.
         /// </summary>
         /// <param name="signature"></param>
         private void TrustPublisher(Signature signature)
@@ -538,7 +537,6 @@ namespace Microsoft.PowerShell
         /// class summary for an overview of the semantics enforced by this
         /// authorization manager.
         /// </summary>
-        ///
         /// <param name="commandInfo">
         /// The command to be run.
         /// </param>
@@ -552,20 +550,16 @@ namespace Microsoft.PowerShell
         /// If access is denied, this parameter provides a specialized
         /// Exception as the reason.
         /// </param>
-        ///
         /// <returns>
         /// True if the command should be run.  False otherwise.
         /// </returns>
-        ///
         /// <exception cref="System.ArgumentException">
         /// CommandInfo is invalid. This may occur if
         /// commandInfo.Name is null or empty.
         /// </exception>
-        ///
         /// <exception cref="System.ArgumentNullException">
         /// CommandInfo is null.
         /// </exception>
-        ///
         /// <exception cref="System.IO.FileNotFoundException">
         /// The file specified by commandInfo.Path is not found.
         /// </exception>
@@ -597,10 +591,8 @@ namespace Microsoft.PowerShell
                     allowRun = true;
                     break;
 
-
                 case CommandTypes.Function:
                 case CommandTypes.Filter:
-                case CommandTypes.Workflow:
                 case CommandTypes.Configuration:
                     //
                     // we do not check functions/filters.
@@ -630,6 +622,7 @@ namespace Microsoft.PowerShell
                         allowRun = CheckPolicy(si, host, out reason);
                         if (etwEnabled) ParserEventSource.Log.CheckSecurityStop(si.Path);
                     }
+
                     break;
 
                 case CommandTypes.Application:
@@ -704,7 +697,6 @@ namespace Microsoft.PowerShell
 
                     break;
 
-
                 //
                 // if the publisher is not trusted, we prompt and
                 // ask the user if s/he wants to allow it to run
@@ -760,7 +752,6 @@ namespace Microsoft.PowerShell
             string alwaysRun = Authenticode.Choice_AlwaysRun;
             string alwaysRunHelp = Authenticode.Choice_AlwaysRun_Help;
 
-
             choices.Add(new ChoiceDescription(neverRun, neverRunHelp));
             choices.Add(new ChoiceDescription(doNotRun, doNotRunHelp));
             choices.Add(new ChoiceDescription(runOnce, runOnceHelp));
@@ -780,7 +771,6 @@ namespace Microsoft.PowerShell
             string suspend = Authenticode.Choice_Suspend;
             string suspendHelp = Authenticode.Choice_Suspend_Help;
 
-
             choices.Add(new ChoiceDescription(doNotRun, doNotRunHelp));
             choices.Add(new ChoiceDescription(runOnce, runOnceHelp));
             choices.Add(new ChoiceDescription(suspend, suspendHelp));
@@ -789,5 +779,4 @@ namespace Microsoft.PowerShell
         }
     }
 }
-
 

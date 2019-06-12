@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 // The define below is only valid for this file. It allows the methods
 // defined here to call Diagnostics.Assert when only ASSERTIONS_TRACE is defined
@@ -14,22 +13,17 @@ Copyright (c) Microsoft Corporation.  All rights reserved.
 using System.Diagnostics;
 using System.Text;
 
-#if CORECLR
-// Use stub for SystemException.
-using Microsoft.PowerShell.CoreClr.Stubs;
-#endif
-
 namespace System.Management.Automation
 {
     /// <summary>
-    /// Exception with a full stack trace excluding the last two frames
+    /// Exception with a full stack trace excluding the last two frames.
     /// </summary>
     internal class AssertException : SystemException
     {
         /// <summary>
-        /// calls the base class with message and sets the stack frame
+        /// Calls the base class with message and sets the stack frame.
         /// </summary>
-        /// <param name="message">repassed to the base class</param>
+        /// <param name="message">Repassed to the base class.</param>
         internal AssertException(string message) : base(message)
         {
             // 3 will skip the assertion caller, this method and AssertException.StackTrace
@@ -37,7 +31,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// returns the stack trace set in the constructor
+        /// Returns the stack trace set in the constructor.
         /// </summary>
         /// <value>the constructor's stackTrace</value>
         public override string StackTrace { get; }
@@ -63,7 +57,6 @@ namespace System.Management.Automation
     {
         internal static string StackTrace(int framesToSkip)
         {
-#if !CORECLR //TODO:CORECLR StackTrace - unable to get stack trace
             StackTrace trace = new StackTrace(true);
             StackFrame[] frames = trace.GetFrames();
             StringBuilder frameString = new StringBuilder();
@@ -74,10 +67,8 @@ namespace System.Management.Automation
                 StackFrame frame = frames[i];
                 frameString.Append(frame.ToString());
             }
+
             return frameString.ToString();
-#else
-            return string.Empty;
-#endif
         }
 
         private static object s_throwInsteadOfAssertLock = 1;
@@ -85,7 +76,7 @@ namespace System.Management.Automation
         private static bool s_throwInsteadOfAssert = false;
         /// <summary>
         /// If set to true will prevent the assertion dialog from showing up
-        /// by throwing an exception instead of calling Debug.Assert
+        /// by throwing an exception instead of calling Debug.Assert.
         /// </summary>
         /// <value>false for dialog, true for exception</value>
         internal static bool ThrowInsteadOfAssert
@@ -97,6 +88,7 @@ namespace System.Management.Automation
                     return s_throwInsteadOfAssert;
                 }
             }
+
             set
             {
                 lock (s_throwInsteadOfAssertLock)
@@ -112,7 +104,7 @@ namespace System.Management.Automation
         private Diagnostics() { }
 
         /// <summary>
-        /// Basic assertion with logical condition and message
+        /// Basic assertion with logical condition and message.
         /// </summary>
         /// <param name="condition">
         /// logical condition that should be true for program to proceed
@@ -137,11 +129,11 @@ namespace System.Management.Automation
             bool condition,
             string whyThisShouldNeverHappen)
         {
-            Diagnostics.Assert(condition, whyThisShouldNeverHappen, String.Empty);
+            Diagnostics.Assert(condition, whyThisShouldNeverHappen, string.Empty);
         }
 
         /// <summary>
-        /// Basic assertion with logical condition, message and detailed message
+        /// Basic assertion with logical condition, message and detailed message.
         /// </summary>
         /// <param name="condition">
         /// logical condition that should be true for program to proceed
@@ -183,6 +175,7 @@ namespace System.Management.Automation
                     tracer.TraceException(e);
                     throw e;
                 }
+
                 StringBuilder builder = new StringBuilder();
                 builder.Append("ASSERT: ");
                 builder.Append(whyThisShouldNeverHappen);
@@ -196,15 +189,13 @@ namespace System.Management.Automation
                 builder.Append(Diagnostics.StackTrace(2));
                 tracer.TraceError(builder.ToString());
             }
-#elif CORECLR // Debug.Fail is not in CoreCLR
-            string assertionMessage = "ASSERT: " + whyThisShouldNeverHappen + "  " + detailMessage + " ";
-            throw new AssertException(assertionMessage);
 #else
             if (Diagnostics.ThrowInsteadOfAssert)
             {
                 string assertionMessage = "ASSERT: " + whyThisShouldNeverHappen + "  " + detailMessage + " ";
                 throw new AssertException(assertionMessage);
             }
+
             System.Diagnostics.Debug.Fail(whyThisShouldNeverHappen, detailMessage);
 #endif
         }

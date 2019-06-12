@@ -1,21 +1,15 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
-using System.IO;
-using System.Management.Automation;
-using System.Text;
-using System.Security;
-using System.Security.Cryptography;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Management.Automation;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
-using System.Diagnostics.CodeAnalysis;
-using System.Collections.ObjectModel;
-using System.Collections.Generic;
-using System.Management.Automation.Security;
-using System.Diagnostics.Eventing.Reader;
+using System.Text;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -26,7 +20,7 @@ namespace Microsoft.PowerShell.Commands
     /// recipient and content supplied.
     /// </summary>
     [Cmdlet(VerbsSecurity.Protect, "CmsMessage", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=394373", DefaultParameterSetName = "ByContent")]
-    [OutputType(typeof(String))]
+    [OutputType(typeof(string))]
     public sealed class ProtectCmsMessageCommand : PSCmdlet
     {
         /// <summary>
@@ -50,6 +44,7 @@ namespace Microsoft.PowerShell.Commands
             get;
             set;
         }
+
         private PSDataCollection<PSObject> _inputObjects = new PSDataCollection<PSObject>();
 
         /// <summary>
@@ -71,6 +66,7 @@ namespace Microsoft.PowerShell.Commands
             get;
             set;
         }
+
         private string _resolvedPath = null;
 
         /// <summary>
@@ -82,26 +78,27 @@ namespace Microsoft.PowerShell.Commands
             get;
             set;
         }
+
         private string _resolvedOutFile = null;
 
         /// <summary>
-        /// Validate / convert arguments
+        /// Validate / convert arguments.
         /// </summary>
         protected override void BeginProcessing()
         {
             // Validate Path
-            if (!String.IsNullOrEmpty(Path))
+            if (!string.IsNullOrEmpty(Path))
             {
                 ProviderInfo provider = null;
                 Collection<string> resolvedPaths = GetResolvedProviderPathFromPSPath(Path, out provider);
 
                 // Ensure the path is a single path from the file system provider
                 if ((resolvedPaths.Count > 1) ||
-                    (!String.Equals(provider.Name, "FileSystem", StringComparison.OrdinalIgnoreCase)))
+                    (!string.Equals(provider.Name, "FileSystem", StringComparison.OrdinalIgnoreCase)))
                 {
                     ErrorRecord error = new ErrorRecord(
                         new ArgumentException(
-                            String.Format(CultureInfo.InvariantCulture,
+                            string.Format(CultureInfo.InvariantCulture,
                                 CmsCommands.FilePathMustBeFileSystemPath, Path)),
                         "FilePathMustBeFileSystemPath", ErrorCategory.ObjectNotFound, provider);
                     ThrowTerminatingError(error);
@@ -110,7 +107,7 @@ namespace Microsoft.PowerShell.Commands
                 _resolvedPath = resolvedPaths[0];
             }
 
-            if (!String.IsNullOrEmpty(LiteralPath))
+            if (!string.IsNullOrEmpty(LiteralPath))
             {
                 // Validate that the path exists
                 SessionState.InvokeProvider.Item.Get(new string[] { LiteralPath }, false, true);
@@ -118,7 +115,7 @@ namespace Microsoft.PowerShell.Commands
             }
 
             // Validate OutFile
-            if (!String.IsNullOrEmpty(OutFile))
+            if (!string.IsNullOrEmpty(OutFile))
             {
                 _resolvedOutFile = GetUnresolvedProviderPathFromPSPath(OutFile);
             }
@@ -131,14 +128,14 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (String.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
             {
                 _inputObjects.Add(Content);
             }
         }
 
         /// <summary>
-        /// Encrypts and outputs the message
+        /// Encrypts and outputs the message.
         /// </summary>
         protected override void EndProcessing()
         {
@@ -148,10 +145,10 @@ namespace Microsoft.PowerShell.Commands
             {
                 StringBuilder outputString = new StringBuilder();
 
-                Collection<PSObject> output = System.Management.Automation.PowerShell.Create().
-                    AddCommand("Microsoft.PowerShell.Utility\\Out-String").
-                    AddParameter("Stream").
-                    Invoke(_inputObjects);
+                Collection<PSObject> output = System.Management.Automation.PowerShell.Create()
+                    .AddCommand("Microsoft.PowerShell.Utility\\Out-String")
+                    .AddParameter("Stream")
+                    .Invoke(_inputObjects);
 
                 foreach (PSObject outputObject in output)
                 {
@@ -178,7 +175,7 @@ namespace Microsoft.PowerShell.Commands
                 ThrowTerminatingError(terminatingError);
             }
 
-            if (String.IsNullOrEmpty(_resolvedOutFile))
+            if (string.IsNullOrEmpty(_resolvedOutFile))
             {
                 WriteObject(encodedContent);
             }
@@ -210,6 +207,7 @@ namespace Microsoft.PowerShell.Commands
             get;
             set;
         }
+
         private StringBuilder _contentBuffer = new StringBuilder();
 
         /// <summary>
@@ -231,27 +229,27 @@ namespace Microsoft.PowerShell.Commands
             get;
             set;
         }
+
         private string _resolvedPath = null;
 
-
         /// <summary>
-        /// Validate / convert arguments
+        /// Validate / convert arguments.
         /// </summary>
         protected override void BeginProcessing()
         {
             // Validate Path
-            if (!String.IsNullOrEmpty(Path))
+            if (!string.IsNullOrEmpty(Path))
             {
                 ProviderInfo provider = null;
                 Collection<string> resolvedPaths = GetResolvedProviderPathFromPSPath(Path, out provider);
 
                 // Ensure the path is a single path from the file system provider
                 if ((resolvedPaths.Count > 1) ||
-                    (!String.Equals(provider.Name, "FileSystem", StringComparison.OrdinalIgnoreCase)))
+                    (!string.Equals(provider.Name, "FileSystem", StringComparison.OrdinalIgnoreCase)))
                 {
                     ErrorRecord error = new ErrorRecord(
                         new ArgumentException(
-                            String.Format(CultureInfo.InvariantCulture,
+                            string.Format(CultureInfo.InvariantCulture,
                                 CmsCommands.FilePathMustBeFileSystemPath, Path)),
                         "FilePathMustBeFileSystemPath", ErrorCategory.ObjectNotFound, provider);
                     ThrowTerminatingError(error);
@@ -260,7 +258,7 @@ namespace Microsoft.PowerShell.Commands
                 _resolvedPath = resolvedPaths[0];
             }
 
-            if (!String.IsNullOrEmpty(LiteralPath))
+            if (!string.IsNullOrEmpty(LiteralPath))
             {
                 // Validate that the path exists
                 SessionState.InvokeProvider.Item.Get(new string[] { LiteralPath }, false, true);
@@ -275,11 +273,11 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            if (String.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
             {
                 if (_contentBuffer.Length > 0)
                 {
-                    _contentBuffer.Append(Environment.NewLine);
+                    _contentBuffer.Append(System.Environment.NewLine);
                 }
 
                 _contentBuffer.Append(Content);
@@ -287,14 +285,14 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Gets the CMS Message object
+        /// Gets the CMS Message object.
         /// </summary>
         protected override void EndProcessing()
         {
             string actualContent = null;
 
             // Read in the content
-            if (String.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
             {
                 actualContent = _contentBuffer.ToString();
             }
@@ -323,6 +321,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 recipients.Add(recipient.RecipientIdentifier.Value);
             }
+
             result.Properties.Add(
                 new PSNoteProperty("Recipients", recipients));
             result.Properties.Add(
@@ -339,7 +338,7 @@ namespace Microsoft.PowerShell.Commands
     /// message.
     /// </summary>
     [Cmdlet(VerbsSecurity.Unprotect, "CmsMessage", HelpUri = "https://go.microsoft.com/fwlink/?LinkId=394374", DefaultParameterSetName = "ByWinEvent")]
-    [OutputType(typeof(String))]
+    [OutputType(typeof(string))]
     public sealed class UnprotectCmsMessageCommand : PSCmdlet
     {
         /// <summary>
@@ -353,6 +352,7 @@ namespace Microsoft.PowerShell.Commands
             get;
             set;
         }
+
         private StringBuilder _contentBuffer = new StringBuilder();
 
         /// <summary>
@@ -385,6 +385,7 @@ namespace Microsoft.PowerShell.Commands
             get;
             set;
         }
+
         private string _resolvedPath = null;
 
         /// <summary>
@@ -410,23 +411,23 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// Validate / convert arguments
+        /// Validate / convert arguments.
         /// </summary>
         protected override void BeginProcessing()
         {
             // Validate Path
-            if (!String.IsNullOrEmpty(Path))
+            if (!string.IsNullOrEmpty(Path))
             {
                 ProviderInfo provider = null;
                 Collection<string> resolvedPaths = GetResolvedProviderPathFromPSPath(Path, out provider);
 
                 // Ensure the path is a single path from the file system provider
                 if ((resolvedPaths.Count > 1) ||
-                    (!String.Equals(provider.Name, "FileSystem", StringComparison.OrdinalIgnoreCase)))
+                    (!string.Equals(provider.Name, "FileSystem", StringComparison.OrdinalIgnoreCase)))
                 {
                     ErrorRecord error = new ErrorRecord(
                         new ArgumentException(
-                            String.Format(CultureInfo.InvariantCulture,
+                            string.Format(CultureInfo.InvariantCulture,
                                 CmsCommands.FilePathMustBeFileSystemPath, Path)),
                         "FilePathMustBeFileSystemPath", ErrorCategory.ObjectNotFound, provider);
                     ThrowTerminatingError(error);
@@ -435,14 +436,13 @@ namespace Microsoft.PowerShell.Commands
                 _resolvedPath = resolvedPaths[0];
             }
 
-            if (!String.IsNullOrEmpty(LiteralPath))
+            if (!string.IsNullOrEmpty(LiteralPath))
             {
                 // Validate that the path exists
                 SessionState.InvokeProvider.Item.Get(new string[] { LiteralPath }, false, true);
                 _resolvedPath = LiteralPath;
             }
         }
-
 
         /// <summary>
         /// Processes records from the input pipeline.
@@ -452,18 +452,18 @@ namespace Microsoft.PowerShell.Commands
         protected override void ProcessRecord()
         {
             // If we're process by content, collect it.
-            if (String.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
             {
                 if (_contentBuffer.Length > 0)
                 {
-                    _contentBuffer.Append(Environment.NewLine);
+                    _contentBuffer.Append(System.Environment.NewLine);
                 }
 
                 _contentBuffer.Append(Content);
             }
 
             // If we're processing event log records, decrypt those inline.
-            if (String.Equals("ByWinEvent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("ByWinEvent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
             {
                 string actualContent = EventLogRecord.Properties["Message"].Value.ToString();
                 string decrypted = Decrypt(actualContent);
@@ -487,7 +487,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void EndProcessing()
         {
-            if (String.Equals("ByWinEvent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("ByWinEvent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -495,7 +495,7 @@ namespace Microsoft.PowerShell.Commands
             string actualContent = null;
 
             // Read in the content
-            if (String.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals("ByContent", this.ParameterSetName, StringComparison.OrdinalIgnoreCase))
             {
                 actualContent = _contentBuffer.ToString();
             }
@@ -517,7 +517,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 ErrorRecord error = new ErrorRecord(
                     new ArgumentException(
-                        String.Format(CultureInfo.InvariantCulture,
+                        string.Format(CultureInfo.InvariantCulture,
                             CmsCommands.InputContainedNoEncryptedContentIncludeContext, "-IncludeContext")),
                     "InputContainedNoEncryptedContentIncludeContext", ErrorCategory.ObjectNotFound, null);
                 ThrowTerminatingError(error);
@@ -532,6 +532,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     preContext = actualContent.Substring(0, startIndex);
                 }
+
                 if (endIndex > -1)
                 {
                     postContext = actualContent.Substring(endIndex);
@@ -576,6 +577,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     resultString = preContext + resultString;
                 }
+
                 if (postContext != null)
                 {
                     resultString = resultString + postContext;

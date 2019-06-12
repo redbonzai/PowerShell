@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Diagnostics.CodeAnalysis;
 
@@ -42,6 +41,7 @@ namespace System.Management.Automation.Language
             {
                 postActionHandler.PostVisit(ast);
             }
+
             return action;
         }
 
@@ -162,7 +162,7 @@ namespace System.Management.Automation.Language
     }
 
     /// <summary>
-    /// AstVisitor for new Ast node types
+    /// AstVisitor for new Ast node types.
     /// </summary>
     public abstract class AstVisitor2 : AstVisitor
     {

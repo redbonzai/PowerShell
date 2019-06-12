@@ -1,6 +1,5 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
 using System.Collections;
@@ -21,13 +20,6 @@ using System.Management.Automation;
 using System.Management.Automation.Language;
 using Microsoft.PowerShell.Commands;
 using Dbg = System.Management.Automation.Diagnostics;
-
-#if CORECLR
-// Some APIs are missing from System.Environment. We use System.Management.Automation.Environment as a proxy type:
-//  - for missing APIs, System.Management.Automation.Environment has extension implementation.
-//  - for existing APIs, System.Management.Automation.Environment redirect the call to System.Environment.
-using Environment = System.Management.Automation.Environment;
-#endif
 
 namespace Microsoft.PowerShell.Cmdletization
 {
@@ -54,8 +46,9 @@ namespace Microsoft.PowerShell.Cmdletization
             ScriptWriter.s_xmlReaderSettings.MaxCharactersFromEntities = 16384; // generous guess for the upper bound
             ScriptWriter.s_xmlReaderSettings.MaxCharactersInDocument = 128 * 1024 * 1024; // generous guess for the upper bound
 
-#if CORECLR // XmlReaderSettings doesn't have XmlResolver and Schema Validation related members in CoreCLR.
-            ScriptWriter.s_xmlReaderSettings.DtdProcessing = DtdProcessing.Ignore; // DtdProcessing.Parse is not in CoreCLR, so we ignore DTDs in OneCore powershell
+#if CORECLR // The XML Schema file 'cmdlets-over-objects.xsd' is missing in Github, and it's likely the resource string
+            // 'CmdletizationCoreResources.Xml_cmdletsOverObjectsXsd' needs to be reworked to work in .NET Core.
+            ScriptWriter.s_xmlReaderSettings.DtdProcessing = DtdProcessing.Ignore;
 #else
             ScriptWriter.s_xmlReaderSettings.DtdProcessing = DtdProcessing.Parse; // Allowing DTD parsing with limits of MaxCharactersFromEntities/MaxCharactersInDocument
             ScriptWriter.s_xmlReaderSettings.XmlResolver = null; // do not fetch external documents
@@ -110,13 +103,12 @@ namespace Microsoft.PowerShell.Cmdletization
             }
             catch (InvalidOperationException e)
             {
-#if !CORECLR    // No XmlSchema Validation In CoreCLR
                 XmlSchemaException schemaException = e.InnerException as XmlSchemaException;
                 if (schemaException != null)
                 {
                     throw new XmlException(schemaException.Message, schemaException, schemaException.LineNumber, schemaException.LinePosition);
                 }
-#endif
+
                 XmlException xmlException = e.InnerException as XmlException;
                 if (xmlException != null)
                 {
@@ -139,8 +131,7 @@ namespace Microsoft.PowerShell.Cmdletization
 
             string objectModelWrapperName = _cmdletizationMetadata.Class.CmdletAdapter ?? defaultObjectModelWrapper;
             _objectModelWrapper = (Type)LanguagePrimitives.ConvertTo(objectModelWrapperName, typeof(Type), CultureInfo.InvariantCulture);
-            TypeInfo objectModelWrapperTypeInfo = _objectModelWrapper.GetTypeInfo();
-            if (objectModelWrapperTypeInfo.IsGenericType)
+            if (_objectModelWrapper.IsGenericType)
             {
                 string message = string.Format(
                     CultureInfo.CurrentCulture,
@@ -148,11 +139,11 @@ namespace Microsoft.PowerShell.Cmdletization
                     objectModelWrapperName);
                 throw new XmlException(message);
             }
+
             Type baseType = _objectModelWrapper;
-            TypeInfo baseTypeInfo = objectModelWrapperTypeInfo;
-            while ((!baseTypeInfo.IsGenericType) || baseTypeInfo.GetGenericTypeDefinition() != typeof(CmdletAdapter<>))
+            while ((!baseType.IsGenericType) || baseType.GetGenericTypeDefinition() != typeof(CmdletAdapter<>))
             {
-                baseType = baseTypeInfo.BaseType;
+                baseType = baseType.BaseType;
                 if (baseType == typeof(object))
                 {
                     string message = string.Format(
@@ -162,8 +153,8 @@ namespace Microsoft.PowerShell.Cmdletization
                         typeof(CmdletAdapter<>).FullName);
                     throw new XmlException(message);
                 }
-                baseTypeInfo = baseType.GetTypeInfo();
             }
+
             _objectInstanceType = baseType.GetGenericArguments()[0];
 
             _moduleName = moduleName;
@@ -246,9 +237,6 @@ function __cmdletization_BindCommonParameters
             return verb + "-" + noun;
         }
 
-        private readonly List<String> _aliasesToExport = new List<string>();
-        private readonly List<String> _functionsToExport = new List<string>();
-
         private string GetCmdletAttributes(CommonCmdletMetadata cmdletMetadata)
         {
             // Generate the script for the Alias and Obsolete Attribute if any is declared in CDXML
@@ -256,7 +244,6 @@ function __cmdletization_BindCommonParameters
             if (cmdletMetadata.Aliases != null)
             {
                 attributes.Append("[Alias('" + string.Join("','", cmdletMetadata.Aliases.Select(alias => CodeGeneration.EscapeSingleQuotedStringContent(alias))) + "')]");
-                _aliasesToExport.AddRange(cmdletMetadata.Aliases);
             }
 
             if (cmdletMetadata.Obsolete != null)
@@ -267,6 +254,7 @@ function __cmdletization_BindCommonParameters
                 string newline = (attributes.Length > 0) ? Environment.NewLine : string.Empty;
                 attributes.AppendFormat(CultureInfo.InvariantCulture, "{0}[Obsolete({1})]", newline, obsoleteMsg);
             }
+
             return attributes.ToString();
         }
 
@@ -317,6 +305,7 @@ function __cmdletization_BindCommonParameters
                     psetMetadata.ValueFromPipelineByPropertyName = false;
                     psetMetadata.ValueFromRemainingArguments = false;
                 }
+
                 commonParameters.Add(parameterMetadata.Name, parameterMetadata);
             }
 
@@ -329,6 +318,7 @@ function __cmdletization_BindCommonParameters
                     _objectModelWrapper.FullName);
                 throw new XmlException(message);
             }
+
             foreach (ParameterMetadata parameter in commonParameters.Values)
             {
                 if ((parameter.ParameterSets.Count == 1) && (parameter.ParameterSets.ContainsKey(ParameterAttribute.AllParameterSets)))
@@ -392,6 +382,7 @@ function __cmdletization_BindCommonParameters
                         parameterSetName);
                     throw new XmlException(message);
                 }
+
                 parameterSetNames.Add(parameterSetName, null);
             }
 
@@ -471,6 +462,7 @@ function __cmdletization_BindCommonParameters
                     }
                 }
             }
+
             if (getCmdletParameters.QueryableAssociations != null)
             {
                 foreach (Association association in getCmdletParameters.QueryableAssociations)
@@ -485,6 +477,7 @@ function __cmdletization_BindCommonParameters
                     }
                 }
             }
+
             if (getCmdletParameters.QueryOptions != null)
             {
                 foreach (QueryOption option in getCmdletParameters.QueryOptions)
@@ -647,6 +640,7 @@ function __cmdletization_BindCommonParameters
                     {
                         elementType = parameterType.HasElementType ? parameterType.GetElementType() : parameterType;
                     }
+
                     object min = LanguagePrimitives.ConvertTo(parameterCmdletization.ValidateRange.Min, elementType, CultureInfo.InvariantCulture);
                     object max = LanguagePrimitives.ConvertTo(parameterCmdletization.ValidateRange.Max, elementType, CultureInfo.InvariantCulture);
                     parameterMetadata.Attributes.Add(new ValidateRangeAttribute(min, max));
@@ -659,6 +653,7 @@ function __cmdletization_BindCommonParameters
                     {
                         allowedValues.Add(allowedValue);
                     }
+
                     parameterMetadata.Attributes.Add(new ValidateSetAttribute(allowedValues.ToArray()));
                 }
             }
@@ -677,14 +672,17 @@ function __cmdletization_BindCommonParameters
                     parameterFlags |= ParameterSetMetadata.ParameterFlags.Mandatory;
                 }
             }
+
             if (isValueFromPipeline)
             {
                 parameterFlags |= ParameterSetMetadata.ParameterFlags.ValueFromPipeline;
             }
+
             if (isValueFromPipelineByPropertyName)
             {
                 parameterFlags |= ParameterSetMetadata.ParameterFlags.ValueFromPipelineByPropertyName;
             }
+
             parameterMetadata.ParameterSets.Add(parameterSetName, new ParameterSetMetadata(position, parameterFlags, null));
 
             return parameterMetadata;
@@ -725,6 +723,7 @@ function __cmdletization_BindCommonParameters
             {
                 queryParameterSets = parameterCmdletization.CmdletParameterSets;
             }
+
             foreach (string parameterSetName in queryParameterSets)
             {
                 if (parameterSetName.Equals(ScriptWriter.InputObjectQueryParameterSetName, StringComparison.OrdinalIgnoreCase))
@@ -843,6 +842,7 @@ function __cmdletization_BindCommonParameters
                     result.Append(c);
                 }
             }
+
             return result.ToString();
         }
 
@@ -860,6 +860,7 @@ function __cmdletization_BindCommonParameters
                     subresult.Add(s);
                     result.Add(subresult);
                 }
+
                 return result;
             }
             else
@@ -924,13 +925,12 @@ function __cmdletization_BindCommonParameters
             }
         }
 
+        private const string StaticCommonParameterSetTemplate = "{1}"; // "{0}::{1}";
+        private const string StaticMethodParameterSetTemplate = "{0}"; // "{1}::{0}";
 
-        private const string StaticCommonParameterSetTemplate = "{1}"; //"{0}::{1}";
-        private const string StaticMethodParameterSetTemplate = "{0}"; //"{1}::{0}";
-
-        private const string InstanceCommonParameterSetTemplate = "{1}"; //"{0}::{1}::{2}";
-        private const string InstanceQueryParameterSetTemplate = "{0}"; //"{1}::{0}::{2}";
-        private const string InstanceMethodParameterSetTemplate = "{2}"; //"{1}::{2}::{0}";
+        private const string InstanceCommonParameterSetTemplate = "{1}"; // "{0}::{1}::{2}";
+        private const string InstanceQueryParameterSetTemplate = "{0}"; // "{1}::{0}::{2}";
+        private const string InstanceMethodParameterSetTemplate = "{2}"; // "{1}::{2}::{0}";
 
         private const string InputObjectQueryParameterSetName = "InputObject (cdxml)";
         private const string SingleQueryParameterSetName = "Query (cdxml)";
@@ -991,6 +991,7 @@ function __cmdletization_BindCommonParameters
             {
                 bindings |= MethodParameterBindings.In;
             }
+
             if (methodParameter.CmdletOutputMetadata != null)
             {
                 if (methodParameter.CmdletOutputMetadata.ErrorCode == null)
@@ -1015,6 +1016,7 @@ function __cmdletization_BindCommonParameters
             {
                 bindings |= MethodParameterBindings.In;
             }
+
             if (methodParameter.CmdletOutputMetadata != null)
             {
                 if (methodParameter.CmdletOutputMetadata.ErrorCode == null)
@@ -1151,6 +1153,7 @@ function __cmdletization_BindCommonParameters
             {
                 output.WriteLine("      switch -exact ($PSCmdlet.ParameterSetName) { ");
             }
+
             foreach (StaticMethodMetadata method in staticCmdlet.Method)
             {
                 if (multipleMethods)
@@ -1166,6 +1169,7 @@ function __cmdletization_BindCommonParameters
                         firstParameterSet = false;
                         output.Write("'{0}'", CodeGeneration.EscapeSingleQuotedStringContent(parameterSetName));
                     }
+
                     output.WriteLine(") -contains $_ } {");
                 }
 
@@ -1228,6 +1232,7 @@ function __cmdletization_BindCommonParameters
                         }
                     }
                 }
+
                 if (method.ReturnValue != null)
                 {
                     MethodParameterBindings methodParameterBindings = GetMethodParameterKind(method.ReturnValue);
@@ -1281,6 +1286,7 @@ function __cmdletization_BindCommonParameters
                     }
                 }
             }
+
             if (multipleMethods)
             {
                 output.WriteLine("    }");
@@ -1314,6 +1320,7 @@ function __cmdletization_BindCommonParameters
                 firstParameterSet = false;
                 output.Write("'{0}'", CodeGeneration.EscapeSingleQuotedStringContent(parameterSetName));
             }
+
             output.WriteLine(") -contains $_ } {");
 
             List<Type> typesOfOutParameters = new List<Type>();
@@ -1366,6 +1373,7 @@ function __cmdletization_BindCommonParameters
                     }
                 }
             }
+
             if (method.ReturnValue != null)
             {
                 MethodParameterBindings methodParameterBindings = GetMethodParameterKind(method.ReturnValue);
@@ -1454,6 +1462,7 @@ function __cmdletization_BindCommonParameters
                     firstParameterSet = false;
                     output.Write("'{0}'", CodeGeneration.EscapeSingleQuotedStringContent(parameterSetName));
                 }
+
             output.WriteLine(") -contains $PSCmdlet.ParameterSetName )) {");
         }
 
@@ -1479,6 +1488,7 @@ function __cmdletization_BindCommonParameters
                 {
                     cmdletParameterMetadata.ParameterType = typeof(object);
                 }
+
                 cmdletParameterMetadata.ParameterType = cmdletParameterMetadata.ParameterType.MakeArrayType();
             }
 
@@ -1499,6 +1509,7 @@ function __cmdletization_BindCommonParameters
                     localVariableName,
                     CodeGeneration.EscapeVariableName(cmdletParameterMetadata.Name));
             }
+
             output.Write(
                 "        $__cmdletization_queryBuilder.{0}('{1}', ${2}",
                 queryBuilderMethodName,
@@ -1532,6 +1543,7 @@ function __cmdletization_BindCommonParameters
             {
                 return BehaviorOnNoMatch.Default;
             }
+
             if (cmdletParameterMetadata.ErrorOnNoMatch)
             {
                 return BehaviorOnNoMatch.ReportErrors;
@@ -1747,6 +1759,7 @@ function __cmdletization_BindCommonParameters
                         _objectInstanceType.FullName,
                         _cmdletizationMetadata.Class.ClassName);
                 }
+
                 inputObjectParameter.Attributes.Add(new PSTypeNameAttribute(psTypeNameOfInputObjectElements));
 
                 inputObjectParameter.Attributes.Add(new ValidateNotNullAttribute());
@@ -1769,6 +1782,7 @@ function {0}
     {1}
     {2}
     {3}
+
     param(
     {4})
 
@@ -1906,8 +1920,6 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function '{1}' -Alias '*'
                 CmdletEndBlockTemplate,
                 /* 0 */ this.GetHelpDirectiveForExternalHelp(),
                 /* 1 */ CodeGeneration.EscapeSingleQuotedStringContent(commandMetadata.Name));
-
-            _functionsToExport.Add(commandMetadata.Name);
         }
 
         private static void AddPassThruParameter(IDictionary<string, ParameterMetadata> commonParameters, InstanceCmdletMetadata instanceCmdletMetadata)
@@ -1927,6 +1939,7 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function '{1}' -Alias '*'
                     }
                 }
             }
+
             if (instanceCmdletMetadata.Method.ReturnValue != null)
             {
                 if ((instanceCmdletMetadata.Method.ReturnValue.CmdletOutputMetadata != null) &&
@@ -1975,6 +1988,7 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function '{1}' -Alias '*'
             {
                 commandMetadata.DefaultParameterSetName = queryParameterSets.Single();
             }
+
             AddPassThruParameter(commonParameters, instanceCmdlet);
             MultiplyParameterSets(commonParameters, InstanceCommonParameterSetTemplate, queryParameterSets, methodParameterSets);
             MultiplyParameterSets(queryParameters, InstanceQueryParameterSetTemplate, commonParameterSets, methodParameterSets);
@@ -2002,8 +2016,6 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function '{1}' -Alias '*'
                 CmdletEndBlockTemplate,
                 /* 0 */ this.GetHelpDirectiveForExternalHelp(),
                 /* 1 */ CodeGeneration.EscapeSingleQuotedStringContent(commandMetadata.Name));
-
-            _functionsToExport.Add(commandMetadata.Name);
         }
 
         private string GetOutputAttributeForGetCmdlet()
@@ -2037,6 +2049,7 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function '{1}' -Alias '*'
                 cmdletMetadata.Noun = _cmdletizationMetadata.Class.DefaultNoun;
                 cmdletMetadata.Verb = VerbsCommon.Get;
             }
+
             Dbg.Assert(cmdletMetadata != null, "xsd should ensure that cmdlet metadata element is always present");
             return cmdletMetadata;
         }
@@ -2063,6 +2076,7 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function '{1}' -Alias '*'
             {
                 commandMetadata.DefaultParameterSetName = getCmdletParameters.DefaultCmdletParameterSet;
             }
+
             MultiplyParameterSets(commonParameters, InstanceCommonParameterSetTemplate, queryParameterSets, methodParameterSets);
             MultiplyParameterSets(queryParameters, InstanceQueryParameterSetTemplate, commonParameterSets, methodParameterSets);
             EnsureOrderOfPositionalParameters(commonParameters, queryParameters);
@@ -2087,8 +2101,6 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function '{1}' -Alias '*'
                 CmdletEndBlockTemplate,
                 /* 0 */ this.GetHelpDirectiveForExternalHelp(),
                 /* 1 */ CodeGeneration.EscapeSingleQuotedStringContent(commandMetadata.Name));
-
-            _functionsToExport.Add(commandMetadata.Name);
         }
 
         private static object s_enumCompilationLock = new object();
@@ -2196,13 +2208,13 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function '{1}' -Alias '*'
                             _cmdletizationMetadata.Class.InstanceCmdlets.Cmdlet.Select(c => c.CmdletMetadata));
                 }
             }
+
             if (_cmdletizationMetadata.Class.StaticCmdlets != null)
             {
                 cmdletMetadatas =
                     cmdletMetadatas.Concat(
                         _cmdletizationMetadata.Class.StaticCmdlets.Select(c => c.CmdletMetadata));
             }
-
 
             foreach (CommonCmdletMetadata cmdletMetadata in cmdletMetadatas)
             {

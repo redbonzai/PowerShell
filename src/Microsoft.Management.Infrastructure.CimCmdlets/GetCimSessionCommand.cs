@@ -1,7 +1,5 @@
-/*============================================================================
- * Copyright (C) Microsoft Corporation, All rights reserved.
- *============================================================================
- */
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #region Using directives
 using System;
@@ -9,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
 #endregion
-
 
 namespace Microsoft.Management.Infrastructure.CimCmdlets
 {
@@ -25,7 +22,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         #region constructor
 
         /// <summary>
-        /// constructor
+        /// Constructor.
         /// </summary>
         public GetCimSessionCommand()
             : base(parameters, parameterSets)
@@ -59,16 +56,18 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             ValueFromPipelineByPropertyName = true,
             ParameterSetName = ComputerNameSet)]
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public String[] ComputerName
+        public string[] ComputerName
         {
             get { return computername;}
+
             set
             {
                 computername = value;
                 base.SetParameter(value, nameComputerName);
             }
         }
-        private String[] computername;
+
+        private string[] computername;
 
         /// <summary>
         /// The following is the definition of the input parameter "Id".
@@ -82,17 +81,19 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public UInt32[] Id
         {
             get { return id;}
+
             set
             {
                 id = value;
                 base.SetParameter(value, nameId);
             }
         }
+
         private UInt32[] id;
 
         /// <summary>
         /// The following is the definition of the input parameter "InstanceID".
-        /// Specifies one or Session Instance IDs
+        /// Specifies one or Session Instance IDs.
         /// </summary>
         [Parameter(Mandatory = true,
             ValueFromPipelineByPropertyName = true,
@@ -101,12 +102,14 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         public Guid[] InstanceId
         {
             get { return instanceid;}
+
             set
             {
                 instanceid = value;
                 base.SetParameter(value, nameInstanceId);
             }
         }
+
         private Guid[] instanceid;
 
         /// <summary>
@@ -118,16 +121,18 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             ValueFromPipelineByPropertyName = true,
             ParameterSetName = NameSet)]
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
-        public String[] Name
+        public string[] Name
         {
             get { return name;}
+
             set
             {
                 name = value;
                 base.SetParameter(value, nameName);
             }
         }
-        private String[] name;
+
+        private string[] name;
 
         #endregion
 
@@ -139,7 +144,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         {
             cimGetSession = new CimGetSession();
             this.AtBeginProcess = false;
-        }//End BeginProcessing()
+        }
 
         /// <summary>
         /// ProcessRecord method.
@@ -148,13 +153,13 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         {
             base.CheckParameterSet();
             cimGetSession.GetCimSession(this);
-        }//End ProcessRecord()
+        }
 
         #endregion
 
         #region private members
         /// <summary>
-        /// <see cref="CimGetSession"/> object used to search CimSession from cache
+        /// <see cref="CimGetSession"/> object used to search CimSession from cache.
         /// </summary>
         private CimGetSession cimGetSession;
 
@@ -166,7 +171,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         #endregion
 
         /// <summary>
-        /// static parameter definition entries
+        /// Static parameter definition entries.
         /// </summary>
         static Dictionary<string, HashSet<ParameterDefinitionEntry>> parameters = new Dictionary<string, HashSet<ParameterDefinitionEntry>>
         {
@@ -193,7 +198,7 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
         };
 
         /// <summary>
-        /// static parameter set entries
+        /// Static parameter set entries.
         /// </summary>
         static Dictionary<string, ParameterSetEntry> parameterSets = new Dictionary<string, ParameterSetEntry>
         {
@@ -203,5 +208,5 @@ namespace Microsoft.Management.Infrastructure.CimCmdlets
             {   CimBaseCommand.NameSet, new ParameterSetEntry(1)     },
         };
         #endregion
-    }//End Class
-}//End namespace
+    }
+}

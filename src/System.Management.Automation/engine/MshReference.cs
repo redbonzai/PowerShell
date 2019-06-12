@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Dynamic;
 using System.Management.Automation.Language;
@@ -23,7 +22,6 @@ namespace System.Management.Automation
     ///         [ref] $a = $b
     ///     b. variable reference
     ///         $a = [ref] $b
-    ///
     /// </remarks>
     public class PSReference
     {
@@ -58,6 +56,7 @@ namespace System.Management.Automation
 
                 return _value;
             }
+
             set
             {
                 PSVariable variable = _value as PSVariable;

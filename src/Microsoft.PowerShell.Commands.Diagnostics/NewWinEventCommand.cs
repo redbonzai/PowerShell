@@ -1,18 +1,17 @@
-//
-// Copyright (c) 2007 Microsoft Corporation. All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
-using System.Management.Automation;
-using System.Globalization;
-using System.Reflection;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Eventing;
 using System.Diagnostics.Eventing.Reader;
-using System.Resources;
-using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using System.Xml;
+using System.Globalization;
 using System.IO;
+using System.Management.Automation;
+using System.Reflection;
+using System.Resources;
+using System.Xml;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -30,9 +29,8 @@ namespace Microsoft.PowerShell.Commands
         private const string DataTag = "data";
         private ResourceManager _resourceMgr = Microsoft.PowerShell.Commands.Diagnostics.Common.CommonUtilities.GetResourceManager();
 
-
         /// <summary>
-        /// ProviderName
+        /// ProviderName.
         /// </summary>
         [Parameter(
             Position = 0,
@@ -44,11 +42,13 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _providerName;
             }
+
             set
             {
                 _providerName = value;
             }
         }
+
         private string _providerName;
 
         /// <summary>
@@ -64,15 +64,16 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _id;
             }
+
             set
             {
                 _id = value;
                 _idSpecified = true;
             }
         }
+
         private int _id;
         private bool _idSpecified = false;
-
 
         /// <summary>
         /// Version (event version)
@@ -86,18 +87,19 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _version;
             }
+
             set
             {
                 _version = value;
                 _versionSpecified = true;
             }
         }
+
         private byte _version;
         private bool _versionSpecified = false;
 
-
         /// <summary>
-        /// Event Payload
+        /// Event Payload.
         /// </summary>
         [Parameter(
             Position = 2,
@@ -113,15 +115,17 @@ namespace Microsoft.PowerShell.Commands
             {
                 return _payload;
             }
+
             set
             {
                 _payload = value;
             }
         }
+
         private object[] _payload;
 
         /// <summary>
-        /// BeginProcessing
+        /// BeginProcessing.
         /// </summary>
         protected override void BeginProcessing()
         {
@@ -153,6 +157,7 @@ namespace Microsoft.PowerShell.Commands
                             string msg = string.Format(CultureInfo.InvariantCulture, _resourceMgr.GetString("ProviderMetadataUnavailable"), providerName, exc.Message);
                             throw new Exception(msg, exc);
                         }
+
                         break;
                     }
                 }
@@ -204,6 +209,7 @@ namespace Microsoft.PowerShell.Commands
                                 break;
                             }
                         }
+
                         if (matchedEvent == null)
                         {
                             string msg = string.Format(CultureInfo.InvariantCulture,
@@ -246,9 +252,7 @@ namespace Microsoft.PowerShell.Commands
                     IgnoreProcessingInstructions = true,
                     MaxCharactersInDocument = 0, // no limit
                     ConformanceLevel = ConformanceLevel.Fragment,
-#if !CORECLR
-                    XmlResolver = null,
-#endif
+                    XmlResolver = null
                 };
 
                 int definedParameterCount = 0;
@@ -274,6 +278,7 @@ namespace Microsoft.PowerShell.Commands
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -304,7 +309,7 @@ namespace Microsoft.PowerShell.Commands
         }
 
         /// <summary>
-        /// ProcessRecord
+        /// ProcessRecord.
         /// </summary>
         protected override void ProcessRecord()
         {
@@ -321,6 +326,7 @@ namespace Microsoft.PowerShell.Commands
                             _payload[i] = string.Empty;
                         }
                     }
+
                     provider.WriteEvent(ref ed, _payload);
                 }
                 else
@@ -328,11 +334,12 @@ namespace Microsoft.PowerShell.Commands
                     provider.WriteEvent(ref ed);
                 }
             }
+
             base.ProcessRecord();
         }
 
         /// <summary>
-        /// EndProcessing
+        /// EndProcessing.
         /// </summary>
         protected override void EndProcessing()
         {

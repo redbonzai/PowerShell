@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 //
 // NOTE: A vast majority of this code was copied from BCL in
@@ -13,14 +15,13 @@ namespace Microsoft.PowerShell.Commands.Internal
     using System.Runtime.Versioning;
     using System.Diagnostics.CodeAnalysis;
 
-
     /**
      * Registry encapsulation. Contains members representing all top level system
      * keys.
      *
      * @security(checkClassLinking=on)
      */
-    //This class contains only static members and does not need to be serializable.
+    // This class contains only static members and does not need to be serializable.
     [ComVisible(true)]
     // Suppressed because these objects need to be accessed from CmdLets.
     [SuppressMessage("Microsoft.MSInternal", "CA903:InternalNamespaceShouldNotContainPublicTypes")]

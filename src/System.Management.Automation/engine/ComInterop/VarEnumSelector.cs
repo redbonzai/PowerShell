@@ -1,6 +1,5 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #if !SILVERLIGHT // ComObject
 
@@ -14,16 +13,16 @@ namespace System.Management.Automation.ComInterop
     /// <summary>
     /// If a managed user type (as opposed to a primitive type or a COM object) is passed as an argument to a COM call, we need
     /// to determine the VarEnum type we will marshal it as. We have the following options:
-    /// 1.	Raise an exception. Languages with their own version of primitive types would not be able to call
-    ///     COM methods using the language's types (for eg. strings in IronRuby are not System.String). An explicit
-    ///     cast would be needed.
-    /// 2.	We could marshal it as VT_DISPATCH. Then COM code will be able to access all the APIs in a late-bound manner,
-    ///     but old COM components will probably malfunction if they expect a primitive type.
-    /// 3.	We could guess which primitive type is the closest match. This will make COM components be as easily
-    ///     accessible as .NET methods.
-    /// 4.	We could use the type library to check what the expected type is. However, the type library may not be available.
+    /// 1.Raise an exception. Languages with their own version of primitive types would not be able to call
+    ///   COM methods using the language's types (for eg. strings in IronRuby are not System.String). An explicit
+    ///   cast would be needed.
+    /// 2.We could marshal it as VT_DISPATCH. Then COM code will be able to access all the APIs in a late-bound manner,
+    ///   but old COM components will probably malfunction if they expect a primitive type.
+    /// 3.We could guess which primitive type is the closest match. This will make COM components be as easily
+    ///   accessible as .NET methods.
+    /// 4.We could use the type library to check what the expected type is. However, the type library may not be available.
     ///
-    /// VarEnumSelector implements option # 3
+    /// VarEnumSelector implements option # 3.
     /// </summary>
     internal class VarEnumSelector
     {
@@ -205,7 +204,7 @@ namespace System.Management.Automation.ComInterop
         }
 
         /// <summary>
-        /// Get the (one representative type for each) primitive type families that the argument can be converted to
+        /// Get the (one representative type for each) primitive type families that the argument can be converted to.
         /// </summary>
         private static List<VarEnum> GetConversionsToComPrimitiveTypeFamilies(Type argumentType)
         {
@@ -224,6 +223,7 @@ namespace System.Management.Automation.ComInterop
                     }
                 }
             }
+
             return compatibleComTypes;
         }
 
@@ -238,7 +238,7 @@ namespace System.Management.Automation.ComInterop
                 return;
             }
 
-            String typeNames = "";
+            string typeNames = string.Empty;
             for (int i = 0; i < compatibleComTypes.Count; i++)
             {
                 string typeName = s_comToManagedPrimitiveTypes[compatibleComTypes[i]].Name;
@@ -250,9 +250,9 @@ namespace System.Management.Automation.ComInterop
                 {
                     typeNames += ", ";
                 }
+
                 typeNames += typeName;
             }
-
 
             throw Error.AmbiguousConversion(argumentType.Name, typeNames);
         }
@@ -346,7 +346,7 @@ namespace System.Management.Automation.ComInterop
         }
 
         /// <summary>
-        /// Is there a unique primitive type that has the best conversion for the argument
+        /// Is there a unique primitive type that has the best conversion for the argument.
         /// </summary>
         private static bool TryGetPrimitiveComTypeViaConversion(Type argumentType, out VarEnum primitiveVarEnum)
         {
@@ -374,13 +374,13 @@ namespace System.Management.Automation.ComInterop
         {
             if (argumentType == typeof(Missing))
             {
-                //actual variant type will be VT_ERROR | E_PARAMNOTFOUND
+                // actual variant type will be VT_ERROR | E_PARAMNOTFOUND
                 return VarEnum.VT_RECORD;
             }
 
             if (argumentType.IsArray)
             {
-                //actual variant type will be VT_ARRAY | VT_<ELEMENT_TYPE>
+                // actual variant type will be VT_ARRAY | VT_<ELEMENT_TYPE>
                 return VarEnum.VT_ARRAY;
             }
 
@@ -426,7 +426,7 @@ namespace System.Management.Automation.ComInterop
                 return GetComType(ref argumentType);
             }
 
-            //generic types cannot be exposed to COM so they do not implement COM interfaces.
+            // generic types cannot be exposed to COM so they do not implement COM interfaces.
             if (argumentType.IsGenericType)
             {
                 return VarEnum.VT_UNKNOWN;
@@ -443,12 +443,12 @@ namespace System.Management.Automation.ComInterop
         }
 
         /// <summary>
-        /// Get the COM Variant type that argument should be marshaled as for a call to COM
+        /// Get the COM Variant type that argument should be marshaled as for a call to COM.
         /// </summary>
         private VariantBuilder GetVariantBuilder(Type argumentType)
         {
-            //argumentType is coming from MarshalType, null means the dynamic object holds
-            //a null value and not byref
+            // argumentType is coming from MarshalType, null means the dynamic object holds
+            // a null value and not byref
             if (argumentType == null)
             {
                 return new VariantBuilder(VarEnum.VT_EMPTY, new NullArgBuilder());
@@ -468,9 +468,9 @@ namespace System.Management.Automation.ComInterop
                 VarEnum elementVarEnum;
                 if (elementType == typeof(object) || elementType == typeof(DBNull))
                 {
-                    //no meaningful value to pass ByRef.
-                    //perhaps the calee will replace it with something.
-                    //need to pass as a variant reference
+                    // no meaningful value to pass ByRef.
+                    // perhaps the calee will replace it with something.
+                    // need to pass as a variant reference
                     elementVarEnum = VarEnum.VT_VARIANT;
                 }
                 else
@@ -488,7 +488,6 @@ namespace System.Management.Automation.ComInterop
             return new VariantBuilder(varEnum, argBuilder);
         }
 
-
         // This helper is called when we are looking for a ByVal marshalling
         // In a ByVal case we can take into account conversions or IConvertible if all other
         // attempts to find marshalling type failed
@@ -497,7 +496,7 @@ namespace System.Management.Automation.ComInterop
             // if VT indicates that marshalling type is unknown
             if (elementVarEnum == VT_DEFAULT)
             {
-                //trying to find a conversion.
+                // trying to find a conversion.
                 VarEnum convertibleTo;
                 if (TryGetPrimitiveComTypeViaConversion(elementType, out convertibleTo))
                 {
@@ -506,12 +505,13 @@ namespace System.Management.Automation.ComInterop
                     return new ConversionArgBuilder(elementType, GetSimpleArgBuilder(marshalType, elementVarEnum));
                 }
 
-                //checking for IConvertible.
+                // checking for IConvertible.
                 if (typeof(IConvertible).IsAssignableFrom(elementType))
                 {
                     return new ConvertibleArgBuilder();
                 }
             }
+
             return GetSimpleArgBuilder(elementType, elementVarEnum);
         }
 
@@ -558,6 +558,7 @@ namespace System.Management.Automation.ComInterop
                     {
                         argBuilder = new ConvertArgBuilder(elementType, marshalType);
                     }
+
                     break;
             }
 

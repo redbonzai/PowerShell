@@ -1,11 +1,10 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-using System.Threading;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Runspaces;
 using System.Management.Automation.Runspaces.Internal;
+using System.Threading;
 
 using Dbg = System.Management.Automation.Diagnostics;
 
@@ -69,7 +68,7 @@ namespace System.Management.Automation.Remoting
         public abstract void CreateAsync();
 
         /// <summary>
-        /// This event handler is raised when the state of session changes
+        /// This event handler is raised when the state of session changes.
         /// </summary>
         public abstract event EventHandler<RemoteSessionStateEventArgs> StateChanged;
 
@@ -81,12 +80,12 @@ namespace System.Management.Automation.Remoting
         public abstract void CloseAsync();
 
         /// <summary>
-        /// Disconnects the remote session in an asynchronous manner
+        /// Disconnects the remote session in an asynchronous manner.
         /// </summary>
         public abstract void DisconnectAsync();
 
         /// <summary>
-        /// Reconnects the remote session in an asynchronous manner
+        /// Reconnects the remote session in an asynchronous manner.
         /// </summary>
         public abstract void ReconnectAsync();
 
@@ -108,7 +107,7 @@ namespace System.Management.Automation.Remoting
         #region URI Redirection
 
         /// <summary>
-        /// Delegate used to report connection URI redirections to the application
+        /// Delegate used to report connection URI redirections to the application.
         /// </summary>
         /// <param name="newURI">
         /// New URI to which the connection is being redirected to.
@@ -118,13 +117,13 @@ namespace System.Management.Automation.Remoting
         #endregion
 
         /// <summary>
-        /// ServerRemoteSessionDataStructureHandler instance for this session
+        /// ServerRemoteSessionDataStructureHandler instance for this session.
         /// </summary>
         internal ClientRemoteSessionDataStructureHandler SessionDataStructureHandler { get; set; }
 
         protected Version _serverProtocolVersion;
         /// <summary>
-        /// Protocol version negotiated by the server
+        /// Protocol version negotiated by the server.
         /// </summary>
         internal Version ServerProtocolVersion
         {
@@ -134,12 +133,10 @@ namespace System.Management.Automation.Remoting
             }
         }
 
-
-
         private RemoteRunspacePoolInternal _remoteRunspacePool;
 
         /// <summary>
-        /// remote runspace pool if used, for this session
+        /// Remote runspace pool if used, for this session.
         /// </summary>
         internal RemoteRunspacePoolInternal RemoteRunspacePoolInternal
         {
@@ -147,6 +144,7 @@ namespace System.Management.Automation.Remoting
             {
                 return _remoteRunspacePool;
             }
+
             set
             {
                 Dbg.Assert(_remoteRunspacePool == null, @"RunspacePool should be
@@ -156,7 +154,7 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Get the runspace pool with the matching id
+        /// Get the runspace pool with the matching id.
         /// </summary>
         /// <param name="clientRunspacePoolId">
         /// Id of the runspace to get
@@ -175,7 +173,7 @@ namespace System.Management.Automation.Remoting
     }
 
     /// <summary>
-    /// Remote Session Implementation
+    /// Remote Session Implementation.
     /// </summary>
     internal class ClientRemoteSessionImpl : ClientRemoteSession, IDisposable
     {
@@ -187,7 +185,7 @@ namespace System.Management.Automation.Remoting
         #region Constructors
 
         /// <summary>
-        /// Creates a new instance of ClientRemoteSessionImpl
+        /// Creates a new instance of ClientRemoteSessionImpl.
         /// </summary>
         /// <param name="rsPool">
         /// The RunspacePool object this session should map to.
@@ -197,7 +195,7 @@ namespace System.Management.Automation.Remoting
         internal ClientRemoteSessionImpl(RemoteRunspacePoolInternal rsPool,
                                        URIDirectionReported uriRedirectionHandler)
         {
-            Dbg.Assert(null != rsPool, "RunspacePool cannot be null");
+            Dbg.Assert(rsPool != null, "RunspacePool cannot be null");
             base.RemoteRunspacePoolInternal = rsPool;
             Context.RemoteAddress = WSManConnectionInfo.ExtractPropertyAsWsManConnectionInfo<Uri>(rsPool.ConnectionInfo,
                 "ConnectionUri", null);
@@ -212,7 +210,7 @@ namespace System.Management.Automation.Remoting
                 "ShellUri", string.Empty);
 
             MySelf = RemotingDestination.Client;
-            //Create session data structure handler for this session
+            // Create session data structure handler for this session
             SessionDataStructureHandler = new ClientRemoteSessionDSHandlerImpl(this,
                 _cryptoHelper,
                 rsPool.ConnectionInfo,
@@ -220,7 +218,7 @@ namespace System.Management.Automation.Remoting
             BaseSessionDataStructureHandler = SessionDataStructureHandler;
             _waitHandleForConfigurationReceived = new ManualResetEvent(false);
 
-            //Register handlers for various ClientSessiondata structure handler events
+            // Register handlers for various ClientSessiondata structure handler events
             SessionDataStructureHandler.NegotiationReceived += HandleNegotiationReceived;
             SessionDataStructureHandler.ConnectionStateChanged += HandleConnectionStateChanged;
             SessionDataStructureHandler.EncryptedSessionKeyReceived +=
@@ -233,23 +231,22 @@ namespace System.Management.Automation.Remoting
 
         #region connect/close
 
-
         /// <summary>
         /// Creates a Remote Session Asynchronously.
         /// </summary>
         public override void CreateAsync()
         {
-            //Raise a CreateSession event in StateMachine. This start the process of connection and negotiation to a new remote session
+            // Raise a CreateSession event in StateMachine. This start the process of connection and negotiation to a new remote session
             RemoteSessionStateMachineEventArgs startArg = new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.CreateSession);
             SessionDataStructureHandler.StateMachine.RaiseEvent(startArg);
         }
 
         /// <summary>
-        /// Connects to a existing Remote Session Asynchronously by executing a Connect negotiation algorithm
+        /// Connects to a existing Remote Session Asynchronously by executing a Connect negotiation algorithm.
         /// </summary>
         public override void ConnectAsync()
         {
-            //Raise the connectsession event in statemachine. This start the process of connection and negotiation to an existing remote session
+            // Raise the connectsession event in statemachine. This start the process of connection and negotiation to an existing remote session
             RemoteSessionStateMachineEventArgs startArg = new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.ConnectSession);
             SessionDataStructureHandler.StateMachine.RaiseEvent(startArg);
         }
@@ -267,7 +264,7 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Temporarily suspends connection to a connected remote session
+        /// Temporarily suspends connection to a connected remote session.
         /// </summary>
         public override void DisconnectAsync()
         {
@@ -276,7 +273,7 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Restores connection to a disconnected remote session. Negotiation has already been performed before
+        /// Restores connection to a disconnected remote session. Negotiation has already been performed before.
         /// </summary>
         public override void ReconnectAsync()
         {
@@ -285,12 +282,12 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// This event handler is raised when the state of session changes
+        /// This event handler is raised when the state of session changes.
         /// </summary>
         public override event EventHandler<RemoteSessionStateEventArgs> StateChanged;
 
         /// <summary>
-        /// Handles changes in data structure handler state
+        /// Handles changes in data structure handler state.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="arg">
@@ -305,7 +302,7 @@ namespace System.Management.Automation.Remoting
                     throw PSTraceSource.NewArgumentNullException("arg");
                 }
 
-                if (arg.SessionStateInfo.State == RemoteSessionState.EstablishedAndKeyReceived) //TODO - Client session would never get into this state... to be removed
+                if (arg.SessionStateInfo.State == RemoteSessionState.EstablishedAndKeyReceived) // TODO - Client session would never get into this state... to be removed
                 {
                     // send the public key
                     StartKeyExchange();
@@ -331,7 +328,7 @@ namespace System.Management.Automation.Remoting
         #region KeyExchange
 
         /// <summary>
-        /// Start the key exchange process
+        /// Start the key exchange process.
         /// </summary>
         internal override void StartKeyExchange()
         {
@@ -367,17 +364,19 @@ namespace System.Management.Automation.Remoting
 
                     SessionDataStructureHandler.StateMachine.RaiseEvent(eventArgs);
                 }
+                else
+                {
+                    // send using data structure handler
+                    eventArgs = new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.KeySent);
+                    SessionDataStructureHandler.StateMachine.RaiseEvent(eventArgs);
 
-                // send using data structure handler
-                eventArgs = new RemoteSessionStateMachineEventArgs(RemoteSessionEvent.KeySent);
-                SessionDataStructureHandler.StateMachine.RaiseEvent(eventArgs);
-
-                SessionDataStructureHandler.SendPublicKeyAsync(localPublicKey);
+                    SessionDataStructureHandler.SendPublicKeyAsync(localPublicKey);
+                }
             }
         }
 
         /// <summary>
-        /// Complete the key exchange process
+        /// Complete the key exchange process.
         /// </summary>
         internal override void CompleteKeyExchange()
         {
@@ -385,9 +384,9 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Handles an encrypted session key received from the other side
+        /// Handles an encrypted session key received from the other side.
         /// </summary>
-        /// <param name="sender">sender of this event</param>
+        /// <param name="sender">Sender of this event.</param>
         /// <param name="eventArgs">arguments that contain the remote
         /// public key</param>
         private void HandleEncryptedSessionKeyReceived(object sender, RemoteDataEventArgs<string> eventArgs)
@@ -417,10 +416,10 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Handles a request for public key from the server
+        /// Handles a request for public key from the server.
         /// </summary>
-        /// <param name="sender">send of this event, unused</param>
-        /// <param name="eventArgs">arguments describing this event, unused</param>
+        /// <param name="sender">Send of this event, unused.</param>
+        /// <param name="eventArgs">Arguments describing this event, unused.</param>
         private void HandlePublicKeyRequestReceived(object sender, RemoteDataEventArgs<string> eventArgs)
         {
             if (SessionDataStructureHandler.StateMachine.State == RemoteSessionState.Established)
@@ -435,7 +434,7 @@ namespace System.Management.Automation.Remoting
 
         #endregion KeyExchange
 
-        //TODO:Review Configuration Story
+        // TODO:Review Configuration Story
         #region configuration
 
         private ManualResetEvent _waitHandleForConfigurationReceived;
@@ -445,7 +444,7 @@ namespace System.Management.Automation.Remoting
         #region negotiation
 
         /// <summary>
-        /// Examines the negotiation packet received from the server
+        /// Examines the negotiation packet received from the server.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="arg"></param>
@@ -484,7 +483,7 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Verifies the negotiation packet received from the server
+        /// Verifies the negotiation packet received from the server.
         /// </summary>
         /// <param name="serverRemoteSessionCapability">
         /// Capabilities of remote session
@@ -523,7 +522,7 @@ namespace System.Management.Automation.Remoting
                      ))
                  )
             {
-                //passed negotiation check
+                // passed negotiation check
             }
             else
             {
@@ -531,7 +530,7 @@ namespace System.Management.Automation.Remoting
                     new PSRemotingDataStructureException(RemotingErrorIdStrings.ClientNegotiationFailed,
                         RemoteDataNameStrings.PS_STARTUP_PROTOCOL_VERSION_NAME,
                         serverProtocolVersion,
-                        PSVersionInfo.BuildVersion,
+                        PSVersionInfo.GitCommitId,
                         RemotingConstants.ProtocolVersion);
                 throw reasonOfFailure;
             }
@@ -545,7 +544,7 @@ namespace System.Management.Automation.Remoting
                     new PSRemotingDataStructureException(RemotingErrorIdStrings.ClientNegotiationFailed,
                         RemoteDataNameStrings.PSVersion,
                         serverPSVersion.ToString(),
-                        PSVersionInfo.BuildVersion,
+                        PSVersionInfo.GitCommitId,
                         RemotingConstants.ProtocolVersion);
                 throw reasonOfFailure;
             }
@@ -559,7 +558,7 @@ namespace System.Management.Automation.Remoting
                     new PSRemotingDataStructureException(RemotingErrorIdStrings.ClientNegotiationFailed,
                         RemoteDataNameStrings.SerializationVersion,
                         serverSerVersion.ToString(),
-                        PSVersionInfo.BuildVersion,
+                        PSVersionInfo.GitCommitId,
                         RemotingConstants.ProtocolVersion);
                 throw reasonOfFailure;
             }
@@ -574,7 +573,7 @@ namespace System.Management.Automation.Remoting
         #region IDisposable
 
         /// <summary>
-        /// Public method for dispose
+        /// Public method for dispose.
         /// </summary>
         public void Dispose()
         {
@@ -584,9 +583,9 @@ namespace System.Management.Automation.Remoting
         }
 
         /// <summary>
-        /// Release all resources
+        /// Release all resources.
         /// </summary>
-        /// <param name="disposing">if true, release all managed resources</param>
+        /// <param name="disposing">If true, release all managed resources.</param>
         public void Dispose(bool disposing)
         {
             if (disposing)
@@ -596,6 +595,7 @@ namespace System.Management.Automation.Remoting
                     _waitHandleForConfigurationReceived.Dispose();
                     _waitHandleForConfigurationReceived = null;
                 }
+
                 ((ClientRemoteSessionDSHandlerImpl)SessionDataStructureHandler).Dispose();
                 SessionDataStructureHandler = null;
                 _cryptoHelper.Dispose();
@@ -606,5 +606,4 @@ namespace System.Management.Automation.Remoting
         #endregion IDisposable
     }
 }
-
 

@@ -1,3 +1,5 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 /*============================================================
 **
@@ -58,6 +60,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return _session;
             }
+
             set
             {
                 _session = value;
@@ -70,6 +73,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return _tolerateErrors;
             }
+
             set
             {
                 _tolerateErrors = value;
@@ -82,6 +86,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 return _reverseDirection;
             }
+
             set
             {
                 _reverseDirection = value;

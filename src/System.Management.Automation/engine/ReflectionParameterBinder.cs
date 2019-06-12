@@ -1,11 +1,11 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Management.Automation.Internal;
 using System.Reflection;
+
 using Microsoft.PowerShell.Commands;
 
 namespace System.Management.Automation
@@ -13,7 +13,6 @@ namespace System.Management.Automation
     /// <summary>
     /// The parameter binder for real CLR objects that have properties and fields decorated with the parameter attributes.
     /// </summary>
-    ///
     internal class ReflectionParameterBinder : ParameterBinderBase
     {
         #region ctor
@@ -22,15 +21,12 @@ namespace System.Management.Automation
         /// Constructs the parameter binder with the specified type metadata. The binder is only valid
         /// for a single instance of a bindable object and only for the duration of a command.
         /// </summary>
-        ///
         /// <param name="target">
         /// The target object that the parameter values will be bound to.
         /// </param>
-        ///
         /// <param name="command">
         /// An instance of the command so that attributes can access the context.
         /// </param>
-        ///
         internal ReflectionParameterBinder(
             object target,
             Cmdlet command)
@@ -42,19 +38,15 @@ namespace System.Management.Automation
         /// Constructs the parameter binder with the specified type metadata. The binder is only valid
         /// for a single instance of a bindable object and only for the duration of a command.
         /// </summary>
-        ///
         /// <param name="target">
         /// The target object that the parameter values will be bound to.
         /// </param>
-        ///
         /// <param name="command">
         /// An instance of the command so that attributes can access the context.
         /// </param>
-        ///
         /// <param name="commandLineParameters">
         /// The dictionary to use to record the parameters set by this object...
         /// </param>
-        ///
         internal ReflectionParameterBinder(
             object target,
             Cmdlet command,
@@ -71,21 +63,17 @@ namespace System.Management.Automation
         #region Parameter default values
 
         /// <summary>
-        /// Gets the default value for the specified parameter
+        /// Gets the default value for the specified parameter.
         /// </summary>
-        ///
         /// <param name="name">
         /// The name of the parameter to get the default value of.
         /// </param>
-        ///
         /// <returns>
         /// The default value of the specified parameter.
         /// </returns>
-        ///
         /// <exception cref="GetValueException">
         /// If the ETS call to get the property value throws an exception.
         /// </exception>
-        ///
         internal override object GetDefaultParameterValue(string name)
         {
             try
@@ -156,7 +144,7 @@ namespace System.Management.Automation
                     ExtendedTypeSystem.ExceptionWhenSetting,
                     name, e.Message);
             }
-        } // BindParameter
+        }
 
         #endregion Parameter binding
 
@@ -243,7 +231,7 @@ namespace System.Management.Automation
                     var propertyExpr = GetPropertyOrFieldExpr(type, property, Expression.Convert(target, type));
 
                     Expression expr = Expression.Assign(propertyExpr, Expression.Convert(value, propertyExpr.Type));
-                    if (propertyExpr.Type.GetTypeInfo().IsValueType && Nullable.GetUnderlyingType(propertyExpr.Type) == null)
+                    if (propertyExpr.Type.IsValueType && Nullable.GetUnderlyingType(propertyExpr.Type) == null)
                     {
                         var throwInvalidCastExceptionExpr =
                             Expression.Call(Language.CachedReflectionInfo.LanguagePrimitives_ThrowInvalidCastException,
@@ -308,5 +296,5 @@ namespace System.Management.Automation
         }
 
         #endregion Private members
-    } // ReflectionParameterBinder
-} // namespace System.Management.Automation
+    }
+}

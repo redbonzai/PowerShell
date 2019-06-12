@@ -1,52 +1,46 @@
-﻿/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation.Remoting;
 using System.Text;
-using System.Diagnostics;
-
 
 namespace System.Management.Automation.Runspaces
 {
     /// <summary>
-    ///
     /// </summary>
     public sealed class PowerShellProcessInstance : IDisposable
     {
-        #region Private Members
+        #region Fields
 
         private readonly ProcessStartInfo _startInfo;
-        private static readonly string s_PSExePath;
         private RunspacePool _runspacePool;
         private readonly object _syncObject = new object();
         private bool _started;
         private bool _isDisposed;
         private bool _processExited;
 
-        #endregion Private Members
+        internal static readonly string PwshExePath;
+
+        #endregion Fields
 
         #region Constructors
 
         /// <summary>
-        ///
         /// </summary>
         static PowerShellProcessInstance()
         {
 #if UNIX
-            s_PSExePath = Path.Combine(Utils.GetApplicationBase(Utils.DefaultPowerShellShellID),
-                            "powershell");
+            PwshExePath = Path.Combine(Utils.DefaultPowerShellAppBase, "pwsh");
 #else
-            s_PSExePath = Path.Combine(Utils.GetApplicationBase(Utils.DefaultPowerShellShellID),
-                            "powershell.exe");
+            PwshExePath = Path.Combine(Utils.DefaultPowerShellAppBase, "pwsh.exe");
 #endif
         }
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="powerShellVersion"></param>
         /// <param name="credential"></param>
@@ -54,43 +48,7 @@ namespace System.Management.Automation.Runspaces
         /// <param name="useWow64"></param>
         public PowerShellProcessInstance(Version powerShellVersion, PSCredential credential, ScriptBlock initializationScript, bool useWow64)
         {
-            string psWow64Path = s_PSExePath;
-
-            if (useWow64)
-            {
-                string procArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-
-                if ((!string.IsNullOrEmpty(procArch)) && (procArch.Equals("amd64", StringComparison.OrdinalIgnoreCase) ||
-                    procArch.Equals("ia64", StringComparison.OrdinalIgnoreCase)))
-                {
-                    psWow64Path = s_PSExePath.ToLowerInvariant().Replace("\\system32\\", "\\syswow64\\");
-
-                    if (!File.Exists(psWow64Path))
-                    {
-                        string message =
-                            PSRemotingErrorInvariants.FormatResourceString(
-                                RemotingErrorIdStrings.IPCWowComponentNotPresent,
-                                psWow64Path);
-                        throw new PSInvalidOperationException(message);
-                    }
-                }
-            }
-
-#if CORECLR
             string processArguments = " -s -NoLogo -NoProfile";
-#else
-            // Adding Version parameter to powershell.exe
-            // Version parameter needs to go before all other parameters because the native layer looks for Version or
-            // PSConsoleFile parameters before parsing other parameters.
-            // The other parameters get parsed in the managed layer.
-            Version tempVersion = powerShellVersion ?? PSVersionInfo.PSVersion;
-            string processArguments = string.Format(CultureInfo.InvariantCulture,
-                       "-Version {0}", new Version(tempVersion.Major, tempVersion.Minor));
-
-            processArguments = string.Format(CultureInfo.InvariantCulture,
-                "{0} -s -NoLogo -NoProfile", processArguments);
-
-#endif
 
             if (initializationScript != null)
             {
@@ -108,7 +66,7 @@ namespace System.Management.Automation.Runspaces
             // to 'false' in our use, we can ignore the 'WindowStyle' setting in the initialization below.
             _startInfo = new ProcessStartInfo
             {
-                FileName = useWow64 ? psWow64Path : s_PSExePath,
+                FileName = PwshExePath,
                 Arguments = processArguments,
                 UseShellExecute = false,
                 RedirectStandardInput = true,
@@ -126,18 +84,13 @@ namespace System.Management.Automation.Runspaces
 
                 _startInfo.UserName = netCredential.UserName;
                 _startInfo.Domain = string.IsNullOrEmpty(netCredential.Domain) ? "." : netCredential.Domain;
-#if CORECLR
-                _startInfo.PasswordInClearText = ClrFacade.ConvertSecureStringToString(credential.Password);
-#else
                 _startInfo.Password = credential.Password;
-#endif
             }
 
             Process = new Process { StartInfo = _startInfo, EnableRaisingEvents = true };
         }
 
         /// <summary>
-        ///
         /// </summary>
         public PowerShellProcessInstance() : this(null, null, null, false)
         {
@@ -162,7 +115,6 @@ namespace System.Management.Automation.Runspaces
 
         #region Dispose
         /// <summary>
-        ///
         /// </summary>
         public void Dispose()
         {
@@ -170,7 +122,6 @@ namespace System.Management.Automation.Runspaces
             GC.SuppressFinalize(this);
         }
         /// <summary>
-        ///
         /// </summary>
         /// <param name="disposing"></param>
         private void Dispose(bool disposing)
@@ -205,7 +156,6 @@ namespace System.Management.Automation.Runspaces
 
         #region Public Properties
         /// <summary>
-        ///
         /// </summary>
         public Process Process { get; }
 
@@ -222,6 +172,7 @@ namespace System.Management.Automation.Runspaces
                     return _runspacePool;
                 }
             }
+
             set
             {
                 lock (_syncObject)
@@ -252,6 +203,7 @@ namespace System.Management.Automation.Runspaces
                 _started = true;
                 Process.Exited += ProcessExited;
             }
+
             Process.Start();
         }
 

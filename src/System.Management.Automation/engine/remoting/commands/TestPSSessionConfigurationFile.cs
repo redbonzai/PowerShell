@@ -1,14 +1,13 @@
-//
-//    Copyright (C) Microsoft.  All rights reserved.
-//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System;
-using System.Management.Automation;
-using System.Management.Automation.Remoting;
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Collections;
+using System.Management.Automation;
 using System.Management.Automation.Internal;
+using System.Management.Automation.Remoting;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -30,8 +29,10 @@ namespace Microsoft.PowerShell.Commands
         public string Path
         {
             get { return _path; }
+
             set { _path = value; }
         }
+
         private string _path;
 
         #endregion
@@ -39,7 +40,6 @@ namespace Microsoft.PowerShell.Commands
         #region Overrides
 
         /// <summary>
-        ///
         /// </summary>
         protected override void ProcessRecord()
         {
@@ -102,7 +102,6 @@ namespace Microsoft.PowerShell.Commands
                 // Create a script info for loading the file...
                 string scriptName;
                 scriptInfo = DISCUtils.GetScriptInfoForFile(this.Context, filePath, out scriptName);
-
 
                 Hashtable configTable = null;
 

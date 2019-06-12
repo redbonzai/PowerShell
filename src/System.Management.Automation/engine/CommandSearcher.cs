@@ -1,18 +1,19 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Management.Automation.Internal;
+
 using Dbg = System.Management.Automation.Diagnostics;
 
 namespace System.Management.Automation
 {
     /// <summary>
     /// Used to enumerate the commands on the system that match the specified
-    /// command name
+    /// command name.
     /// </summary>
     internal class CommandSearcher : IEnumerable<CommandInfo>, IEnumerator<CommandInfo>
     {
@@ -20,31 +21,24 @@ namespace System.Management.Automation
         /// Constructs a command searching enumerator that resolves the location
         /// to a command using a standard algorithm.
         /// </summary>
-        ///
         /// <param name="commandName">
         /// The name of the command to look for.
         /// </param>
-        ///
         /// <param name="options">
         /// Determines which types of commands glob resolution of the name will take place on.
         /// </param>
-        ///
         /// <param name="commandTypes">
         /// The types of commands to look for.
         /// </param>
-        ///
         /// <param name="context">
         /// The execution context for this engine instance...
         /// </param>
-        ///
         /// <exception cref="ArgumentNullException">
         /// If <paramref name="context"/> is null.
         /// </exception>
-        ///
         /// <exception cref="PSArgumentException">
         /// If <paramref name="commandName"/> is null or empty.
         /// </exception>
-        ///
         internal CommandSearcher(
             string commandName,
             SearchResolutionOptions options,
@@ -64,31 +58,27 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Gets an instance of a command enumerator
+        /// Gets an instance of a command enumerator.
         /// </summary>
-        ///
         /// <returns>
         /// An instance of this class as IEnumerator.
         /// </returns>
-        ///
         IEnumerator<CommandInfo> IEnumerable<CommandInfo>.GetEnumerator()
         {
             return this;
-        } // GetEnumerator
+        }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this;
-        } // GetEnumerator
+        }
 
         /// <summary>
-        /// Moves the enumerator to the next command match. Public for IEnumerable
+        /// Moves the enumerator to the next command match. Public for IEnumerable.
         /// </summary>
-        ///
         /// <returns>
         /// true if there was another command that matches, false otherwise.
         /// </returns>
-        ///
         public bool MoveNext()
         {
             _currentMatch = null;
@@ -127,18 +117,6 @@ namespace System.Management.Automation
             if (_currentState == SearchState.SearchingCmdlets)
             {
                 _currentMatch = SearchForCmdlets();
-                if (_currentMatch != null)
-                {
-                    return true;
-                }
-
-                // Advance the state
-                _currentState = SearchState.SearchingBuiltinScripts;
-            }
-
-            if (_currentState == SearchState.SearchingBuiltinScripts)
-            {
-                _currentMatch = SearchForBuiltinScripts();
                 if (_currentMatch != null)
                 {
                     return true;
@@ -222,7 +200,7 @@ namespace System.Management.Automation
                     _currentState = SearchState.QualifiedFileSystemPath;
                     return true;
                 }
-            } // SearchState.Reset
+            }
 
             if (_currentState == SearchState.PowerShellPathResolution)
             {
@@ -234,7 +212,7 @@ namespace System.Management.Automation
                 {
                     return true;
                 }
-            } // SearchState.PowerShellPathResolution
+            }
 
             // Search using CommandPathSearch
 
@@ -247,7 +225,7 @@ namespace System.Management.Automation
                 {
                     return true;
                 }
-            } // SearchState.QualifiedFileSystemPath || SearchState.PathSearch
+            }
 
             if (_currentState == SearchState.PathSearch)
             {
@@ -262,7 +240,7 @@ namespace System.Management.Automation
             }
 
             return false;
-        } // MoveNext
+        }
 
         private CommandInfo SearchForAliases()
         {
@@ -273,6 +251,7 @@ namespace System.Management.Automation
             {
                 currentMatch = GetNextAlias();
             }
+
             return currentMatch;
         }
 
@@ -281,7 +260,7 @@ namespace System.Management.Automation
             CommandInfo currentMatch = null;
 
             if (_context.EngineSessionState != null &&
-                (_commandTypes & (CommandTypes.Function | CommandTypes.Filter | CommandTypes.Workflow | CommandTypes.Configuration)) != 0)
+                (_commandTypes & (CommandTypes.Function | CommandTypes.Filter | CommandTypes.Configuration)) != 0)
             {
                 currentMatch = GetNextFunction();
             }
@@ -296,18 +275,6 @@ namespace System.Management.Automation
             if ((_commandTypes & CommandTypes.Cmdlet) != 0)
             {
                 currentMatch = GetNextCmdlet();
-            }
-
-            return currentMatch;
-        }
-
-        private CommandInfo SearchForBuiltinScripts()
-        {
-            CommandInfo currentMatch = null;
-
-            if ((_commandTypes & CommandTypes.Script) != 0)
-            {
-                currentMatch = GetNextBuiltinScript();
             }
 
             return currentMatch;
@@ -404,6 +371,7 @@ namespace System.Management.Automation
                     // The enumerator may throw if there are no more matches
                 }
             }
+
             return currentMatch;
         }
 
@@ -412,7 +380,7 @@ namespace System.Management.Automation
             CommandInfo currentMatch = null;
             string path = DoPowerShellRelativePathLookup();
 
-            if (!String.IsNullOrEmpty(path))
+            if (!string.IsNullOrEmpty(path))
             {
                 currentMatch = GetInfoFromPath(path);
             }
@@ -420,17 +388,14 @@ namespace System.Management.Automation
             return currentMatch;
         }
 
-
         /// <summary>
         /// Gets the CommandInfo representing the current command match.
         /// </summary>
         /// <value></value>
-        ///
         /// <exception cref="InvalidOperationException">
         /// The enumerator is positioned before the first element of
         /// the collection or after the last element.
         /// </exception>
-        ///
         CommandInfo IEnumerator<CommandInfo>.Current
         {
             get
@@ -444,8 +409,7 @@ namespace System.Management.Automation
 
                 return _currentMatch;
             }
-        } // Current
-
+        }
 
         object IEnumerator.Current
         {
@@ -474,13 +438,11 @@ namespace System.Management.Automation
         #region private members
 
         /// <summary>
-        /// Gets the next command info using the command name as a path
+        /// Gets the next command info using the command name as a path.
         /// </summary>
-        ///
         /// <returns>
         /// A CommandInfo for the next command if it exists as a path, or null otherwise.
         /// </returns>
-        ///
         private CommandInfo GetNextFromPath()
         {
             CommandInfo result = null;
@@ -495,52 +457,33 @@ namespace System.Management.Automation
                     "Trying to resolve the path as an PSPath");
 
                 // Find the match if it is.
+                // Try literal path resolution if it is set to run first
+                if (_commandResolutionOptions.HasFlag(SearchResolutionOptions.ResolveLiteralThenPathPatterns))
+                {
+                    var path = GetNextLiteralPathThatExistsAndHandleExceptions(_commandName, out _);
+
+                    if (path != null)
+                    {
+                        return GetInfoFromPath(path);
+                    }
+                }
 
                 Collection<string> resolvedPaths = new Collection<string>();
+                if (WildcardPattern.ContainsWildcardCharacters(_commandName))
+                {
+                    resolvedPaths = GetNextFromPathUsingWildcards(_commandName, out _);
+                }
 
-                try
+                // Try literal path resolution if wildcards are enable first and wildcard search failed
+                if (!_commandResolutionOptions.HasFlag(SearchResolutionOptions.ResolveLiteralThenPathPatterns) &&
+                    resolvedPaths.Count == 0)
                 {
-                    Provider.CmdletProvider providerInstance;
-                    ProviderInfo provider;
-                    resolvedPaths =
-                        _context.LocationGlobber.GetGlobbedProviderPathsFromMonadPath(_commandName, false, out provider, out providerInstance);
-                }
-                catch (ItemNotFoundException)
-                {
-                    CommandDiscovery.discoveryTracer.TraceError(
-                        "The path could not be found: {0}",
-                        _commandName);
-                }
-                catch (DriveNotFoundException)
-                {
-                    CommandDiscovery.discoveryTracer.TraceError(
-                        "A drive could not be found for the path: {0}",
-                        _commandName);
-                }
-                catch (ProviderNotFoundException)
-                {
-                    CommandDiscovery.discoveryTracer.TraceError(
-                        "A provider could not be found for the path: {0}",
-                        _commandName);
-                }
-                catch (InvalidOperationException)
-                {
-                    CommandDiscovery.discoveryTracer.TraceError(
-                        "The path specified a home directory, but the provider home directory was not set. {0}",
-                        _commandName);
-                }
-                catch (ProviderInvocationException providerException)
-                {
-                    CommandDiscovery.discoveryTracer.TraceError(
-                        "The provider associated with the path '{0}' encountered an error: {1}",
-                        _commandName,
-                        providerException.Message);
-                }
-                catch (PSNotSupportedException)
-                {
-                    CommandDiscovery.discoveryTracer.TraceError(
-                        "The provider associated with the path '{0}' does not implement ContainerCmdletProvider",
-                        _commandName);
+                    string path = GetNextLiteralPathThatExistsAndHandleExceptions(_commandName, out _);
+
+                    if (path != null)
+                    {
+                        return GetInfoFromPath(path);
+                    }
                 }
 
                 if (resolvedPaths.Count > 1)
@@ -567,6 +510,64 @@ namespace System.Management.Automation
             return result;
         }
 
+        /// <summary>
+        /// Gets the next path using WildCards.
+        /// </summary>
+        /// <param name="command">
+        /// The command to search for.
+        /// </param>
+        /// <param name="provider">The provider that the command was found in.</param>
+        /// <returns>
+        /// A collection of full paths to the commands which were found.
+        /// </returns>
+        private Collection<string> GetNextFromPathUsingWildcards(string command, out ProviderInfo provider)
+        {
+            try
+            {
+                return _context.LocationGlobber.GetGlobbedProviderPathsFromMonadPath(path: command, allowNonexistingPaths: false, provider: out provider, providerInstance: out _);
+            }
+            catch (ItemNotFoundException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "The path could not be found: {0}",
+                    command);
+            }
+            catch (DriveNotFoundException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "A drive could not be found for the path: {0}",
+                    command);
+            }
+            catch (ProviderNotFoundException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "A provider could not be found for the path: {0}",
+                    command);
+            }
+            catch (InvalidOperationException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "The path specified a home directory, but the provider home directory was not set. {0}",
+                    command);
+            }
+            catch (ProviderInvocationException providerException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "The provider associated with the path '{0}' encountered an error: {1}",
+                    command,
+                    providerException.Message);
+            }
+            catch (PSNotSupportedException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "The provider associated with the path '{0}' does not implement ContainerCmdletProvider",
+                    command);
+            }
+
+            provider = null;
+            return new Collection<string>();
+        }
+
         private static bool checkPath(string path, string commandName)
         {
             return path.StartsWith(commandName, StringComparison.OrdinalIgnoreCase);
@@ -575,37 +576,31 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the appropriate CommandInfo instance given the specified path.
         /// </summary>
-        ///
         /// <param name="path">
         /// The path to create the CommandInfo for.
         /// </param>
-        ///
         /// <returns>
         /// An instance of the appropriate CommandInfo derivative given the specified path.
         /// </returns>
-        ///
         /// <exception cref="FileLoadException">
         /// The <paramref name="path"/> refers to a cmdlet, or cmdletprovider
         /// and it could not be loaded as an XML document.
         /// </exception>
-        ///
         /// <exception cref="FormatException">
         /// The <paramref name="path"/> refers to a cmdlet, or cmdletprovider
         /// that does not adhere to the appropriate file format for its extension.
         /// </exception>
-        ///
         /// <exception cref="MetadataException">
         /// If <paramref name="path"/> refers to a cmdlet file that
         /// contains invalid metadata.
         /// </exception>
-        ///
         private CommandInfo GetInfoFromPath(string path)
         {
             CommandInfo result = null;
 
             do // false loop
             {
-                if (!Utils.NativeFileExists(path))
+                if (!File.Exists(path))
                 {
                     CommandDiscovery.discoveryTracer.TraceError("The path does not exist: {0}", path);
                     break;
@@ -635,7 +630,7 @@ namespace System.Management.Automation
                     break;
                 }
 
-                if (String.Equals(extension, StringLiterals.PowerShellScriptFileExtension, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(extension, StringLiterals.PowerShellScriptFileExtension, StringComparison.OrdinalIgnoreCase))
                 {
                     if ((_commandTypes & CommandTypes.ExternalScript) != 0)
                     {
@@ -651,9 +646,9 @@ namespace System.Management.Automation
                         result = new ExternalScriptInfo(scriptName, path, _context);
                         break;
                     }
+
                     break;
                 }
-
 
                 if ((_commandTypes & CommandTypes.Application) != 0)
                 {
@@ -678,16 +673,14 @@ namespace System.Management.Automation
             }
 
             return result;
-        } // GetNextFromPath
+        }
 
         /// <summary>
-        /// Gets the next matching alias
+        /// Gets the next matching alias.
         /// </summary>
-        ///
         /// <returns>
         /// A CommandInfo representing the next matching alias if found, otherwise null.
         /// </returns>
-        ///
         private CommandInfo GetNextAlias()
         {
             CommandInfo result = null;
@@ -707,7 +700,9 @@ namespace System.Management.Automation
 
                     foreach (KeyValuePair<string, AliasInfo> aliasEntry in _context.EngineSessionState.GetAliasTable())
                     {
-                        if (aliasMatcher.IsMatch(aliasEntry.Key))
+                        if (aliasMatcher.IsMatch(aliasEntry.Key) ||
+                            (_commandResolutionOptions.HasFlag(SearchResolutionOptions.FuzzyMatch) &&
+                            FuzzyMatcher.IsFuzzyMatch(aliasEntry.Key, _commandName)))
                         {
                             matchingAliases.Add(aliasEntry.Value);
                         }
@@ -757,22 +752,21 @@ namespace System.Management.Automation
                     result.Name,
                     result.Definition);
             }
+
             return result;
-        } // GetNextAlias
+        }
 
         /// <summary>
-        /// Gets the next matching function
+        /// Gets the next matching function.
         /// </summary>
-        ///
         /// <returns>
         /// A CommandInfo representing the next matching function if found, otherwise null.
         /// </returns>
-        ///
         private CommandInfo GetNextFunction()
         {
             CommandInfo result = null;
 
-            if ((_commandResolutionOptions & SearchResolutionOptions.ResolveFunctionPatterns) != 0)
+            if (_commandResolutionOptions.HasFlag(SearchResolutionOptions.ResolveFunctionPatterns))
             {
                 if (_matchingFunctionEnumerator == null)
                 {
@@ -786,17 +780,26 @@ namespace System.Management.Automation
 
                     foreach (DictionaryEntry functionEntry in _context.EngineSessionState.GetFunctionTable())
                     {
-                        if (functionMatcher.IsMatch((string)functionEntry.Key))
+                        if (functionMatcher.IsMatch((string)functionEntry.Key) ||
+                            (_commandResolutionOptions.HasFlag(SearchResolutionOptions.FuzzyMatch) &&
+                            FuzzyMatcher.IsFuzzyMatch(functionEntry.Key.ToString(), _commandName)))
                         {
                             matchingFunction.Add((CommandInfo)functionEntry.Value);
+                        }
+                        else if (_commandResolutionOptions.HasFlag(SearchResolutionOptions.UseAbbreviationExpansion))
+                        {
+                            if (_commandName.Equals(ModuleUtils.AbbreviateName((string)functionEntry.Key), StringComparison.OrdinalIgnoreCase))
+                            {
+                                matchingFunction.Add((CommandInfo)functionEntry.Value);
+                            }
                         }
                     }
 
                     // Process functions from modules
-                    CommandInfo c = GetFunctionFromModules(_commandName);
-                    if (c != null)
+                    CommandInfo cmdInfo = GetFunctionFromModules(_commandName);
+                    if (cmdInfo != null)
                     {
-                        matchingFunction.Add(c);
+                        matchingFunction.Add(cmdInfo);
                     }
 
                     _matchingFunctionEnumerator = matchingFunction.GetEnumerator();
@@ -885,6 +888,7 @@ namespace System.Management.Automation
                     }
                 }
             }
+
             return result;
         }
 
@@ -906,6 +910,7 @@ namespace System.Management.Automation
                     }
                 }
             }
+
             return result;
         }
 
@@ -924,6 +929,7 @@ namespace System.Management.Automation
                         break;
                     }
                 }
+
                 if (module == null)
                 {
                     module = modules[0];
@@ -936,16 +942,13 @@ namespace System.Management.Automation
         /// <summary>
         /// Gets the FunctionInfo or FilterInfo for the specified function name.
         /// </summary>
-        ///
         /// <param name="function">
         /// The name of the function/filter to retrieve.
         /// </param>
-        ///
         /// <returns>
         /// A FunctionInfo if the function name exists and is a function, a FilterInfo if
         /// the filter name exists and is a filter, or null otherwise.
         /// </returns>
-        ///
         private CommandInfo GetFunction(string function)
         {
             CommandInfo result = _context.EngineSessionState.GetFunction(function);
@@ -975,34 +978,34 @@ namespace System.Management.Automation
             {
                 result = GetFunctionFromModules(function);
             }
+
             return result;
-        } // GetFunction
+        }
 
         /// <summary>
         /// Gets the next cmdlet from the collection of matching cmdlets.
         /// If the collection doesn't exist yet it is created and the
         /// enumerator is moved to the first item in the collection.
         /// </summary>
-        ///
         /// <returns>
         /// A CmdletInfo for the next matching Cmdlet or null if there are
         /// no more matches.
         /// </returns>
-        ///
         private CmdletInfo GetNextCmdlet()
         {
             CmdletInfo result = null;
+            bool useAbbreviationExpansion = _commandResolutionOptions.HasFlag(SearchResolutionOptions.UseAbbreviationExpansion);
 
             if (_matchingCmdlet == null)
             {
-                if ((_commandResolutionOptions & SearchResolutionOptions.CommandNameIsPattern) != 0)
+                if (_commandResolutionOptions.HasFlag(SearchResolutionOptions.CommandNameIsPattern) || useAbbreviationExpansion)
                 {
                     Collection<CmdletInfo> matchingCmdletInfo = new Collection<CmdletInfo>();
 
                     PSSnapinQualifiedName PSSnapinQualifiedCommandName =
                         PSSnapinQualifiedName.GetInstance(_commandName);
 
-                    if (PSSnapinQualifiedCommandName == null)
+                    if (!useAbbreviationExpansion && PSSnapinQualifiedCommandName == null)
                     {
                         return null;
                     }
@@ -1018,13 +1021,22 @@ namespace System.Management.Automation
                     {
                         foreach (CmdletInfo cmdlet in cmdletList)
                         {
-                            if (cmdletMatcher.IsMatch(cmdlet.Name))
+                            if (cmdletMatcher.IsMatch(cmdlet.Name) ||
+                                (_commandResolutionOptions.HasFlag(SearchResolutionOptions.FuzzyMatch) &&
+                                FuzzyMatcher.IsFuzzyMatch(cmdlet.Name, _commandName)))
                             {
                                 if (string.IsNullOrEmpty(PSSnapinQualifiedCommandName.PSSnapInName) ||
                                     (PSSnapinQualifiedCommandName.PSSnapInName.Equals(
                                         cmdlet.ModuleName, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     // If PSSnapin is specified, make sure they match
+                                    matchingCmdletInfo.Add(cmdlet);
+                                }
+                            }
+                            else if (useAbbreviationExpansion)
+                            {
+                                if (_commandName.Equals(ModuleUtils.AbbreviateName(cmdlet.Name), StringComparison.OrdinalIgnoreCase))
+                                {
                                     matchingCmdletInfo.Add(cmdlet);
                                 }
                             }
@@ -1036,14 +1048,14 @@ namespace System.Management.Automation
                 else
                 {
                     _matchingCmdlet = _context.CommandDiscovery.GetCmdletInfo(_commandName,
-                        (_commandResolutionOptions & SearchResolutionOptions.SearchAllScopes) != 0);
+                        _commandResolutionOptions.HasFlag(SearchResolutionOptions.SearchAllScopes));
                 }
             }
 
             if (!_matchingCmdlet.MoveNext())
             {
                 // Advance the state
-                _currentState = SearchState.SearchingBuiltinScripts;
+                _currentState = SearchState.StartSearchingForExternalCommands;
 
                 _matchingCmdlet = null;
             }
@@ -1054,6 +1066,7 @@ namespace System.Management.Automation
 
             return traceResult(result);
         }
+
         private IEnumerator<CmdletInfo> _matchingCmdlet;
 
         private static CmdletInfo traceResult(CmdletInfo result)
@@ -1065,88 +1078,9 @@ namespace System.Management.Automation
                     result.Name,
                     result.ImplementingType);
             }
+
             return result;
         }
-
-        /// <summary>
-        /// Gets the next builtin script from the collection of matching scripts.
-        /// If the collection doesn't exist yet it is created and the
-        /// enumerator is moved to the first item in the collection.
-        /// </summary>
-        ///
-        /// <returns>
-        /// A ScriptInfo for the next matching script or null if there are
-        /// no more matches.
-        /// </returns>
-        ///
-        private ScriptInfo GetNextBuiltinScript()
-        {
-            ScriptInfo result = null;
-
-            if ((_commandResolutionOptions & SearchResolutionOptions.CommandNameIsPattern) != 0)
-            {
-                if (_matchingScript == null)
-                {
-                    // Generate the enumerator of matching script names
-
-                    Collection<string> matchingScripts =
-                        new Collection<string>();
-
-                    WildcardPattern scriptMatcher =
-                        WildcardPattern.Get(
-                            _commandName,
-                            WildcardOptions.IgnoreCase);
-
-                    WildcardPattern scriptExtensionMatcher =
-                        WildcardPattern.Get(
-                            _commandName + StringLiterals.PowerShellScriptFileExtension,
-                            WildcardOptions.IgnoreCase);
-
-                    // Get the script cache enumerator. This acquires the cache lock,
-                    // so be sure to dispose.
-
-                    foreach (string scriptName in _context.CommandDiscovery.ScriptCache.Keys)
-                    {
-                        if (scriptMatcher.IsMatch(scriptName) ||
-                            scriptExtensionMatcher.IsMatch(scriptName))
-                        {
-                            matchingScripts.Add(scriptName);
-                        }
-                    }
-                    _matchingScript = matchingScripts.GetEnumerator();
-                }
-
-                if (!_matchingScript.MoveNext())
-                {
-                    // Advance the state
-                    _currentState = SearchState.StartSearchingForExternalCommands;
-
-                    _matchingScript = null;
-                }
-                else
-                {
-                    result = _context.CommandDiscovery.GetScriptInfo(_matchingScript.Current);
-                }
-            }
-            else
-            {
-                // Advance the state
-                _currentState = SearchState.StartSearchingForExternalCommands;
-
-                result = _context.CommandDiscovery.GetScriptInfo(_commandName) ??
-                         _context.CommandDiscovery.GetScriptInfo(_commandName + StringLiterals.PowerShellScriptFileExtension);
-            }
-
-            if (result != null)
-            {
-                CommandDiscovery.discoveryTracer.WriteLine(
-                    "Script found: {0}",
-                    result.Name);
-            }
-            return result;
-        }
-        private IEnumerator<string> _matchingScript;
-
 
         private string DoPowerShellRelativePathLookup()
         {
@@ -1175,23 +1109,21 @@ namespace System.Management.Automation
                     }
                 }
             }
+
             return result;
-        } // DoPowerShellRelativePathLookup
+        }
 
         /// <summary>
         /// Resolves the given path as an PSPath and ensures that it was resolved
-        /// by the FileSystemProvider
+        /// by the FileSystemProvider.
         /// </summary>
-        ///
         /// <param name="path">
         /// The path to resolve.
         /// </param>
-        ///
         /// <returns>
         /// The path that was resolved. Null if the path couldn't be resolved or was
         /// not resolved by the FileSystemProvider.
         /// </returns>
-        ///
         private string ResolvePSPath(string path)
         {
             string result = null;
@@ -1200,15 +1132,21 @@ namespace System.Management.Automation
             {
                 ProviderInfo provider = null;
                 string resolvedPath = null;
-                if (WildcardPattern.ContainsWildcardCharacters(path))
+
+                // Try literal path resolution if it is set to run first
+                if (_commandResolutionOptions.HasFlag(SearchResolutionOptions.ResolveLiteralThenPathPatterns))
+                {
+                    // Cannot return early as this code path only expects
+                    // The file system provider and the final check for that
+                    // must verify this before we return.
+                    resolvedPath = GetNextLiteralPathThatExists(path, out provider);
+                }
+
+                if (WildcardPattern.ContainsWildcardCharacters(path) &&
+                    ((resolvedPath == null) || (provider == null)))
                 {
                     // Let PowerShell resolve relative path with wildcards.
-                    Provider.CmdletProvider providerInstance;
-                    Collection<string> resolvedPaths = _context.LocationGlobber.GetGlobbedProviderPathsFromMonadPath(
-                        path,
-                        false,
-                        out provider,
-                        out providerInstance);
+                    Collection<string> resolvedPaths = GetNextFromPathUsingWildcards(path, out provider);
 
                     if (resolvedPaths.Count == 0)
                     {
@@ -1232,14 +1170,15 @@ namespace System.Management.Automation
                     }
                 }
 
-                // Revert to previous path resolver if wildcards produces no results.
-                if ((resolvedPath == null) || (provider == null))
+                // Try literal path resolution if wildcards are enabled first and wildcard search failed
+                if (!_commandResolutionOptions.HasFlag(SearchResolutionOptions.ResolveLiteralThenPathPatterns) &&
+                    ((resolvedPath == null) || (provider == null)))
                 {
-                    resolvedPath = _context.LocationGlobber.GetProviderPath(path, out provider);
+                    resolvedPath = GetNextLiteralPathThatExists(path, out provider);
                 }
 
                 // Verify the path was resolved to a file system path
-                if (provider.NameEquals(_context.ProviderNames.FileSystem))
+                if (provider != null && provider.NameEquals(_context.ProviderNames.FileSystem))
                 {
                     result = resolvedPath;
 
@@ -1282,16 +1221,103 @@ namespace System.Management.Automation
             }
 
             return result;
-        } // ResolvePSPath
+        }
+        /// <summary>
+        /// Gets the next literal path.
+        /// Filtering to ones that exist for the filesystem.
+        /// Handles Exceptions
+        /// </summary>
+        /// <param name="command">
+        /// The command to search for.
+        /// </param>
+        /// <param name="provider">The provider that the command was found in.</param>
+        /// <returns>
+        /// Full path to the command.
+        /// </returns>
+        private string GetNextLiteralPathThatExistsAndHandleExceptions(string command, out ProviderInfo provider)
+        {
+            try
+            {
+                return GetNextLiteralPathThatExists(command, out provider);
+            }
+            catch (ItemNotFoundException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "The path could not be found: {0}",
+                    _commandName);
+            }
+            catch (DriveNotFoundException)
+            {
+                // This can be because we think a scope or a url is a drive
+                // and need to continue searching.
+                // Although, scope does not work through get-command
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "A drive could not be found for the path: {0}",
+                    _commandName);
+            }
+            catch (ProviderNotFoundException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "A provider could not be found for the path: {0}",
+                    _commandName);
+            }
+            catch (InvalidOperationException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "The path specified a home directory, but the provider home directory was not set. {0}",
+                    _commandName);
+            }
+            catch (ProviderInvocationException providerException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "The provider associated with the path '{0}' encountered an error: {1}",
+                    _commandName,
+                    providerException.Message);
+            }
+            catch (PSNotSupportedException)
+            {
+                CommandDiscovery.discoveryTracer.TraceError(
+                    "The provider associated with the path '{0}' does not implement ContainerCmdletProvider",
+                    _commandName);
+            }
+
+            provider = null;
+            return null;
+        }
 
         /// <summary>
-        /// Creates a collection of patterns used to find the command
+        /// Gets the next literal path.
+        /// Filtering to ones that exist for the filesystem.
         /// </summary>
-        ///
+        /// <param name="command">
+        /// The command to search for.
+        /// </param>
+        /// <param name="provider">The provider that the command was found in.</param>
+        /// <returns>
+        /// Full path to the command.
+        /// </returns>
+        private string GetNextLiteralPathThatExists(string command, out ProviderInfo provider)
+        {
+            string resolvedPath = _context.LocationGlobber.GetProviderPath(command, out provider);
+
+            if (provider.NameEquals(_context.ProviderNames.FileSystem)
+                && !File.Exists(resolvedPath)
+                && !Directory.Exists(resolvedPath))
+            {
+                provider = null;
+                return null;
+            }
+
+            return resolvedPath;
+        }
+
+        /// <summary>
+        /// Creates a collection of patterns used to find the command.
+        /// </summary>
         /// <param name="name">
         /// The name of the command to search for.
         /// </param>
-        /// <param name="commandDiscovery">get names for command discovery</param>
+        /// <param name="commandDiscovery">Get names for command discovery.</param>
         /// <returns>
         /// A collection of the patterns used to find the command.
         /// The patterns are as follows:
@@ -1302,7 +1328,6 @@ namespace System.Management.Automation
         ///             [commandName].[extension]
         ///     x+1. [commandName]
         /// </returns>
-        ///
         /// <exception cref="ArgumentException">
         /// If <paramref name="name"/> contains one or more of the
         /// invalid characters defined in InvalidPathChars.
@@ -1310,7 +1335,7 @@ namespace System.Management.Automation
         internal Collection<string> ConstructSearchPatternsFromName(string name, bool commandDiscovery = false)
         {
             Dbg.Assert(
-                !String.IsNullOrEmpty(name),
+                !string.IsNullOrEmpty(name),
                 "Caller should verify name");
 
             Collection<string> result = new Collection<string>();
@@ -1320,7 +1345,7 @@ namespace System.Management.Automation
 
             bool commandNameAddedFirst = false;
 
-            if (!String.IsNullOrEmpty(Path.GetExtension(name)))
+            if (!string.IsNullOrEmpty(Path.GetExtension(name)))
             {
                 result.Add(name);
                 commandNameAddedFirst = true;
@@ -1355,26 +1380,24 @@ namespace System.Management.Automation
             {
                 result.Add(name);
             }
+
             return result;
-        } // ConstructSearchPatternsFromName
+        }
 
         /// <summary>
         /// Determines if the given command name is a qualified PowerShell path.
         /// </summary>
-        ///
         /// <param name="commandName">
         /// The name of the command.
         /// </param>
-        ///
         /// <returns>
         /// True if the command name is either a provider-qualified or PowerShell drive-qualified
         /// path. False otherwise.
         /// </returns>
-        ///
         private static bool IsQualifiedPSPath(string commandName)
         {
             Dbg.Assert(
-                !String.IsNullOrEmpty(commandName),
+                !string.IsNullOrEmpty(commandName),
                 "The caller should have verified the commandName");
 
             bool result =
@@ -1384,7 +1407,7 @@ namespace System.Management.Automation
                 LocationGlobber.IsProviderDirectPath(commandName);
 
             return result;
-        } // IsQualifiedPSPath
+        }
 
         private enum CanDoPathLookupResult
         {
@@ -1400,16 +1423,13 @@ namespace System.Management.Automation
         /// characters which would require resolution. If so,
         /// path lookup will not succeed.
         /// </summary>
-        ///
         /// <param name="possiblePath">
         /// The command name (or possible path) to look for the special characters.
         /// </param>
-        ///
         /// <returns>
         /// True if the command name does not contain any special
         /// characters.  False otherwise.
         /// </returns>
-        ///
         private static CanDoPathLookupResult CanDoPathLookup(string possiblePath)
         {
             CanDoPathLookupResult result = CanDoPathLookupResult.Yes;
@@ -1458,11 +1478,10 @@ namespace System.Management.Automation
             } while (false);
 
             return result;
-        } // CanDoPathLookup
-
+        }
 
         /// <summary>
-        /// The command name to search for
+        /// The command name to search for.
         /// </summary>
         private string _commandName;
 
@@ -1490,13 +1509,11 @@ namespace System.Management.Automation
         /// <summary>
         /// A routine to initialize the path searcher...
         /// </summary>
-        ///
         /// <exception cref="ArgumentException">
         /// If the commandName used to construct this object
         /// contains one or more of the invalid characters defined
         /// in InvalidPathChars.
         /// </exception>
-        ///
         private void setupPathSearcher()
         {
             // If it's already set up, just return...
@@ -1520,7 +1537,8 @@ namespace System.Management.Automation
                         _commandName,
                         _context.CommandDiscovery.GetLookupDirectoryPaths(),
                         _context,
-                        acceptableCommandNames: null);
+                        acceptableCommandNames: null,
+                        useFuzzyMatch: _commandResolutionOptions.HasFlag(SearchResolutionOptions.FuzzyMatch));
             }
             else
             {
@@ -1550,7 +1568,7 @@ namespace System.Management.Automation
 
                     string fileName = Path.GetFileName(_commandName);
 
-                    if (!String.IsNullOrEmpty(fileName))
+                    if (!string.IsNullOrEmpty(fileName))
                     {
                         fileName = fileName.TrimEnd(Utils.Separators.PathSearchTrimEnd);
                         _pathSearcher =
@@ -1589,7 +1607,7 @@ namespace System.Management.Automation
 
                         string fileName = Path.GetFileName(_commandName);
 
-                        if (!String.IsNullOrEmpty(fileName))
+                        if (!string.IsNullOrEmpty(fileName))
                         {
                             fileName = fileName.TrimEnd(Utils.Separators.PathSearchTrimEnd);
                             _pathSearcher =
@@ -1609,7 +1627,7 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Resets the enumerator to before the first command match, public for IEnumerable
+        /// Resets the enumerator to before the first command match, public for IEnumerable.
         /// </summary>
         public void Reset()
         {
@@ -1628,27 +1646,29 @@ namespace System.Management.Automation
             {
                 _pathSearcher.Reset();
             }
+
             _currentMatch = null;
             _currentState = SearchState.SearchingAliases;
             _matchingAlias = null;
             _matchingCmdlet = null;
-            _matchingScript = null;
-        } // Reset
+        }
 
         internal CommandOrigin CommandOrigin
         {
             get { return _commandOrigin; }
+
             set { _commandOrigin = value; }
         }
+
         private CommandOrigin _commandOrigin = CommandOrigin.Internal;
 
         /// <summary>
-        /// An enumerator of the matching aliases
+        /// An enumerator of the matching aliases.
         /// </summary>
         private IEnumerator<AliasInfo> _matchingAlias;
 
         /// <summary>
-        /// An enumerator of the matching functions
+        /// An enumerator of the matching functions.
         /// </summary>
         private IEnumerator<CommandInfo> _matchingFunctionEnumerator;
 
@@ -1661,7 +1681,7 @@ namespace System.Management.Automation
         private CanDoPathLookupResult _canDoPathLookupResult = CanDoPathLookupResult.Yes;
 
         /// <summary>
-        /// The current state of the enumerator
+        /// The current state of the enumerator.
         /// </summary>
         private SearchState _currentState = SearchState.SearchingAliases;
 
@@ -1675,9 +1695,6 @@ namespace System.Management.Automation
 
             // the searcher has finished function resolution and is now searching for cmdlets
             SearchingCmdlets,
-
-            // the search has finished cmdlet resolution and is now searching for builtin scripts
-            SearchingBuiltinScripts,
 
             // the search has finished builtin script resolution and is now searching for external commands
             StartSearchingForExternalCommands,
@@ -1702,10 +1719,10 @@ namespace System.Management.Automation
 
             // No more matches can be found
             NoMoreMatches,
-        } // SearchState
+        }
 
         #endregion private members
-    } // CommandSearcher
+    }
 
     /// <summary>
     /// Determines which types of commands should be globbed using the specified
@@ -1719,5 +1736,18 @@ namespace System.Management.Automation
         ResolveFunctionPatterns = 0x02,
         CommandNameIsPattern = 0x04,
         SearchAllScopes = 0x08,
+
+        /// <summary>Use fuzzy matching.</summary>
+        FuzzyMatch = 0x10,
+
+        /// <summary>
+        /// Enable searching for cmdlets/functions by abbreviation expansion.
+        /// </summary>
+        UseAbbreviationExpansion = 0x20,
+
+        /// <summary>
+        /// Enable resolving wildcard in paths.
+        /// </summary>
+        ResolveLiteralThenPathPatterns = 0x40
     }
 }

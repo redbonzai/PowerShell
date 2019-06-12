@@ -1,24 +1,26 @@
-/********************************************************************++
-Copyright (c) Microsoft Corporation.  All rights reserved.
---********************************************************************/
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Management.Automation.Host;
+using System.Management.Automation.Internal;
+using System.Management.Automation.Remoting;
+using System.Management.Automation.Remoting.Client;
 using System.Management.Automation.Tracing;
 using System.Threading;
+
 using Dbg = System.Management.Automation.Diagnostics;
-using System.Management.Automation.Remoting;
-using System.Management.Automation.Internal;
-using System.Management.Automation.Host;
-using System.Collections.ObjectModel;
-using System.Management.Automation.Remoting.Client;
+#if LEGACYTELEMETRY
 using Microsoft.PowerShell.Telemetry.Internal;
+#endif
 
 namespace System.Management.Automation.Runspaces.Internal
 {
     /// <summary>
     /// Class which supports pooling remote powerShell runspaces
-    /// on the client
+    /// on the client.
     /// </summary>
     internal class RemoteRunspacePoolInternal : RunspacePoolInternal, IDisposable
     {
@@ -47,7 +49,7 @@ namespace System.Management.Automation.Runspaces.Internal
         ///   1. TargetTypeForDeserialization
         ///   2. TypeConverter
         /// </param>
-        /// <param name="host">Host associated with this runspacepool</param>
+        /// <param name="host">Host associated with this runspacepool.</param>
         /// <param name="applicationArguments">
         /// Application arguments the server can see in <see cref="System.Management.Automation.Remoting.PSSenderInfo.ApplicationArguments"/>
         /// </param>
@@ -112,10 +114,12 @@ namespace System.Management.Automation.Runspaces.Internal
             {
                 throw PSTraceSource.NewArgumentNullException("RunspacePool Guid");
             }
+
             if (connectCommands == null)
             {
                 throw PSTraceSource.NewArgumentNullException("ConnectCommandInfo[]");
             }
+
             if (connectionInfo == null)
             {
                 throw PSTraceSource.NewArgumentNullException("WSManConnectionInfo");
@@ -200,7 +204,7 @@ namespace System.Management.Automation.Runspaces.Internal
         #region Properties
 
         /// <summary>
-        /// the connection associated with this runspace pool
+        /// The connection associated with this runspace pool.
         /// </summary>
         public override RunspaceConnectionInfo ConnectionInfo
         {
@@ -212,7 +216,7 @@ namespace System.Management.Automation.Runspaces.Internal
 
         /// <summary>
         /// The ClientRunspacePoolDataStructureHandler associated with this
-        /// runspace pool
+        /// runspace pool.
         /// </summary>
         internal ClientRunspacePoolDataStructureHandler DataStructureHandler { get; private set; }
 
@@ -228,6 +232,7 @@ namespace System.Management.Automation.Runspaces.Internal
         internal string Name
         {
             get { return _friendlyName; }
+
             set { _friendlyName = value ?? string.Empty; }
         }
 
@@ -291,7 +296,7 @@ namespace System.Management.Automation.Runspaces.Internal
         /// runspace.
         /// This is currently supported *only* for remote runspaces.
         /// </summary>
-        /// <returns>True if successful</returns>
+        /// <returns>True if successful.</returns>
         internal override bool ResetRunspaceState()
         {
             // Version check.  Reset Runspace is supported only on PSRP protocol
@@ -361,7 +366,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 callId = DispatchTable.CreateNewCallId();
 
                 DataStructureHandler.SendSetMaxRunspacesToServer(maxRunspaces, callId);
-            } // lock ...
+            }
 
             // this call blocks until the response is received
             object response = DispatchTable.GetResponse(callId, false);
@@ -424,7 +429,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 callId = DispatchTable.CreateNewCallId();
 
                 DataStructureHandler.SendSetMinRunspacesToServer(minRunspaces, callId);
-            } // lock ...
+            }
 
             // this call blocks until the response is received
             object response = DispatchTable.GetResponse(callId, false);
@@ -444,9 +449,9 @@ namespace System.Management.Automation.Runspaces.Internal
 
         /// <summary>
         /// Retrieves the number of runspaces available at the time of calling
-        /// this method from the remote server
+        /// this method from the remote server.
         /// </summary>
-        /// <returns>The number of runspaces available in the pool</returns>
+        /// <returns>The number of runspaces available in the pool.</returns>
         internal override int GetAvailableRunspaces()
         {
             int availableRunspaces = 0;
@@ -475,7 +480,7 @@ namespace System.Management.Automation.Runspaces.Internal
                 }
 
                 DataStructureHandler.SendGetAvailableRunspacesToServer(callId);
-            } // lock ...
+            }
 
             // this call blocks until the response is received
             object response = DispatchTable.GetResponse(callId, 0);
@@ -488,8 +493,8 @@ namespace System.Management.Automation.Runspaces.Internal
         /// The server sent application private data.  Store the data so that user
         /// can get it later.
         /// </summary>
-        /// <param name="eventArgs">argument describing this event</param>
-        /// <param name="sender">sender of this event</param>
+        /// <param name="eventArgs">Argument describing this event.</param>
+        /// <param name="sender">Sender of this event.</param>
         internal void HandleApplicationPrivateDataReceived(object sender,
             RemoteDataEventArgs<PSPrimitiveDictionary> eventArgs)
         {
@@ -527,10 +532,10 @@ namespace System.Management.Automation.Runspaces.Internal
 
         /// <summary>
         /// The state of the server RunspacePool has changed. Handle
-        /// the same and reflect local states accordingly
+        /// the same and reflect local states accordingly.
         /// </summary>
-        /// <param name="eventArgs">argument describing this event</param>
-        /// <param name="sender">sender of this event</param>
+        /// <param name="eventArgs">Argument describing this event.</param>
+        /// <param name="sender">Sender of this event.</param>
         internal void HandleStateInfoReceived(object sender,
             RemoteDataEventArgs<RunspacePoolStateInfo> eventArgs)
         {
@@ -584,7 +589,7 @@ namespace System.Management.Automation.Runspaces.Internal
                     // if closeAsyncResult is null, BeginClose is not called. That means
                     // we are getting close event from server, in this case release the
                     // local resources
-                    if (null == _closeAsyncResult)
+                    if (_closeAsyncResult == null)
                     {
                         // Close the local resources.
                         DataStructureHandler.CloseRunspacePoolAsync();
@@ -593,15 +598,15 @@ namespace System.Management.Automation.Runspaces.Internal
                     // Delay notifying upper layers of finished state change event
                     // until after transport close ack is received (HandleSessionClosed handler).
                 }
-            } // else if ...
+            }
         }
 
         /// <summary>
         /// A host call has been proxied from the server which needs to
-        /// be executed
+        /// be executed.
         /// </summary>
-        /// <param name="sender">sender of this event</param>
-        /// <param name="eventArgs">arguments describing this event</param>
+        /// <param name="sender">Sender of this event.</param>
+        /// <param name="eventArgs">Arguments describing this event.</param>
         internal void HandleRemoteHostCalls(object sender,
             RemoteDataEventArgs<RemoteHostCall> eventArgs)
         {
@@ -634,7 +639,7 @@ namespace System.Management.Automation.Runspaces.Internal
         }
 
         /// <summary>
-        /// Application arguments to use when opening a remote session
+        /// Application arguments to use when opening a remote session.
         /// </summary>
         internal PSPrimitiveDictionary ApplicationArguments { get; }
 
@@ -690,12 +695,12 @@ namespace System.Management.Automation.Runspaces.Internal
 
         /// <summary>
         /// This event is raised, when a host call is for a remote runspace
-        /// which this runspace pool wraps
+        /// which this runspace pool wraps.
         /// </summary>
         internal event EventHandler<RemoteDataEventArgs<RemoteHostCall>> HostCallReceived;
 
         /// <summary>
-        /// EventHandler used to report connection URI redirections to the application
+        /// EventHandler used to report connection URI redirections to the application.
         /// </summary>
         internal event EventHandler<RemoteDataEventArgs<Uri>> URIRedirectionReported;
 
@@ -705,7 +710,6 @@ namespace System.Management.Automation.Runspaces.Internal
         internal event EventHandler<CreateCompleteEventArgs> SessionCreateCompleted;
 
         /// <summary>
-        ///
         /// </summary>
         /// <param name="shell"></param>
         internal void CreatePowerShellOnServerAndInvoke(ClientRemotePowerShell shell)
@@ -776,7 +780,7 @@ namespace System.Management.Automation.Runspaces.Internal
         /// <summary>
         /// Push a running PowerShell onto the stack.
         /// </summary>
-        /// <param name="ps">PowerShell</param>
+        /// <param name="ps">PowerShell.</param>
         internal void PushRunningPowerShell(PowerShell ps)
         {
             Dbg.Assert(ps != null, "Caller should not pass in null reference.");
@@ -786,7 +790,7 @@ namespace System.Management.Automation.Runspaces.Internal
         /// <summary>
         /// Pop the currently running PowerShell from stack.
         /// </summary>
-        /// <returns>PowerShell</returns>
+        /// <returns>PowerShell.</returns>
         internal PowerShell PopRunningPowerShell()
         {
             PowerShell powershell;
@@ -801,7 +805,7 @@ namespace System.Management.Automation.Runspaces.Internal
         /// <summary>
         /// Return the current running PowerShell.
         /// </summary>
-        /// <returns>PowerShell</returns>
+        /// <returns>PowerShell.</returns>
         internal PowerShell GetCurrentRunningPowerShell()
         {
             PowerShell powershell;
@@ -850,7 +854,9 @@ namespace System.Management.Automation.Runspaces.Internal
             PSEtwLog.LogOperationalVerbose(PSEventId.RunspacePoolOpen, PSOpcode.Open,
                             PSTask.CreateRunspace, PSKeyword.UseAlwaysOperational);
 
+#if LEGACYTELEMETRY
             TelemetryAPI.ReportRemoteSessionCreated(_connectionInfo);
+#endif
 
             lock (syncObject)
             {
@@ -869,7 +875,6 @@ namespace System.Management.Automation.Runspaces.Internal
 
             _openAsyncResult = asyncResult;
 
-
             // send a message using the data structure handler to open the RunspacePool
             // on the remote server
             DataStructureHandler.CreateRunspacePoolAndOpenAsync();
@@ -882,7 +887,7 @@ namespace System.Management.Automation.Runspaces.Internal
         #region Public Methods
 
         /// <summary>
-        /// Synchronous open
+        /// Synchronous open.
         /// </summary>
         public override void Open()
         {
@@ -911,7 +916,7 @@ namespace System.Management.Automation.Runspaces.Internal
 
         /// <summary>
         /// Closes the RunspacePool asynchronously. To get the exceptions
-        /// that might have occurred, call EndOpen
+        /// that might have occurred, call EndOpen.
         /// </summary>
         /// <param name="callback">
         /// An AsyncCallback to call once the BeginClose completes
@@ -978,7 +983,7 @@ namespace System.Management.Automation.Runspaces.Internal
 
             if (!skipClosing)
             {
-                //SetRunspacePoolState(new RunspacePoolStateInfo(RunspacePoolState.Closing, null), true);
+                // SetRunspacePoolState(new RunspacePoolStateInfo(RunspacePoolState.Closing, null), true);
 
                 // send a message using the data structure handler to close the RunspacePool
                 // on the remote server
@@ -1007,8 +1012,8 @@ namespace System.Management.Automation.Runspaces.Internal
         /// Asynchronous disconnect.
         /// </summary>
         /// <param name="callback">AsyncCallback object.</param>
-        /// <param name="state">state object.</param>
-        /// <returns>IAsyncResult</returns>
+        /// <param name="state">State object.</param>
+        /// <returns>IAsyncResult.</returns>
         public override IAsyncResult BeginDisconnect(AsyncCallback callback, object state)
         {
             if (!CanDisconnect)
@@ -1064,14 +1069,14 @@ namespace System.Management.Automation.Runspaces.Internal
         /// <param name="asyncResult">IAsyncResult object.</param>
         public override void EndDisconnect(IAsyncResult asyncResult)
         {
-            if (null == asyncResult)
+            if (asyncResult == null)
             {
                 throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
 
             RunspacePoolAsyncResult rsAsyncResult = asyncResult as RunspacePoolAsyncResult;
 
-            if ((null == rsAsyncResult) ||
+            if ((rsAsyncResult == null) ||
                 (rsAsyncResult.OwnerId != instanceId) ||
                 (rsAsyncResult.IsAssociatedWithAsyncOpen))
             {
@@ -1098,8 +1103,8 @@ namespace System.Management.Automation.Runspaces.Internal
         /// Asynchronous connect.
         /// </summary>
         /// <param name="callback">ASyncCallback object.</param>
-        /// <param name="state">state Object.</param>
-        /// <returns>IAsyncResult</returns>
+        /// <param name="state">State Object.</param>
+        /// <returns>IAsyncResult.</returns>
         public override IAsyncResult BeginConnect(AsyncCallback callback, object state)
         {
             if (!AvailableForConnection)
@@ -1174,14 +1179,14 @@ namespace System.Management.Automation.Runspaces.Internal
         /// <param name="asyncResult">IAsyncResult object.</param>
         public override void EndConnect(IAsyncResult asyncResult)
         {
-            if (null == asyncResult)
+            if (asyncResult == null)
             {
                 throw PSTraceSource.NewArgumentNullException("asyncResult");
             }
 
             RunspacePoolAsyncResult rsAsyncResult = asyncResult as RunspacePoolAsyncResult;
 
-            if ((null == rsAsyncResult) ||
+            if ((rsAsyncResult == null) ||
                 (rsAsyncResult.OwnerId != instanceId) ||
                 (rsAsyncResult.IsAssociatedWithAsyncOpen))
             {
@@ -1223,7 +1228,7 @@ namespace System.Management.Automation.Runspaces.Internal
         ///<summary>
         /// Returns RunspacePool capabilities.
         /// </summary>
-        /// <returns>RunspacePoolCapability</returns>
+        /// <returns>RunspacePoolCapability.</returns>
         public override RunspacePoolCapability GetCapabilities()
         {
             RunspacePoolCapability returnCaps = RunspacePoolCapability.Default;
@@ -1236,7 +1241,7 @@ namespace System.Management.Automation.Runspaces.Internal
             return returnCaps;
         }
 
-        #endregion  Public Methods
+        #endregion Public Methods
 
         #region Static methods
 
@@ -1314,6 +1319,7 @@ namespace System.Management.Automation.Runspaces.Internal
 
                     throw;
                 }
+
                 foreach (PSObject cmdObject in commandItems)
                 {
                     PSPropertyInfo pspCommandId = cmdObject.Properties["CommandId"];
@@ -1375,6 +1381,7 @@ namespace System.Management.Automation.Runspaces.Internal
                     wsmanConnectionInfo.IdleTimeout = idleTimeout;
                 }
             }
+
             if (pspBufferMode != null)
             {
                 string bufferingMode = pspBufferMode.Value as string;
@@ -1388,6 +1395,7 @@ namespace System.Management.Automation.Runspaces.Internal
                     }
                 }
             }
+
             if (pspResourceUri != null)
             {
                 string strShellUri = pspResourceUri.Value as string;
@@ -1396,6 +1404,7 @@ namespace System.Management.Automation.Runspaces.Internal
                     wsmanConnectionInfo.ShellUri = strShellUri;
                 }
             }
+
             if (pspLocale != null)
             {
                 string localString = pspLocale.Value as string;
@@ -1409,6 +1418,7 @@ namespace System.Management.Automation.Runspaces.Internal
                     { }
                 }
             }
+
             if (pspDataLocale != null)
             {
                 string dataLocalString = pspDataLocale.Value as string;
@@ -1422,6 +1432,7 @@ namespace System.Management.Automation.Runspaces.Internal
                     { }
                 }
             }
+
             if (pspCompressionMode != null)
             {
                 string compressionModeString = pspCompressionMode.Value as string;
@@ -1431,6 +1442,7 @@ namespace System.Management.Automation.Runspaces.Internal
                         ? false : true;
                 }
             }
+
             if (pspEncoding != null)
             {
                 string encodingString = pspEncoding.Value as string;
@@ -1440,6 +1452,7 @@ namespace System.Management.Automation.Runspaces.Internal
                         ? true : false;
                 }
             }
+
             if (pspProfile != null)
             {
                 string machineProfileLoadedString = pspProfile.Value as string;
@@ -1449,6 +1462,7 @@ namespace System.Management.Automation.Runspaces.Internal
                         ? false : true;
                 }
             }
+
             if (pspMaxIdleTimeout != null)
             {
                 int maxIdleTimeout;
@@ -1505,7 +1519,7 @@ namespace System.Management.Automation.Runspaces.Internal
         {
             if (timeString != null)
             {
-                string timeoutString = timeString.Replace("PT", "").Replace("S", "");
+                string timeoutString = timeString.Replace("PT", string.Empty).Replace("S", string.Empty);
                 try
                 {
                     // Convert time from seconds to milliseconds.
@@ -1532,7 +1546,7 @@ namespace System.Management.Automation.Runspaces.Internal
 
         /// <summary>
         /// Set the new runspace pool state based on the state of the
-        /// server RunspacePool
+        /// server RunspacePool.
         /// </summary>
         /// <param name="newStateInfo">state information object
         /// describing the state change at the server RunspacePool</param>
@@ -1543,11 +1557,11 @@ namespace System.Management.Automation.Runspaces.Internal
 
         /// <summary>
         /// Set the new runspace pool state based on the state of the
-        /// server RunspacePool and raise events if required
+        /// server RunspacePool and raise events if required.
         /// </summary>
         /// <param name="newStateInfo">state information object
         /// describing the state change at the server RunspacePool</param>
-        /// <param name="raiseEvents">raise state changed events if true</param>
+        /// <param name="raiseEvents">Raise state changed events if true.</param>
         private void SetRunspacePoolState(RunspacePoolStateInfo newStateInfo, bool raiseEvents)
         {
             stateInfo = newStateInfo;
@@ -1630,10 +1644,10 @@ namespace System.Management.Automation.Runspaces.Internal
         }
 
         /// <summary>
-        /// The session is closing set the state and reason accordingly
+        /// The session is closing set the state and reason accordingly.
         /// </summary>
-        /// <param name="sender">sender of this event, unused</param>
-        /// <param name="eventArgs">arguments describing this event</param>
+        /// <param name="sender">Sender of this event, unused.</param>
+        /// <param name="eventArgs">Arguments describing this event.</param>
         private void HandleSessionClosing(object sender, RemoteDataEventArgs<Exception> eventArgs)
         {
             // just capture the reason for closing here..handle the session closed event
@@ -1642,10 +1656,10 @@ namespace System.Management.Automation.Runspaces.Internal
         }
 
         /// <summary>
-        /// The session closed, set the state and reason accordingly
+        /// The session closed, set the state and reason accordingly.
         /// </summary>
-        /// <param name="sender">sender of this event, unused</param>
-        /// <param name="eventArgs">arguments describing this event</param>
+        /// <param name="sender">Sender of this event, unused.</param>
+        /// <param name="eventArgs">Arguments describing this event.</param>
         private void HandleSessionClosed(object sender, RemoteDataEventArgs<Exception> eventArgs)
         {
             if (eventArgs.Data != null)
@@ -1701,7 +1715,7 @@ namespace System.Management.Automation.Runspaces.Internal
         }
 
         /// <summary>
-        /// Set the async result for open as completed
+        /// Set the async result for open as completed.
         /// </summary>
         private void SetOpenAsCompleted()
         {
@@ -1714,7 +1728,7 @@ namespace System.Management.Automation.Runspaces.Internal
         }
 
         /// <summary>
-        /// Set the async result for close as completed
+        /// Set the async result for close as completed.
         /// </summary>
         private void SetCloseAsCompleted()
         {
@@ -1744,10 +1758,10 @@ namespace System.Management.Automation.Runspaces.Internal
         /// <summary>
         /// When a response to a SetMaxRunspaces or SetMinRunspaces is received,
         /// from the server, this method sets the response and thereby unblocks
-        /// corresponding call
+        /// corresponding call.
         /// </summary>
-        /// <param name="sender">sender of this message, unused</param>
-        /// <param name="eventArgs">contains response and call id</param>
+        /// <param name="sender">Sender of this message, unused.</param>
+        /// <param name="eventArgs">Contains response and call id.</param>
         private void HandleResponseReceived(object sender, RemoteDataEventArgs<PSObject> eventArgs)
         {
             PSObject data = eventArgs.Data;
@@ -1765,7 +1779,7 @@ namespace System.Management.Automation.Runspaces.Internal
         private void HandleURIDirectionReported(object sender, RemoteDataEventArgs<Uri> eventArgs)
         {
             WSManConnectionInfo wsmanConnectionInfo = _connectionInfo as WSManConnectionInfo;
-            if (null != wsmanConnectionInfo)
+            if (wsmanConnectionInfo != null)
             {
                 wsmanConnectionInfo.ConnectionUri = eventArgs.Data;
                 URIRedirectionReported.SafeInvoke(this, eventArgs);
@@ -1773,7 +1787,7 @@ namespace System.Management.Automation.Runspaces.Internal
         }
 
         /// <summary>
-        /// When the server sends a PSEventArgs this method will add it to the local event queue
+        /// When the server sends a PSEventArgs this method will add it to the local event queue.
         /// </summary>
         private void HandlePSEventArgsReceived(object sender, RemoteDataEventArgs<PSEventArgs> e)
         {
@@ -1901,7 +1915,7 @@ namespace System.Management.Automation.Runspaces.Internal
         #region IDisposable
 
         /// <summary>
-        /// Public method for Dispose
+        /// Public method for Dispose.
         /// </summary>
         public void Dispose()
         {
@@ -1911,9 +1925,9 @@ namespace System.Management.Automation.Runspaces.Internal
         }
 
         /// <summary>
-        /// Release all resources
+        /// Release all resources.
         /// </summary>
-        /// <param name="disposing">if true, release all managed resources</param>
+        /// <param name="disposing">If true, release all managed resources.</param>
         public override void Dispose(bool disposing)
         {
             // dispose the base class before disposing dataStructure handler.
@@ -1944,7 +1958,7 @@ namespace System.Management.Automation.Runspaces.Internal
         /// <summary>
         /// Remote command string.
         /// </summary>
-        public string Command { get; } = String.Empty;
+        public string Command { get; } = string.Empty;
 
         /// <summary>
         /// Constructs a remote command object.
@@ -1993,24 +2007,29 @@ namespace System.Management.Automation.Runspaces.Internal
                 {
                     powerShell.AddParameter("Credential", wsmanConnectionInfo.Credential);
                 }
+
                 if (wsmanConnectionInfo.CertificateThumbprint != null)
                 {
                     powerShell.AddParameter("CertificateThumbprint", wsmanConnectionInfo.CertificateThumbprint);
                 }
+
                 if (wsmanConnectionInfo.PortSetting != -1)
                 {
                     powerShell.AddParameter("Port", wsmanConnectionInfo.Port);
                 }
+
                 if (CheckForSSL(wsmanConnectionInfo))
                 {
                     powerShell.AddParameter("UseSSL", true);
                 }
+
                 if (!string.IsNullOrEmpty(wsmanConnectionInfo.AppName))
                 {
                     // Remove prepended path character.
                     string appName = wsmanConnectionInfo.AppName.TrimStart('/');
                     powerShell.AddParameter("ApplicationName", appName);
                 }
+
                 powerShell.AddParameter("SessionOption", GetSessionOptions(wsmanConnectionInfo));
 
                 result = powerShell.Invoke();
@@ -2048,24 +2067,29 @@ namespace System.Management.Automation.Runspaces.Internal
                 {
                     powerShell.AddParameter("Credential", wsmanConnectionInfo.Credential);
                 }
+
                 if (wsmanConnectionInfo.CertificateThumbprint != null)
                 {
                     powerShell.AddParameter("CertificateThumbprint", wsmanConnectionInfo.CertificateThumbprint);
                 }
+
                 if (wsmanConnectionInfo.PortSetting != -1)
                 {
                     powerShell.AddParameter("Port", wsmanConnectionInfo.Port);
                 }
+
                 if (CheckForSSL(wsmanConnectionInfo))
                 {
                     powerShell.AddParameter("UseSSL", true);
                 }
+
                 if (!string.IsNullOrEmpty(wsmanConnectionInfo.AppName))
                 {
                     // Remove prepended path character.
                     string appName = wsmanConnectionInfo.AppName.TrimStart('/');
                     powerShell.AddParameter("ApplicationName", appName);
                 }
+
                 powerShell.AddParameter("SessionOption", GetSessionOptions(wsmanConnectionInfo));
 
                 result = powerShell.Invoke();
@@ -2078,8 +2102,8 @@ namespace System.Management.Automation.Runspaces.Internal
         /// Use the WSMan New-WSManSessionOption cmdlet to create a session options
         /// object used for Get-WSManInstance queries.
         /// </summary>
-        /// <param name="wsmanConnectionInfo">WSManConnectionInfo</param>
-        /// <returns>WSMan session options object</returns>
+        /// <param name="wsmanConnectionInfo">WSManConnectionInfo.</param>
+        /// <returns>WSMan session options object.</returns>
         private static object GetSessionOptions(WSManConnectionInfo wsmanConnectionInfo)
         {
             Collection<PSObject> result;
