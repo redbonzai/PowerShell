@@ -5,6 +5,12 @@ Import-Module HelpersCommon
 
 Describe "New-PSSession basic test" -Tag @("CI") {
     It "New-PSSession should not crash powershell" {
+        $platformInfo = Get-PlatformInfo
+        if (($platformInfo -eq "alpine") -or ($platformInfo -eq "raspbian")) {
+            Set-ItResult -Skipped -Because "MI library not available for Alpine or Raspberry Pi"
+            return
+        }
+
         { New-PSSession -ComputerName nonexistcomputer -Authentication Basic } |
            Should -Throw -ErrorId "InvalidOperation,Microsoft.PowerShell.Commands.NewPSSessionCommand"
     }
@@ -12,6 +18,12 @@ Describe "New-PSSession basic test" -Tag @("CI") {
 
 Describe "Basic Auth over HTTP not allowed on Unix" -Tag @("CI") {
     It "New-PSSession should throw when specifying Basic Auth over HTTP on Unix" -skip:($IsWindows) {
+        $platformInfo = Get-PlatformInfo
+        if (($platformInfo -eq "alpine") -or ($platformInfo -eq "raspbian")) {
+            Set-ItResult -Skipped -Because "MI library not available for Alpine or Raspberry Pi"
+            return
+        }
+
         $password = ConvertTo-SecureString -String "password" -AsPlainText -Force
         $credential = [PSCredential]::new('username', $password)
 
@@ -23,6 +35,12 @@ Describe "Basic Auth over HTTP not allowed on Unix" -Tag @("CI") {
     }
 
     It "New-PSSession should NOT throw a ConnectFailed exception when specifying Basic Auth over HTTPS on Unix" -skip:($IsWindows) {
+        $platformInfo = Get-PlatformInfo
+        if (($platformInfo -eq "alpine") -or ($platformInfo -eq "raspbian") ) {
+            Set-ItResult -Skipped -Because "MI library not available for Alpine or Raspberry Pi"
+            return
+        }
+
         $password = ConvertTo-SecureString -String "password" -AsPlainText -Force
         $credential = [PSCredential]::new('username', $password)
 
@@ -187,7 +205,7 @@ Describe "Remoting loopback tests" -Tags @('CI', 'RequireAdminOnWindows') {
     AfterAll {
         $global:PSDefaultParameterValues = $originalDefaultParameterValues
 
-        if($isWindows)
+        if($IsWindows)
         {
             Remove-PSSession $disconnectedSession,$closedSession,$openSession -ErrorAction SilentlyContinue
         }

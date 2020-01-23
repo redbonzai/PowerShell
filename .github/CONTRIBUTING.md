@@ -27,7 +27,7 @@ Please read the rest of this document to ensure a smooth contribution process.
 * Review [Issue Management][issue-management].
 * Check if the issue you are going to file already exists in our [GitHub issues][open-issue].
 * If you can't find your issue already,
-  [open a new issue](https://github.com/PowerShell/PowerShell/issues/new),
+  [open a new issue](https://github.com/PowerShell/PowerShell/issues/new/choose),
   making sure to follow the directions as best you can.
 * If the issue is marked as [`Up-for-Grabs`][up-for-grabs],
   the PowerShell Maintainers are looking for help with the issue.
@@ -40,6 +40,32 @@ Please read the rest of this document to ensure a smooth contribution process.
 ### Contributing to documentation related to PowerShell
 
 Please see the [Contributor Guide in `MicrosoftDocs/PowerShell-Docs`](https://github.com/MicrosoftDocs/PowerShell-Docs/blob/staging/CONTRIBUTING.md).
+
+#### Quick steps if you're changing an existing cmdlet
+
+If you made a change to an existing cmdlet and would like to update the documentation using PlatyPS,
+here are the quick steps:
+
+1. Install
+`PlatyPS`
+if you don't have it -
+`Install-Module PlatyPS`.
+1. Clone the
+[`MicrosoftDocs/PowerShell-Docs`](https://github.com/MicrosoftDocs/PowerShell-Docs)
+repo if you don't already have it.
+1. Start your local build of PowerShell
+(with the change to the cmdlet you made).
+1. Find the cmdlet's markdown file in PowerShell Docs - usually under
+`PowerShell-Docs/reference/<latest powershell version>/<module cmdlet is a part of>/<your changed cmdlet>.md`
+(Ex. `PowerShell-Docs/reference/7/Microsoft.PowerShell.Utility/Select-String.md`)
+1. Run
+`Update-MarkdownHelp -Path <path to cmdlet markdown file>`
+which will update the documentation for you.
+1. Make any additional changes needed for the cmdlet to be properly documented.
+1. Send a Pull Request to the PowerShell Docs repo with the changes that
+`PlatyPS`
+made.
+1. Link your Docs PR to your original change PR.
 
 ### Contributing to documentation related to maintaining or contributing to the PowerShell project
 
@@ -356,7 +382,7 @@ Once you sign a CLA, all your existing and future pull requests will have the st
 [testing-guidelines]: ../docs/testing-guidelines/testing-guidelines.md
 [running-tests-outside-of-ci]: ../docs/testing-guidelines/testing-guidelines.md#running-tests-outside-of-ci
 [issue-management]: ../docs/maintainers/issue-management.md
-[vuln-reporting]: ../docs/maintainers/issue-management.md#Security-Vulnerabilities
+[vuln-reporting]: ./SECURITY.md
 [governance]: ../docs/community/governance.md
 [using-prs]: https://help.github.com/articles/using-pull-requests/
 [fork-a-repo]: https://help.github.com/articles/fork-a-repo/

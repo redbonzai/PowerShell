@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Management.Automation.Language;
 using System.Text;
 
 namespace System.Management.Automation
@@ -449,7 +450,7 @@ namespace System.Management.Automation
                 new Collection<MergedCompiledCommandParameter>();
 
             // Skip the leading '-' if present
-            if (name.Length > 0 && SpecialCharacters.IsDash(name[0]))
+            if (name.Length > 0 && CharExtensions.IsDash(name[0]))
             {
                 name = name.Substring(1);
             }
@@ -512,7 +513,7 @@ namespace System.Management.Automation
                     }
                 }
 
-                if (filteredParameters.Count == 1)
+                if (tryExactMatching && filteredParameters.Count == 1)
                 {
                     matchingParameters = filteredParameters;
                 }

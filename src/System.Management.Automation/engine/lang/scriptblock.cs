@@ -109,7 +109,7 @@ namespace System.Management.Automation
             fileContents: script);
 
         internal static ScriptBlock CreateDelayParsedScriptBlock(string script, bool isProductCode)
-            => new ScriptBlock(new CompiledScriptBlockData(script, isProductCode));
+            => new ScriptBlock(new CompiledScriptBlockData(script, isProductCode)) { DebuggerHidden = true };
 
         /// <summary>
         /// Returns a new scriptblock bound to a module. Any local variables in the
@@ -975,7 +975,8 @@ namespace System.Management.Automation
                 try
                 {
                     var runspace = (RunspaceBase)context.CurrentRunspace;
-                    shouldGenerateEvent = !runspace.RunActionIfNoRunningPipelinesWithThreadCheck(() =>
+                    if (runspace.CanRunActionInCurrentPipeline())
+                    {
                         InvokeWithPipeImpl(
                             useLocalScope,
                             functionsToDefine,
@@ -986,7 +987,12 @@ namespace System.Management.Automation
                             scriptThis,
                             outputPipe,
                             invocationInfo,
-                            args));
+                            args);
+                    }
+                    else
+                    {
+                        shouldGenerateEvent = true;
+                    }
                 }
                 finally
                 {

@@ -1285,8 +1285,8 @@ namespace System.Management.Automation.Runspaces
                                                     (RemotingErrorIdStrings.RelativeUriForRunspacePathNotSupported));
             }
 
-            if (uri.OriginalString.LastIndexOf(":", StringComparison.OrdinalIgnoreCase) >
-                uri.AbsoluteUri.IndexOf("//", StringComparison.OrdinalIgnoreCase))
+            if (uri.OriginalString.LastIndexOf(':') >
+                uri.AbsoluteUri.IndexOf("//", StringComparison.Ordinal))
             {
                 UseDefaultWSManPort = false;
             }
@@ -1296,7 +1296,7 @@ namespace System.Management.Automation.Runspaces
             // http://localhost , http://127.0.0.1 etc.
             string appname;
 
-            if (uri.AbsolutePath.Equals("/", StringComparison.OrdinalIgnoreCase) &&
+            if (uri.AbsolutePath.Equals("/", StringComparison.Ordinal) &&
                 string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment))
             {
                 appname = s_defaultAppName;
@@ -1515,6 +1515,11 @@ namespace System.Management.Automation.Runspaces
         public bool RunAs32 { get; set; }
 
         /// <summary>
+        /// Gets or sets an initial working directory for the powershell background process.
+        /// </summary>
+        public string WorkingDirectory { get; set; }
+
+        /// <summary>
         /// Powershell version to execute the job in.
         /// </summary>
         public Version PSVersion { get; set; }
@@ -1590,6 +1595,7 @@ namespace System.Management.Automation.Runspaces
             NewProcessConnectionInfo result = new NewProcessConnectionInfo(_credential);
             result.AuthenticationMechanism = this.AuthenticationMechanism;
             result.InitializationScript = this.InitializationScript;
+            result.WorkingDirectory = this.WorkingDirectory;
             result.RunAs32 = this.RunAs32;
             result.PSVersion = this.PSVersion;
             result.Process = Process;
@@ -2075,6 +2081,10 @@ namespace System.Management.Automation.Runspaces
             //   See sshd_configuration file, subsystems section and it will have this entry:
             //     Subsystem       powershell C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -sshs -NoLogo -NoProfile
             string arguments;
+
+            // ssh.exe expects ipv6 not to have square brackets so we have to remove
+            string hostname = this.ComputerName.TrimStart('[').TrimEnd(']');
+
             if (!string.IsNullOrEmpty(this.KeyFilePath))
             {
                 if (!System.IO.File.Exists(this.KeyFilePath))
@@ -2084,14 +2094,14 @@ namespace System.Management.Automation.Runspaces
                 }
 
                 arguments = (string.IsNullOrEmpty(domainName)) ?
-                    string.Format(CultureInfo.InvariantCulture, @"-i ""{0}"" {1}@{2} -p {3} -s {4}", this.KeyFilePath, userName, this.ComputerName, this.Port, this.Subsystem) :
-                    string.Format(CultureInfo.InvariantCulture, @"-i ""{0}"" -l {1}@{2} {3} -p {4} -s {5}", this.KeyFilePath, userName, domainName, this.ComputerName, this.Port, this.Subsystem);
+                    string.Format(CultureInfo.InvariantCulture, @"-i ""{0}"" {1}@{2} -p {3} -s {4}", this.KeyFilePath, userName, hostname, this.Port, this.Subsystem) :
+                    string.Format(CultureInfo.InvariantCulture, @"-i ""{0}"" -l {1}@{2} {3} -p {4} -s {5}", this.KeyFilePath, userName, domainName, hostname, this.Port, this.Subsystem);
             }
             else
             {
                 arguments = (string.IsNullOrEmpty(domainName)) ?
-                    string.Format(CultureInfo.InvariantCulture, @"{0}@{1} -p {2} -s {3}", userName, this.ComputerName, this.Port, this.Subsystem) :
-                    string.Format(CultureInfo.InvariantCulture, @"-l {0}@{1} {2} -p {3} -s {4}", userName, domainName, this.ComputerName, this.Port, this.Subsystem);
+                    string.Format(CultureInfo.InvariantCulture, @"{0}@{1} -p {2} -s {3}", userName, hostname, this.Port, this.Subsystem) :
+                    string.Format(CultureInfo.InvariantCulture, @"-l {0}@{1} {2} -p {3} -s {4}", userName, domainName, hostname, this.Port, this.Subsystem);
             }
 
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(
@@ -3459,16 +3469,6 @@ namespace System.Management.Automation.Runspaces
         /// </summary>
         private void RunOnMTAThread(ThreadStart threadProc)
         {
-            //
-            // By default, non-OneCore PowerShell is launched with ApartmentState being STA.
-            // In this case, we need to create a separate thread, set its ApartmentState to MTA,
-            // and do the work.
-            //
-            // For OneCore PowerShell, its ApartmentState is always MTA.
-            //
-#if CORECLR
-            threadProc();
-#else
             if (Thread.CurrentThread.GetApartmentState() == ApartmentState.MTA)
             {
                 threadProc();
@@ -3481,7 +3481,6 @@ namespace System.Management.Automation.Runspaces
                 executionThread.Start();
                 executionThread.Join();
             }
-#endif
         }
 
         /// <summary>

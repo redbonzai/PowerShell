@@ -113,7 +113,12 @@ Describe "Select-Object" -Tags "CI" {
 	$result[0].Size              | Should -Be ($orig1 + 1)
 	$dirObject[0].Size           | Should -Be ($orig1 + 1)
 	$dirObject[$TestLength].Size | Should -Be ($orig2 + 1)
-    }
+	}
+
+	It "Should not leak 'StopUpstreamCommandsException' internal exception for stopping upstream" {
+		1,2 | Select-Object -First 1 -ErrorVariable err
+		$err | Should -BeNullOrEmpty
+	}
 }
 
 Describe "Select-Object DRT basic functionality" -Tags "CI" {
@@ -341,7 +346,7 @@ Describe "Select-Object with Property = '*'" -Tags "CI" {
 	}
 
     It "Select-Object with ExpandProperty and Property don't skip processing ExcludeProperty" {
-		$p = Get-Process -Id $pid | Select-Object -Property Process* -ExcludeProperty ProcessorAffinity -ExpandProperty Modules
+		$p = Get-Process -Id $PID | Select-Object -Property Process* -ExcludeProperty ProcessorAffinity -ExpandProperty Modules
 		$p[0].psobject.Properties.Item("ProcessorAffinity") | Should -BeNullOrEmpty
     }
 }

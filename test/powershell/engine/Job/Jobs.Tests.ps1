@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-Describe 'Basic Job Tests' -Tags 'CI' {
+
+Describe 'Basic Job Tests' -Tags 'Feature' {
     BeforeAll {
         # Make sure we do not have any jobs running
         Get-Job | Remove-Job -Force
@@ -25,6 +26,14 @@ Describe 'Basic Job Tests' -Tags 'CI' {
     }
 
     Context 'Basic tests' {
+
+        BeforeAll {
+            $invalidPathTestCases = @(
+                @{ path = "This is an invalid path"; case = "invalid path"; errorId = "DirectoryNotFoundException,Microsoft.PowerShell.Commands.StartJobCommand"}
+                @{ path = ""; case = "empty string"; errorId = "ParameterArgumentValidationError,Microsoft.PowerShell.Commands.StartJobCommand"}
+                @{ path = " "; case = "whitespace string (single space)"; errorId = "ParameterArgumentValidationError,Microsoft.PowerShell.Commands.StartJobCommand"}
+            )
+        }
 
         AfterEach {
             Get-Job | Where-Object { $_.Id -ne $startedJob.Id } | Remove-Job -ErrorAction SilentlyContinue -Force
@@ -69,9 +78,43 @@ Describe 'Basic Job Tests' -Tags 'CI' {
             $ProgressMsg[0].StatusDescription | Should -BeExactly 2
         }
 
+        It 'Can use the user specified working directory parameter with whitespace' {
+            $path = Join-Path -Path $TestDrive -ChildPath "My Dir"
+            $null = New-Item -ItemType Directory -Path "$path"
+            $job = Start-Job -ScriptBlock { $PWD } -WorkingDirectory $path | Wait-Job
+            $jobOutput = Receive-Job $job
+            $jobOutput | Should -BeExactly $path.ToString()
+        }
+
+        It 'Can use the user specified working directory parameter with quote' -Skip:($IsWindows) {
+            $path = Join-Path -Path $TestDrive -ChildPath "My ""Dir"
+            $null = New-Item -ItemType Directory -Path "$path"
+            $job = Start-Job -ScriptBlock { $PWD } -WorkingDirectory $path | Wait-Job
+            $jobOutput = Receive-Job $job
+            $jobOutput | Should -BeExactly $path.ToString()
+        }
+
+        It 'Verifies the working directory parameter path with trailing backslash' -Skip:(! $IsWindows) {
+            $job = Start-Job { $PWD } -WorkingDirectory '\' | Wait-Job
+            $job.JobStateInfo.State | Should -BeExactly 'Completed'
+        }
+
+        It 'Throws an error when the working directory parameter is <case>' -TestCases $invalidPathTestCases {
+            param($path, $case, $expectedErrorId)
+
+            {Start-Job -ScriptBlock { 1 + 1 } -WorkingDirectory $path} | Should -Throw -ErrorId $expectedErrorId
+        }
+
+        It 'Verifies that the current working directory is preserved' {
+            $job = Start-Job -ScriptBlock { $PWD }
+            $location = $job | Wait-Job | Receive-Job
+            $job | Remove-Job
+            $location.Path | Should -BeExactly $PWD.Path
+        }
+
         It "Create job with native command" {
             try {
-                $nativeJob = Start-job { pwsh -c 1+1 }
+                $nativeJob = Start-job { & "$PSHOME/pwsh" -c 1+1 }
                 $nativeJob | Wait-Job
                 $nativeJob.State | Should -BeExactly "Completed"
                 $nativeJob.HasMoreData | Should -BeTrue

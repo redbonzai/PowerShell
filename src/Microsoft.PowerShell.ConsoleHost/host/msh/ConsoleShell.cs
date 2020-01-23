@@ -12,8 +12,7 @@ namespace Microsoft.PowerShell
     /// to transfer control to Msh console host implementation.
     /// </summary>
 
-    public static
-    class ConsoleShell
+    public static class ConsoleShell
     {
         /// <summary>Entry point in to ConsoleShell. This method is called by main of minishell.</summary>
         /// <param name="bannerText">Banner text to be displayed by ConsoleHost.</param>
@@ -25,7 +24,7 @@ namespace Microsoft.PowerShell
             return Start(InitialSessionState.CreateDefault2(), bannerText, helpText, args);
         }
 
-        /// <summary>Entry point in to ConsoleShell. Used to create a custom Powershell console application</summary>
+        /// <summary>Entry point in to ConsoleShell. Used to create a custom Powershell console application.</summary>
         /// <param name="initialSessionState">InitialSessionState to be used by the ConsoleHost.</param>
         /// <param name="bannerText">Banner text to be displayed by ConsoleHost.</param>
         /// <param name="helpText">Help text for the shell.</param>
@@ -49,4 +48,3 @@ namespace Microsoft.PowerShell
         }
     }
 }
-

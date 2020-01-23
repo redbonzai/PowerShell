@@ -196,7 +196,7 @@ baz
         Set-Content -Path $testPath $testContent
         $result = Get-Content @GetContentParams
         $result.Length | Should -Be $expectedLength
-        if ($isWindows) {
+        if ($IsWindows) {
             $result | Should -BeExactly $expectedWindowsContent
         } else {
             $result | Should -BeExactly $expectedNotWindowsContent
@@ -340,6 +340,12 @@ baz
             $expected = New-Object System.Array[] 2
             $expected[0] = ($firstLine,$secondLine)
             $expected[1] = $thirdLine
+            Compare-Object -ReferenceObject $expected -DifferenceObject $result | Should -BeNullOrEmpty
+        }
+        It "Should return the same number of first lines as set in -TotalCount at one time for -ReadCount 0" {
+            $result = Get-Content -Path $testPath -TotalCount 3 -ReadCount 0
+            $result.Length | Should -Be 3
+            $expected = $firstLine,$secondLine,$thirdLine
             Compare-Object -ReferenceObject $expected -DifferenceObject $result | Should -BeNullOrEmpty
         }
         It "A warning should be emitted if both -AsByteStream and -Encoding are used together" {

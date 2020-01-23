@@ -80,7 +80,7 @@ Describe "New-Item" -Tags "CI" {
         Test-Path $FullyQualifiedFile | Should -BeTrue
     }
 
-    It "Should create a file with sample text inside the file using the Value switch" {
+    It "Should create a file with sample text inside the file using the Value parameter" {
         $expected = "This is test string"
         New-Item -Name $testfile -Path $tmpDirectory -ItemType file -Value $expected
 
@@ -89,7 +89,7 @@ Describe "New-Item" -Tags "CI" {
         Get-Content $FullyQualifiedFile | Should -Be $expected
     }
 
-    It "Should not create a file when the Name switch is not used and only a directory specified" {
+    It "Should not create a file when the Name parameter is not used and only a directory specified" {
         #errorAction used because permissions issue in Windows
         New-Item -Path $tmpDirectory -ItemType file -ErrorAction SilentlyContinue
 
@@ -97,7 +97,7 @@ Describe "New-Item" -Tags "CI" {
 
     }
 
-    It "Should create a file when the Name switch is not used but a fully qualified path is specified" {
+    It "Should create a file when the Name parameter is not used but a fully qualified path is specified" {
         New-Item -Path $FullyQualifiedFile -ItemType file
 
         Test-Path $FullyQualifiedFile | Should -BeTrue
@@ -294,3 +294,30 @@ Describe "New-Item with links fails for non elevated user if developer mode not 
         $TestFilePath | Should -Exist
     }
 }
+
+Describe "New-Item -Force allows to create an item even if the directories in the path don't exist" -Tags "CI" {
+    BeforeAll {
+        $testFile             = 'testfile.txt'
+        $testFolder           = 'testfolder'
+        $FullyQualifiedFolder = Join-Path -Path $TestDrive -ChildPath $testFolder
+        $FullyQualifiedFile   = Join-Path -Path $TestDrive -ChildPath $testFolder -AdditionalChildPath $testFile
+    }
+
+    BeforeEach {
+        # Explicitly removing folder and the file before tests
+        Remove-Item $FullyQualifiedFolder -ErrorAction SilentlyContinue
+        Remove-Item $FullyQualifiedFile   -ErrorAction SilentlyContinue
+        Test-Path -Path $FullyQualifiedFolder | Should -BeFalse
+        Test-Path -Path $FullyQualifiedFile   | Should -BeFalse
+    }
+
+    It "Should error correctly when -Force is not used and folder in the path doesn't exist" {
+        { New-Item $FullyQualifiedFile -ErrorAction Stop } | Should -Throw -ErrorId 'NewItemIOError,Microsoft.PowerShell.Commands.NewItemCommand'
+        $FullyQualifiedFile | Should -Not -Exist
+    }
+    It "Should create new file correctly when -Force is used and folder in the path doesn't exist" {
+        { New-Item $FullyQualifiedFile -Force -ErrorAction Stop } | Should -Not -Throw
+        $FullyQualifiedFile | Should -Exist
+    }
+}
+

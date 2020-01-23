@@ -9,6 +9,7 @@ using System.Management.Automation.Configuration;
 using System.Management.Automation.Internal;
 using System.Management.Automation.Tracing;
 using System.Runtime.CompilerServices;
+using Microsoft.PowerShell.Telemetry;
 
 namespace System.Management.Automation
 {
@@ -106,14 +107,19 @@ namespace System.Management.Automation
                     name: "PSImplicitRemotingBatching",
                     description: "Batch implicit remoting proxy commands to improve performance"),
                 new ExperimentalFeature(
-                    name: "PSUseAbbreviationExpansion",
-                    description: "Allow tab completion of cmdlets and functions by abbreviation"),
-                new ExperimentalFeature(
-                    name: "PSTempDrive",
-                    description: "Create TEMP: PS Drive mapped to user's temporary directory path"),
-                new ExperimentalFeature(
                     name: "PSCommandNotFoundSuggestion",
                     description: "Recommend potential commands based on fuzzy search on a CommandNotFoundException"),
+#if UNIX
+                new ExperimentalFeature(
+                    name: "PSUnixFileStat",
+                    description: "Provide unix permission information for files and directories"),
+#endif
+                new ExperimentalFeature(
+                    name: "PSNullConditionalOperators",
+                    description: "Support the null conditional member access operators in PowerShell language"),
+                new ExperimentalFeature(
+                    name: "PSCultureInvariantReplaceOperator",
+                    description: "Use culture invariant to-string convertor for lval in replace operator"),
             };
             EngineExperimentalFeatures = new ReadOnlyCollection<ExperimentalFeature>(engineFeatures);
 
@@ -153,6 +159,7 @@ namespace System.Management.Automation
                 if (IsModuleFeatureName(name))
                 {
                     list.Add(name);
+                    ApplicationInsightsTelemetry.SendTelemetryMetric(TelemetryType.ExperimentalModuleFeatureActivation, name);
                 }
                 else if (IsEngineFeatureName(name))
                 {
@@ -160,6 +167,7 @@ namespace System.Management.Automation
                     {
                         feature.Enabled = true;
                         list.Add(name);
+                        ApplicationInsightsTelemetry.SendTelemetryMetric(TelemetryType.ExperimentalEngineFeatureActivation, name);
                     }
                     else
                     {

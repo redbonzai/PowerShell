@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -9,10 +10,8 @@ using System.Management.Automation.Internal;
 using System.Management.Automation.Internal.Host;
 using System.Management.Automation.Language;
 using System.Management.Automation.Runspaces;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Text;
 using System.Text.RegularExpressions;
 
 using Dbg = System.Management.Automation.Diagnostics;
@@ -21,73 +20,6 @@ using Dbg = System.Management.Automation.Diagnostics;
 
 namespace System.Management.Automation
 {
-    #region SpecialCharacters
-    /// <summary>
-    /// Define the various unicode special characters that
-    /// the parser has to deal with.
-    /// </summary>
-    internal static class SpecialCharacters
-    {
-        public const char enDash = (char)0x2013;
-        public const char emDash = (char)0x2014;
-        public const char horizontalBar = (char)0x2015;
-
-        public const char quoteSingleLeft = (char)0x2018;   // left single quotation mark
-        public const char quoteSingleRight = (char)0x2019;  // right single quotation mark
-        public const char quoteSingleBase = (char)0x201a;   // single low-9 quotation mark
-        public const char quoteReversed = (char)0x201b;     // single high-reversed-9 quotation mark
-        public const char quoteDoubleLeft = (char)0x201c;   // left double quotation mark
-        public const char quoteDoubleRight = (char)0x201d;  // right double quotation mark
-        public const char quoteLowDoubleLeft = (char)0x201E;// low double left quote used in german.
-
-        public static bool IsDash(char c)
-        {
-            return (c == enDash || c == emDash || c == horizontalBar || c == '-');
-        }
-
-        public static bool IsSingleQuote(char c)
-        {
-            return (c == quoteSingleLeft || c == quoteSingleRight || c == quoteSingleBase ||
-                c == quoteReversed || c == '\'');
-        }
-
-        public static bool IsDoubleQuote(char c)
-        {
-            return (c == '"' || c == quoteDoubleLeft || c == quoteDoubleRight || c == quoteLowDoubleLeft);
-        }
-
-        public static bool IsQuote(char c)
-        {
-            return (IsSingleQuote(c) || IsDoubleQuote(c));
-        }
-
-        public static bool IsDelimiter(char c, char delimiter)
-        {
-            if (delimiter == '"') return IsDoubleQuote(c);
-            if (delimiter == '\'') return IsSingleQuote(c);
-            return (c == delimiter);
-        }
-
-        public static bool IsCurlyBracket(char c)
-        {
-            return (c == '{' || c == '}');
-        }
-        /// <summary>
-        /// Canonicalize the quote character - map all of the aliases for " or '
-        /// into their ascii equivalent.
-        /// </summary>
-        /// <param name="c">The character to map.</param>
-        /// <returns>The mapped character.</returns>
-        public static char AsQuote(char c)
-        {
-            if (IsSingleQuote(c)) return '\'';
-            if (IsDoubleQuote(c)) return '"';
-            return (c);
-        }
-    };
-
-    #endregion SpecialChars
-
     #region Flow Control Exceptions
 
     /// <summary>
@@ -1035,7 +967,15 @@ namespace System.Management.Automation
             IEnumerator list = LanguagePrimitives.GetEnumerator(lval);
             if (list == null)
             {
-                string lvalString = lval?.ToString() ?? string.Empty;
+                string lvalString;
+                if (ExperimentalFeature.IsEnabled("PSCultureInvariantReplaceOperator"))
+                {
+                    lvalString = PSObject.ToStringParser(context, lval) ?? string.Empty;
+                }
+                else
+                {
+                    lvalString = lval?.ToString() ?? string.Empty;
+                }
 
                 return ReplaceOperatorImpl(context, lvalString, rr, substitute);
             }
@@ -1414,35 +1354,37 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// Cache regular expressions...
+        /// Cache regular expressions.
         /// </summary>
         /// <param name="patternString">The string to find the pattern for.</param>
-        /// <param name="options">The options used to create the regex...</param>
-        /// <returns>A case-insensitive Regex...</returns>
+        /// <param name="options">The options used to create the regex.</param>
+        /// <returns>New or cached Regex.</returns>
         internal static Regex NewRegex(string patternString, RegexOptions options)
         {
-            if (options != RegexOptions.IgnoreCase)
-                return new Regex(patternString, options);
-
-            lock (s_regexCache)
+            var subordinateRegexCache = s_regexCache.GetOrAdd(options, s_subordinateRegexCacheCreationDelegate);
+            if (subordinateRegexCache.TryGetValue(patternString, out Regex result))
             {
-                Regex result;
-                if (s_regexCache.TryGetValue(patternString, out result))
+                return result;
+            }
+            else
+            {
+                if (subordinateRegexCache.Count > MaxRegexCache)
                 {
-                    return result;
+                    // TODO: it would be useful to get a notice (in telemetry?) if the cache is full.
+                    subordinateRegexCache.Clear();
                 }
-                else
-                {
-                    if (s_regexCache.Count > MaxRegexCache)
-                        s_regexCache.Clear();
-                    Regex re = new Regex(patternString, RegexOptions.IgnoreCase);
-                    s_regexCache.Add(patternString, re);
-                    return re;
-                }
+
+                var regex = new Regex(patternString, options);
+                return subordinateRegexCache.GetOrAdd(patternString, regex);
             }
         }
 
-        private static Dictionary<string, Regex> s_regexCache = new Dictionary<string, Regex>();
+        private static readonly ConcurrentDictionary<RegexOptions, ConcurrentDictionary<string, Regex>> s_regexCache =
+            new ConcurrentDictionary<RegexOptions, ConcurrentDictionary<string, Regex>>();
+
+        private static readonly Func<RegexOptions, ConcurrentDictionary<string, Regex>> s_subordinateRegexCacheCreationDelegate =
+            key => new ConcurrentDictionary<string, Regex>(StringComparer.Ordinal);
+
         private const int MaxRegexCache = 1000;
 
         /// <summary>
