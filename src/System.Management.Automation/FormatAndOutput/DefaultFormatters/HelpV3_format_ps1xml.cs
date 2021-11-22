@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.Generic;
@@ -175,7 +175,7 @@ else                 { '-{0}{1} ' }) -f $_.Name, $parameterValue")
                 .EndControl();
 
             var sharedControls = new CustomControl[] {
-                null,//MamlParameterValueGroupControl,
+                null, //MamlParameterValueGroupControl,
                 MamlParameterControl,
                 MamlTypeControl,
                 MamlParameterValueControl,
@@ -525,6 +525,9 @@ else                 { '-{0}{1} ' }) -f $_.Name, $parameterValue")
                             .AddText(HelpDisplayStrings.ParameterIsDynamic)
                             .AddPropertyExpressionBinding(@"isDynamic")
                             .AddNewline()
+                            .AddText(HelpDisplayStrings.AcceptsWildCardCharacters)
+                            .AddPropertyExpressionBinding(@"globbing")
+                            .AddNewline()
                             .AddNewline()
                         .EndFrame()
                     .EndEntry()
@@ -710,6 +713,9 @@ else                 { '-{0}{1} ' }) -f $_.Name, $parameterValue")
                             .AddNewline()
                             .AddText(HelpDisplayStrings.ParameterIsDynamic)
                             .AddPropertyExpressionBinding(@"isDynamic")
+                            .AddNewline()
+                            .AddText(HelpDisplayStrings.AcceptsWildCardCharacters)
+                            .AddPropertyExpressionBinding(@"globbing")
                             .AddNewline()
                             .AddNewline()
                         .EndFrame()

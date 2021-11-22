@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 #region Using directives
@@ -25,19 +25,19 @@ namespace Microsoft.PowerShell.Commands
         /// This parameter specifies the current pipeline object.
         /// </summary>
         [Parameter(ValueFromPipeline = true)]
-        public PSObject InputObject { set; get; } = AutomationNull.Value;
+        public PSObject InputObject { get; set; } = AutomationNull.Value;
 
         /// <summary>
         /// The script block to apply.
         /// </summary>
         [Parameter(Position = 0, Mandatory = true)]
-        public ScriptBlock Expression { set; get; }
+        public ScriptBlock Expression { get; set; }
 
         #endregion
 
         #region private members
 
-        private System.Diagnostics.Stopwatch _stopWatch = new System.Diagnostics.Stopwatch();
+        private readonly System.Diagnostics.Stopwatch _stopWatch = new();
 
         #endregion
 

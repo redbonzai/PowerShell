@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -47,7 +47,7 @@ namespace Microsoft.PowerShell.Commands
         /// </summary>
         protected override void ProcessRecord()
         {
-            Hashtable result = new Hashtable(StringComparer.OrdinalIgnoreCase);
+            Hashtable result = new(StringComparer.OrdinalIgnoreCase);
 
             if (string.IsNullOrEmpty(_stringData))
             {
@@ -95,4 +95,3 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
-

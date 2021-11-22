@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.ComponentModel;
@@ -70,12 +70,14 @@ namespace Microsoft.Management.UI.Internal
         /// </param>
         protected void NotifyPropertyChanged(string propertyName)
         {
+            #pragma warning disable IDE1005 // IDE1005: Delegate invocation can be simplified.
             PropertyChangedEventHandler eh = this.PropertyChanged;
 
             if (eh != null)
             {
                 eh(this, new PropertyChangedEventArgs(propertyName));
             }
+            #pragma warning restore IDE1005
         }
 
         #endregion NotifyPropertyChanged

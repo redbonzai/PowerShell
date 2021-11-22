@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -13,11 +13,11 @@ namespace System.Management.Automation.Remoting
     /// version on the server. These capabilities will be used in remote debugging sessions to
     /// determine what is supported by the server.
     /// </summary>
-    internal class RemoteDebuggingCapability
+    internal sealed class RemoteDebuggingCapability
     {
         private readonly HashSet<string> _supportedCommands = new HashSet<string>();
 
-        internal Version PSVersion { get; private set; }
+        internal Version PSVersion { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RemoteDebuggingCapability"/> class.
@@ -93,20 +93,20 @@ namespace System.Management.Automation.Remoting
         #region DO NOT REMOVE OR CHANGE THE VALUES OF THESE CONSTANTS - it will break remote debugging compatibility with PowerShell
 
         // Commands related to debugger stop events
-        internal const string GetDebuggerStopArgs        = "__Get-PSDebuggerStopArgs";
-        internal const string SetDebuggerAction          = "__Set-PSDebuggerAction";
+        internal const string GetDebuggerStopArgs = "__Get-PSDebuggerStopArgs";
+        internal const string SetDebuggerAction = "__Set-PSDebuggerAction";
 
         // Miscellaneous debug commands
-        internal const string SetDebuggerStepMode        = "__Set-PSDebuggerStepMode";
-        internal const string SetDebugMode               = "__Set-PSDebugMode";
+        internal const string SetDebuggerStepMode = "__Set-PSDebuggerStepMode";
+        internal const string SetDebugMode = "__Set-PSDebugMode";
         internal const string SetUnhandledBreakpointMode = "__Set-PSUnhandledBreakpointMode";
 
         // Breakpoint commands
-        internal const string GetBreakpoint              = "__Get-PSBreakpoint";
-        internal const string SetBreakpoint              = "__Set-PSBreakpoint";
-        internal const string EnableBreakpoint           = "__Enable-PSBreakpoint";
-        internal const string DisableBreakpoint          = "__Disable-PSBreakpoint";
-        internal const string RemoveBreakpoint           = "__Remove-PSBreakpoint";
+        internal const string GetBreakpoint = "__Get-PSBreakpoint";
+        internal const string SetBreakpoint = "__Set-PSBreakpoint";
+        internal const string EnableBreakpoint = "__Enable-PSBreakpoint";
+        internal const string DisableBreakpoint = "__Disable-PSBreakpoint";
+        internal const string RemoveBreakpoint = "__Remove-PSBreakpoint";
 
         #endregion
 

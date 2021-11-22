@@ -1,10 +1,9 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 #nullable enable
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Management.Automation;
@@ -43,7 +42,7 @@ namespace Microsoft.PowerShell.Commands
 
         // Count of pings sent to each trace route hop. Default mimics Windows' defaults.
         // If this value changes, we need to update 'ConsoleTraceRouteReply' resource string.
-        private const int DefaultTraceRoutePingCount = 3;
+        private const uint DefaultTraceRoutePingCount = 3;
 
         // Default size for the send buffer.
         private const int DefaultSendBufferSize = 32;
@@ -57,6 +56,8 @@ namespace Microsoft.PowerShell.Commands
         #region Private Fields
 
         private static byte[]? s_DefaultSendBuffer;
+
+        private readonly CancellationTokenSource _dnsLookupCancel = new();
 
         private bool _disposed;
 
@@ -177,7 +178,7 @@ namespace Microsoft.PowerShell.Commands
         /// With this switch, standard ping and -Traceroute returns only true / false, and -MtuSize returns an integer.
         /// </summary>
         [Parameter]
-        public SwitchParameter Quiet;
+        public SwitchParameter Quiet { get; set; }
 
         /// <summary>
         /// Gets or sets the timeout value for an individual ping in seconds.
@@ -275,6 +276,7 @@ namespace Microsoft.PowerShell.Commands
         protected override void StopProcessing()
         {
             _sender?.SendAsyncCancel();
+            _dnsLookupCancel.Cancel();
         }
 
         #region ConnectionTest
@@ -283,10 +285,15 @@ namespace Microsoft.PowerShell.Commands
         {
             if (!TryResolveNameOrAddress(targetNameOrAddress, out _, out IPAddress? targetAddress))
             {
+                if (Quiet.IsPresent)
+                {
+                    WriteObject(false);
+                }
+
                 return;
             }
 
-            TcpClient client = new TcpClient();
+            TcpClient client = new();
 
             try
             {
@@ -334,15 +341,20 @@ namespace Microsoft.PowerShell.Commands
 
             if (!TryResolveNameOrAddress(targetNameOrAddress, out string resolvedTargetName, out IPAddress? targetAddress))
             {
+                if (!Quiet.IsPresent)
+                {
+                    WriteObject(false);
+                }
+
                 return;
             }
 
             int currentHop = 1;
-            PingOptions pingOptions = new PingOptions(currentHop, DontFragment.IsPresent);
+            PingOptions pingOptions = new(currentHop, DontFragment.IsPresent);
             PingReply reply;
             PingReply discoveryReply;
             int timeout = TimeoutSeconds * 1000;
-            Stopwatch timer = new Stopwatch();
+            Stopwatch timer = new();
 
             IPAddress hopAddress;
             do
@@ -424,7 +436,7 @@ namespace Microsoft.PowerShell.Commands
                             resolvedTargetName,
                             ex.Message);
                         Exception pingException = new PingException(message, ex.InnerException);
-                        ErrorRecord errorRecord = new ErrorRecord(
+                        ErrorRecord errorRecord = new(
                             pingException,
                             TestConnectionExceptionId,
                             ErrorCategory.ResourceUnavailable,
@@ -471,6 +483,11 @@ namespace Microsoft.PowerShell.Commands
             PingReply? reply, replyResult = null;
             if (!TryResolveNameOrAddress(targetNameOrAddress, out string resolvedTargetName, out IPAddress? targetAddress))
             {
+                if (Quiet.IsPresent)
+                {
+                    WriteObject(-1);
+                }
+
                 return;
             }
 
@@ -482,7 +499,7 @@ namespace Microsoft.PowerShell.Commands
 
             try
             {
-                PingOptions pingOptions = new PingOptions(MaxHops, true);
+                PingOptions pingOptions = new(MaxHops, true);
                 int retry = 1;
 
                 while (LowMTUSize < (HighMTUSize - 1))
@@ -518,7 +535,7 @@ namespace Microsoft.PowerShell.Commands
                                 targetAddress,
                                 reply.Status.ToString());
                             Exception pingException = new PingException(message);
-                            ErrorRecord errorRecord = new ErrorRecord(
+                            ErrorRecord errorRecord = new(
                                 pingException,
                                 TestConnectionExceptionId,
                                 ErrorCategory.ResourceUnavailable,
@@ -543,7 +560,7 @@ namespace Microsoft.PowerShell.Commands
             {
                 string message = StringUtil.Format(TestConnectionResources.NoPingResult, targetAddress, ex.Message);
                 Exception pingException = new PingException(message, ex.InnerException);
-                ErrorRecord errorRecord = new ErrorRecord(
+                ErrorRecord errorRecord = new(
                     pingException,
                     TestConnectionExceptionId,
                     ErrorCategory.ResourceUnavailable,
@@ -574,6 +591,11 @@ namespace Microsoft.PowerShell.Commands
         {
             if (!TryResolveNameOrAddress(targetNameOrAddress, out string resolvedTargetName, out IPAddress? targetAddress))
             {
+                if (Quiet.IsPresent)
+                {
+                    WriteObject(false);
+                }
+
                 return;
             }
 
@@ -581,11 +603,11 @@ namespace Microsoft.PowerShell.Commands
             byte[] buffer = GetSendBuffer(BufferSize);
 
             PingReply reply;
-            PingOptions pingOptions = new PingOptions(MaxHops, DontFragment.IsPresent);
+            PingOptions pingOptions = new(MaxHops, DontFragment.IsPresent);
             int timeout = TimeoutSeconds * 1000;
             int delay = Delay * 1000;
 
-            for (uint i = 1; i <= Count; i++)
+            for (int i = 1; i <= Count; i++)
             {
                 try
                 {
@@ -595,7 +617,7 @@ namespace Microsoft.PowerShell.Commands
                 {
                     string message = StringUtil.Format(TestConnectionResources.NoPingResult, resolvedTargetName, ex.Message);
                     Exception pingException = new PingException(message, ex.InnerException);
-                    ErrorRecord errorRecord = new ErrorRecord(
+                    ErrorRecord errorRecord = new(
                         pingException,
                         TestConnectionExceptionId,
                         ErrorCategory.ResourceUnavailable,
@@ -619,7 +641,7 @@ namespace Microsoft.PowerShell.Commands
                         reply,
                         reply.RoundtripTime,
                         buffer.Length,
-                        pingNum: i));
+                        pingNum: (uint)i));
                 }
 
                 // Delay between pings, but not after last ping.
@@ -656,7 +678,7 @@ namespace Microsoft.PowerShell.Commands
                         resolvedTargetName,
                         TestConnectionResources.TargetAddressAbsent);
                     Exception pingException = new PingException(message, null);
-                    ErrorRecord errorRecord = new ErrorRecord(
+                    ErrorRecord errorRecord = new(
                         pingException,
                         TestConnectionExceptionId,
                         ErrorCategory.ResourceUnavailable,
@@ -667,7 +689,7 @@ namespace Microsoft.PowerShell.Commands
 
                 if (ResolveDestination)
                 {
-                    hostEntry = Dns.GetHostEntry(targetNameOrAddress);
+                    hostEntry = GetCancellableHostEntry(targetNameOrAddress);
                     resolvedTargetName = hostEntry.HostName;
                 }
                 else
@@ -679,27 +701,35 @@ namespace Microsoft.PowerShell.Commands
             {
                 try
                 {
-                    hostEntry = Dns.GetHostEntry(targetNameOrAddress);
+                    hostEntry = GetCancellableHostEntry(targetNameOrAddress);
 
                     if (ResolveDestination)
                     {
                         resolvedTargetName = hostEntry.HostName;
-                        hostEntry = Dns.GetHostEntry(hostEntry.HostName);
+                        hostEntry = GetCancellableHostEntry(hostEntry.HostName);
                     }
+                }
+                catch (PipelineStoppedException)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
-                    string message = StringUtil.Format(
-                        TestConnectionResources.NoPingResult,
-                        resolvedTargetName,
-                        TestConnectionResources.CannotResolveTargetName);
-                    Exception pingException = new PingException(message, ex);
-                    ErrorRecord errorRecord = new ErrorRecord(
-                        pingException,
-                        TestConnectionExceptionId,
-                        ErrorCategory.ResourceUnavailable,
-                        resolvedTargetName);
-                    WriteError(errorRecord);
+                    if (!Quiet.IsPresent)
+                    {
+                        string message = StringUtil.Format(
+                            TestConnectionResources.NoPingResult,
+                            resolvedTargetName,
+                            TestConnectionResources.CannotResolveTargetName);
+                        Exception pingException = new PingException(message, ex);
+                        ErrorRecord errorRecord = new(
+                            pingException,
+                            TestConnectionExceptionId,
+                            ErrorCategory.ResourceUnavailable,
+                            resolvedTargetName);
+                        WriteError(errorRecord);
+                    }
+
                     return false;
                 }
 
@@ -714,7 +744,7 @@ namespace Microsoft.PowerShell.Commands
                             resolvedTargetName,
                             TestConnectionResources.TargetAddressAbsent);
                         Exception pingException = new PingException(message, null);
-                        ErrorRecord errorRecord = new ErrorRecord(
+                        ErrorRecord errorRecord = new(
                             pingException,
                             TestConnectionExceptionId,
                             ErrorCategory.ResourceUnavailable,
@@ -730,6 +760,20 @@ namespace Microsoft.PowerShell.Commands
             }
 
             return true;
+        }
+
+        private IPHostEntry GetCancellableHostEntry(string targetNameOrAddress)
+        {
+            var task = Dns.GetHostEntryAsync(targetNameOrAddress);
+            var waitHandles = new[] { ((IAsyncResult)task).AsyncWaitHandle, _dnsLookupCancel.Token.WaitHandle };
+
+            // WaitAny() returns the index of the first signal it gets; 1 is our cancellation token.
+            if (WaitHandle.WaitAny(waitHandles) == 1)
+            {
+                throw new PipelineStoppedException();
+            }
+
+            return task.GetAwaiter().GetResult();
         }
 
         private IPAddress? GetHostAddress(IPHostEntry hostEntry)
@@ -749,7 +793,7 @@ namespace Microsoft.PowerShell.Commands
 
         // Users most often use the default buffer size so we cache the buffer.
         // Creates and fills a send buffer. This follows the ping.exe and CoreFX model.
-        private byte[] GetSendBuffer(int bufferSize)
+        private static byte[] GetSendBuffer(int bufferSize)
         {
             if (bufferSize == DefaultSendBufferSize && s_DefaultSendBuffer != null)
             {
@@ -793,6 +837,7 @@ namespace Microsoft.PowerShell.Commands
                 if (disposing)
                 {
                     _sender?.Dispose();
+                    _dnsLookupCancel.Dispose();
                 }
 
                 _disposed = true;

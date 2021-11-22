@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -40,10 +40,14 @@ namespace Microsoft.Management.UI.Internal
             FilterRule copy = null;
             try
             {
+#pragma warning disable SYSLIB0011
                 formatter.Serialize(ms, rule);
+#pragma warning restore SYSLIB0011
 
                 ms.Position = 0;
+#pragma warning disable SYSLIB0011
                 copy = (FilterRule)formatter.Deserialize(ms);
+#pragma warning restore SYSLIB0011
             }
             finally
             {

@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 using namespace System.Diagnostics
 
@@ -19,21 +19,21 @@ Describe 'minishell for native executables' -Tag 'CI' {
         It 'gets a hashtable object from minishell' {
             $output = & $powershell -noprofile { @{'a' = 'b'} }
             ($output | Measure-Object).Count | Should -Be 1
-            $output | Should -BeOfType 'Hashtable'
+            $output | Should -BeOfType Hashtable
             $output['a'] | Should -Be 'b'
         }
 
         It 'gets the error stream from minishell' {
             $output = & $powershell -noprofile { Write-Error 'foo' } 2>&1
             ($output | Measure-Object).Count | Should -Be 1
-            $output | Should -BeOfType 'System.Management.Automation.ErrorRecord'
+            $output | Should -BeOfType System.Management.Automation.ErrorRecord
             $output.FullyQualifiedErrorId | Should -Be 'Microsoft.PowerShell.Commands.WriteErrorException'
         }
 
         It 'gets the information stream from minishell' {
             $output = & $powershell -noprofile { Write-Information 'foo' } 6>&1
             ($output | Measure-Object).Count | Should -Be 1
-            $output | Should -BeOfType 'System.Management.Automation.InformationRecord'
+            $output | Should -BeOfType System.Management.Automation.InformationRecord
             $output | Should -Be 'foo'
         }
     }
@@ -100,19 +100,6 @@ Describe "ConsoleHost unit tests" -tags "Feature" {
             { & $powershell -outp blah -comm { $input } } | Should -Throw -ErrorId "IncorrectValueForFormatParameter"
         }
 
-        It "Verify Validate Dollar Error Populated should throw exception" {
-            $origEA = $ErrorActionPreference
-            $ErrorActionPreference = "Stop"
-            $a = 1,2,3
-            $e = {
-                $a | & $powershell -noprofile -command { wgwg-wrwrhqwrhrh35h3h3}
-            } | Should -Throw -ErrorId "CommandNotFoundException" -PassThru
-
-            $e.ToString() | Should -Match "wgwg-wrwrhqwrhrh35h3h3"
-
-            $ErrorActionPreference = $origEA
-        }
-
         It "Verify Validate Output Format As Text Explicitly Child Single Shell does not throw" {
             {
                 "blahblah" | & $powershell -noprofile -out text -com { $input }
@@ -160,19 +147,30 @@ Describe "ConsoleHost unit tests" -tags "Feature" {
         }
 
         It "-File should be default parameter" {
-            Set-Content -Path $testdrive/test -Value "'hello'"
-            $observed = & $powershell -NoProfile $testdrive/test
+            Set-Content -Path $testdrive/test.ps1 -Value "'hello'"
+            $observed = & $powershell -NoProfile $testdrive/test.ps1
             $observed | Should -Be "hello"
         }
 
-        It "-File accepts scripts with and without .ps1 extension: <Filename>" -TestCases @(
-            @{Filename="test.ps1"},
-            @{Filename="test"}
-        ) {
-            param($Filename)
+        It "-File accepts scripts with .ps1 extension" {
+            $Filename = 'test.ps1'
             Set-Content -Path $testdrive/$Filename -Value "'hello'"
             $observed = & $powershell -NoProfile -File $testdrive/$Filename
             $observed | Should -Be "hello"
+        }
+
+        It "-File accepts scripts without .ps1 extension to support shebang" -Skip:($IsWindows) {
+            $Filename = 'test.xxx'
+            Set-Content -Path $testdrive/$Filename -Value "'hello'"
+            $observed = & $powershell -NoProfile -File $testdrive/$Filename
+            $observed | Should -Be "hello"
+        }
+
+        It "-File should fail for script without .ps1 extension" -Skip:(!$IsWindows) {
+            $Filename = 'test.xxx'
+            Set-Content -Path $testdrive/$Filename -Value "'hello'"
+            & $powershell -NoProfile -File $testdrive/$Filename > $null
+            $LASTEXITCODE | Should -Be 64
         }
 
         It "-File should pass additional arguments to script" {
@@ -221,11 +219,8 @@ Describe "ConsoleHost unit tests" -tags "Feature" {
             $observed | Should -Be $BoolValue
         }
 
-        It "-File '<filename>' should return exit code from script" -TestCases @(
-            @{Filename = "test.ps1"},
-            @{Filename = "test"}
-        ) {
-            param($Filename)
+        It "-File should return exit code from script" {
+            $Filename = 'test.ps1'
             Set-Content -Path $testdrive/$Filename -Value 'exit 123'
             & $powershell $testdrive/$Filename
             $LASTEXITCODE | Should -Be 123
@@ -248,9 +243,14 @@ Describe "ConsoleHost unit tests" -tags "Feature" {
             $observed | Should -BeExactly "h-llo"
         }
 
-        It "Empty command should fail" {
-            & $powershell -noprofile -c ''
+        It "Missing command should fail" {
+            & $powershell -noprofile -c
             $LASTEXITCODE | Should -Be 64
+        }
+
+        It "Empty space command should succeed on non-Windows" -skip:$IsWindows {
+            & $powershell -noprofile -c '' | Should -BeNullOrEmpty
+            $LASTEXITCODE | Should -Be 0
         }
 
         It "Whitespace command should succeed" {
@@ -283,7 +283,7 @@ export $envVarName='$guid'
         }
 
         It "Doesn't run the login profile when -Login not used" {
-            $result = & $powershell -Command "`$env:$envVarName"
+            $result = & $powershell -noprofile -Command "`$env:$envVarName"
             $result | Should -BeNullOrEmpty
             $LASTEXITCODE | Should -Be 0
         }
@@ -351,12 +351,12 @@ export $envVarName='$guid'
         # must use an explicit scope of LocalMachine to ensure the setting is written to the expected file.
         # Skip the tests on Unix platforms because *-ExecutionPolicy cmdlets don't work by design.
 
-        It "Verifies PowerShell reads from the custom -settingsFile" -skip:(!$IsWindows) {
+        It "Verifies PowerShell reads from the custom -settingsFile" -Skip:(!$IsWindows) {
             $actualValue = & $powershell -NoProfile -SettingsFile $CustomSettingsFile -Command {(Get-ExecutionPolicy -Scope LocalMachine).ToString()}
             $actualValue  | Should -Be $DefaultExecutionPolicy
         }
 
-        It "Verifies PowerShell writes to the custom -settingsFile" -skip:(!$IsWindows) {
+        It "Verifies PowerShell writes to the custom -settingsFile" -Skip:(!$IsWindows) {
             $expectedValue = 'AllSigned'
 
             # Update the execution policy; this should update the settings file.
@@ -371,7 +371,7 @@ export $envVarName='$guid'
             $actualValue  | Should -Be $expectedValue
         }
 
-        It "Verify PowerShell removes a setting from the custom -settingsFile" -skip:(!$IsWindows) {
+        It "Verify PowerShell removes a setting from the custom -settingsFile" -Skip:(!$IsWindows) {
             # Remove the LocalMachine execution policy; this should update the settings file.
             & $powershell -NoProfile -SettingsFile $CustomSettingsFile -Command {Set-ExecutionPolicy -ExecutionPolicy Undefined -Scope LocalMachine }
 
@@ -382,11 +382,24 @@ export $envVarName='$guid'
     }
 
     Context "Pipe to/from powershell" {
-        $p = [PSCustomObject]@{X=10;Y=20}
+        BeforeAll {
+            if ($null -ne $PSStyle) {
+                $outputRendering = $PSStyle.OutputRendering
+                $PSStyle.OutputRendering = 'plaintext'
+            }
+
+            $p = [PSCustomObject]@{X=10;Y=20}
+        }
+
+        AfterAll {
+            if ($null -ne $PSStyle) {
+                $PSStyle.OutputRendering = $outputRendering
+            }
+        }
 
         It "xml input" {
-            $p | & $powershell -noprofile { $input | Foreach-Object {$a = 0} { $a += $_.X + $_.Y } { $a } } | Should -Be 30
-            $p | & $powershell -noprofile -inputFormat xml { $input | Foreach-Object {$a = 0} { $a += $_.X + $_.Y } { $a } } | Should -Be 30
+            $p | & $powershell -noprofile { $input | ForEach-Object {$a = 0} { $a += $_.X + $_.Y } { $a } } | Should -Be 30
+            $p | & $powershell -noprofile -inputFormat xml { $input | ForEach-Object {$a = 0} { $a += $_.X + $_.Y } { $a } } | Should -Be 30
         }
 
         It "text input" {
@@ -395,8 +408,8 @@ export $envVarName='$guid'
         }
 
         It "xml output" {
-            & $powershell -noprofile { [PSCustomObject]@{X=10;Y=20} } | Foreach-Object {$a = 0} { $a += $_.X + $_.Y } { $a } | Should -Be 30
-            & $powershell -noprofile -outputFormat xml { [PSCustomObject]@{X=10;Y=20} } | Foreach-Object {$a = 0} { $a += $_.X + $_.Y } { $a } | Should -Be 30
+            & $powershell -noprofile { [PSCustomObject]@{X=10;Y=20} } | ForEach-Object {$a = 0} { $a += $_.X + $_.Y } { $a } | Should -Be 30
+            & $powershell -noprofile -outputFormat xml { [PSCustomObject]@{X=10;Y=20} } | ForEach-Object {$a = 0} { $a += $_.X + $_.Y } { $a } | Should -Be 30
         }
 
         It "text output" {
@@ -638,18 +651,32 @@ namespace StackTest {
             $env:XDG_CONFIG_HOME = $XDG_CONFIG_HOME
         }
 
-        It "Should start if Data, Config, and Cache location is not accessible" -skip:($IsWindows) {
+        It "Should start if Data, Config, and Cache location is not accessible" -Skip:($IsWindows) {
             $env:XDG_CACHE_HOME = "/dev/cpu"
             $env:XDG_DATA_HOME = "/dev/cpu"
             $env:XDG_CONFIG_HOME = "/dev/cpu"
-            $output = & $powershell -noprofile -Command { (get-command).count }
+            $output = & $powershell -noprofile -Command { (Get-Command).count }
             [int]$output | Should -BeGreaterThan 0
         }
     }
 
     Context "HOME environment variable" {
-        It "Should start if HOME is not defined" -skip:($IsWindows) {
+        It "Should start if HOME is not defined" -Skip:($IsWindows) {
             bash -c "unset HOME;$powershell -c '1+1'" | Should -BeExactly 2
+        }
+
+        It "Same user should use the same temporary HOME directory for different sessions" -Skip:($IsWindows) {
+            $results = bash -c @"
+unset HOME;
+$powershell -c '[System.Management.Automation.Platform]::SelectProductNameForDirectory([System.Management.Automation.Platform+XDG_Type]::DEFAULT)';
+$powershell -c '[System.Management.Automation.Platform]::SelectProductNameForDirectory([System.Management.Automation.Platform+XDG_Type]::DEFAULT)';
+"@
+            $results | Should -HaveCount 2
+            $results[0] | Should -BeExactly $results[1]
+
+            $tempHomeName = "pwsh-{0}-98288ff9-5712-4a14-9a11-23693b9cd91a" -f [System.Environment]::UserName
+            $defaultPath = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "$tempHomeName/.config/powershell"
+            $results[0] | Should -BeExactly $defaultPath
         }
     }
 
@@ -659,7 +686,7 @@ namespace StackTest {
         }
 
         It "powershell starts if PATH is not set" -Skip:($IsWindows) {
-            bash -c "unset PATH;$powershell -c '1+1'" | Should -BeExactly 2
+            bash -c "unset PATH;$powershell -nop -c '1+1'" | Should -BeExactly 2
         }
     }
 
@@ -769,7 +796,7 @@ namespace StackTest {
     Context "ApartmentState WPF tests" -Tag Slow {
 
         It "WPF requires STA and will work" -Skip:(!$IsWindows -or [System.Management.Automation.Platform]::IsNanoServer) {
-            add-type -AssemblyName presentationframework
+            Add-Type -AssemblyName presentationframework
 
             $xaml = [xml]@"
             <Window
@@ -970,12 +997,12 @@ Describe 'Pwsh startup in directories that contain wild cards' -Tag CI {
         $dirnames = "[T]est","[Test","T][est","Test"
         $testcases = @()
         foreach ( $d in $dirnames ) {
-            $null = New-Item -type Directory -path "${TESTDRIVE}/$d"
+            $null = New-Item -type Directory -Path "${TESTDRIVE}/$d"
             $testcases += @{ Dirname = $d }
         }
     }
 
-    It "pwsh can startup in a directory named <dirname>" -testcases $testcases {
+    It "pwsh can startup in a directory named <dirname>" -TestCases $testcases {
         param ( $dirname )
         try {
             Push-Location -LiteralPath "${TESTDRIVE}/${dirname}"
@@ -1007,5 +1034,47 @@ Describe 'Pwsh startup and PATH' -Tag CI {
         Remove-Item Env:\PATH
         $path = & $pwsh -noprofile -command '$env:PATH'
         $path | Should -BeExactly ($PSHOME + [System.IO.Path]::PathSeparator)
+    }
+}
+
+Describe 'Console host name' -Tag CI {
+    It 'Name is pwsh' -Pending {
+        # waiting on https://github.com/dotnet/runtime/issues/33673
+        (Get-Process -Id $PID).Name | Should -BeExactly 'pwsh'
+    }
+}
+
+Describe 'TERM env var' -Tag CI {
+    BeforeAll {
+        $oldTERM = $env:TERM
+    }
+
+    AfterAll {
+        $env:TERM = $oldTERM
+    }
+
+    It 'TERM = "dumb"' {
+        $env:TERM = 'dumb'
+        pwsh -noprofile -command '$Host.UI.SupportsVirtualTerminal' | Should -BeExactly 'False'
+    }
+
+    It 'TERM = "<term>"' -TestCases @(
+        @{ term = "xterm-mono" }
+        @{ term = "xtermm" }
+    ) {
+        param ($term)
+
+        $env:TERM = $term
+        pwsh -noprofile -command '$PSStyle.OutputRendering' | Should -BeExactly 'PlainText'
+    }
+
+    It 'NO_COLOR' {
+        try {
+            $env:NO_COLOR = 1
+            pwsh -noprofile -command '$PSStyle.OutputRendering' | Should -BeExactly 'PlainText'
+        }
+        finally {
+            $env:NO_COLOR = $null
+        }
     }
 }

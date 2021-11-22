@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -97,7 +97,7 @@ namespace Microsoft.PowerShell.Commands
                (!WildcardPattern.ContainsWildcardCharacters(_sourceIdentifier)) &&
                (!_foundMatch))
             {
-                ErrorRecord errorRecord = new ErrorRecord(
+                ErrorRecord errorRecord = new(
                     new ArgumentException(
                         string.Format(
                             System.Globalization.CultureInfo.CurrentCulture,
@@ -111,7 +111,7 @@ namespace Microsoft.PowerShell.Commands
             else if ((SubscriptionId >= 0) &&
                (!_foundMatch))
             {
-                ErrorRecord errorRecord = new ErrorRecord(
+                ErrorRecord errorRecord = new(
                     new ArgumentException(
                         string.Format(
                             System.Globalization.CultureInfo.CurrentCulture,

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -126,7 +126,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal static IReadOnlyList<Runspace> GetRunspacesByName(string[] names)
         {
-            List<Runspace> rtnRunspaces = new List<Runspace>();
+            List<Runspace> rtnRunspaces = new();
             IReadOnlyList<Runspace> runspaces = Runspace.RunspaceList;
 
             foreach (string name in names)
@@ -146,7 +146,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal static IReadOnlyList<Runspace> GetRunspacesById(int[] ids)
         {
-            List<Runspace> rtnRunspaces = new List<Runspace>();
+            List<Runspace> rtnRunspaces = new();
 
             foreach (int id in ids)
             {
@@ -167,7 +167,7 @@ namespace Microsoft.PowerShell.Commands
 
         internal static IReadOnlyList<Runspace> GetRunspacesByInstanceId(Guid[] instanceIds)
         {
-            List<Runspace> rtnRunspaces = new List<Runspace>();
+            List<Runspace> rtnRunspaces = new();
             IReadOnlyList<Runspace> runspaces = Runspace.RunspaceList;
 
             foreach (Guid instanceId in instanceIds)

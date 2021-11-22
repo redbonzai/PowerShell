@@ -1,8 +1,8 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 using namespace System.Text
 
-Set-StrictMode -Version Latest
+Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
 Import-Module HelpersCommon
@@ -204,7 +204,7 @@ $PID
 
         $items | Should -Not -Be $null
         $items.Count | Should -BeGreaterThan 2
-        $createdEvents = $items | where-object {$_.EventId -eq 'ScriptBlock_Compile_Detail:ExecuteCommand.Create.Verbose'}
+        $createdEvents = $items | Where-Object {$_.EventId -eq 'ScriptBlock_Compile_Detail:ExecuteCommand.Create.Verbose'}
         $createdEvents.Count | Should -BeGreaterOrEqual 3
 
         # Verify we log that we are executing a file
@@ -233,7 +233,7 @@ $PID
 
         $items | Should -Not -Be $null
         $items.Count | Should -BeGreaterThan 2
-        $createdEvents = $items | where-object {$_.EventId -eq 'ScriptBlock_Compile_Detail:ExecuteCommand.Create.Verbose'}
+        $createdEvents = $items | Where-Object {$_.EventId -eq 'ScriptBlock_Compile_Detail:ExecuteCommand.Create.Verbose'}
         $createdEvents.Count | Should -BeGreaterOrEqual 3
 
         # Verify we log that we are executing a file
@@ -248,12 +248,15 @@ $PID
 
     It 'Verifies logging level filtering works' -Skip:(!$IsSupportedEnvironment) {
         $configFile = WriteLogSettings -LogId $logId -LogLevel Warning
-        & $powershell -NoProfile -SettingsFile $configFile -Command '$env:PSModulePath | out-null'
+        $result = & $powershell -NoProfile -SettingsFile $configFile -Command '$PID'
+        $result | Should -Not -BeNullOrEmpty
 
         # by default, PowerShell only logs informational events on startup. With Level = Warning, nothing should
-        # have been logged.
-        $items = Get-PSSysLog -Path $SyslogFile -Id $logId -Tail 100 -TotalCount 1
-        $items | Should -Be $null
+        # have been logged. We'll collect all the syslog entries and look for $PID (there should be none).
+        $items = Get-PSSysLog -Path $SyslogFile
+        @($items).Count | Should -BeGreaterThan 0
+        $logs = $items | Where-Object { $_.ProcessId -eq $result }
+        $logs | Should -BeNullOrEmpty
     }
 }
 
@@ -353,7 +356,7 @@ $PID
 
             $items | Should -Not -Be $null
             $items.Count | Should -BeGreaterThan 2
-            $createdEvents = $items | where-object {$_.EventId -eq 'ScriptBlock_Compile_Detail:ExecuteCommand.Create.Verbose'}
+            $createdEvents = $items | Where-Object {$_.EventId -eq 'ScriptBlock_Compile_Detail:ExecuteCommand.Create.Verbose'}
             $createdEvents.Count | Should -BeGreaterOrEqual 3
 
             # Verify we log that we are executing a file
@@ -391,7 +394,7 @@ $PID
 
             $items | Should -Not -Be $null
             $items.Count | Should -BeGreaterThan 2
-            $createdEvents = $items | where-object {$_.EventId -eq 'ScriptBlock_Compile_Detail:ExecuteCommand.Create.Verbose'}
+            $createdEvents = $items | Where-Object {$_.EventId -eq 'ScriptBlock_Compile_Detail:ExecuteCommand.Create.Verbose'}
             $createdEvents.Count | Should -BeGreaterOrEqual 3
 
             # Verify we log that we are executing a file

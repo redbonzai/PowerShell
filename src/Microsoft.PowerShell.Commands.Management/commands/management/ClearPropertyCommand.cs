@@ -1,10 +1,8 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.ObjectModel;
 using System.Management.Automation;
-
-using Dbg = System.Management.Automation;
 
 namespace Microsoft.PowerShell.Commands
 {
@@ -86,7 +84,7 @@ namespace Microsoft.PowerShell.Commands
         /// </returns>
         internal override object GetDynamicParameters(CmdletProviderContext context)
         {
-            Collection<string> propertyCollection = new Collection<string>();
+            Collection<string> propertyCollection = new();
             propertyCollection.Add(_property);
 
             if (Path != null && Path.Length > 0)
@@ -126,7 +124,7 @@ namespace Microsoft.PowerShell.Commands
             CmdletProviderContext currentContext = CmdletProviderContext;
             currentContext.PassThru = PassThru;
 
-            Collection<string> propertyCollection = new Collection<string>();
+            Collection<string> propertyCollection = new();
             propertyCollection.Add(_property);
 
             foreach (string path in Path)

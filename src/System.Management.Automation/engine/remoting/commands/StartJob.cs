@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -505,7 +505,10 @@ namespace Microsoft.PowerShell.Commands
         [ValidateNotNullOrEmpty]
         public virtual Version PSVersion
         {
-            get { return _psVersion; }
+            get
+            {
+                return _psVersion;
+            }
 
             set
             {
@@ -598,14 +601,14 @@ namespace Microsoft.PowerShell.Commands
 
             if (WorkingDirectory != null && !Directory.Exists(WorkingDirectory))
             {
-                    string message = StringUtil.Format(RemotingErrorIdStrings.StartJobWorkingDirectoryNotFound, WorkingDirectory);
-                    var errorRecord = new ErrorRecord(
-                        new DirectoryNotFoundException(message),
-                        "DirectoryNotFoundException",
-                        ErrorCategory.InvalidOperation,
-                        targetObject: null);
+                string message = StringUtil.Format(RemotingErrorIdStrings.StartJobWorkingDirectoryNotFound, WorkingDirectory);
+                var errorRecord = new ErrorRecord(
+                    new DirectoryNotFoundException(message),
+                    "DirectoryNotFoundException",
+                    ErrorCategory.InvalidOperation,
+                    targetObject: null);
 
-                    ThrowTerminatingError(errorRecord);
+                ThrowTerminatingError(errorRecord);
             }
 
             if (WorkingDirectory == null)

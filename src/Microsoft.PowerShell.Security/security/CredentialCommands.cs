@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -104,7 +104,11 @@ namespace Microsoft.PowerShell.Commands
             }
             catch (ArgumentException exception)
             {
-                ErrorRecord errorRecord = new ErrorRecord(exception, "CouldNotPromptForCredential", ErrorCategory.InvalidOperation, null);
+                ErrorRecord errorRecord = new(
+                    exception,
+                    "CouldNotPromptForCredential",
+                    ErrorCategory.InvalidOperation,
+                    targetObject: null);
                 WriteError(errorRecord);
             }
 

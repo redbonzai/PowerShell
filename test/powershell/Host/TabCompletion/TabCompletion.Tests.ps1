@@ -1,9 +1,8 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 Describe "TabCompletion" -Tags CI {
     BeforeAll {
         $separator = [System.IO.Path]::DirectorySeparatorChar
-        $nullConditionalFeatureDisabled = -not $EnabledExperimentalFeatures.Contains('PSNullConditionalOperators')
     }
 
     It 'Should complete Command' {
@@ -34,12 +33,12 @@ Describe "TabCompletion" -Tags CI {
         $res.CompletionMatches[0].CompletionText | Should -BeExactly 'ToString('
     }
 
-    It 'Should complete dotnet method with null conditional operator' -skip:$nullConditionalFeatureDisabled {
+    It 'Should complete dotnet method with null conditional operator' {
         $res = TabExpansion2 -inputScript '(1)?.ToSt' -cursorColumn '(1)?.ToSt'.Length
         $res.CompletionMatches[0].CompletionText | Should -BeExactly 'ToString('
     }
 
-    It 'Should complete dotnet method with null conditional operator without first letter' -skip:$nullConditionalFeatureDisabled {
+    It 'Should complete dotnet method with null conditional operator without first letter' {
         $res = TabExpansion2 -inputScript '(1)?.' -cursorColumn '(1)?.'.Length
         $res.CompletionMatches[0].CompletionText | Should -BeExactly 'CompareTo('
     }
@@ -131,7 +130,7 @@ Describe "TabCompletion" -Tags CI {
     }
 
     It 'Should complete "Get-Process -Id " with Id and name in tooltip' {
-        Set-StrictMode -Version latest
+        Set-StrictMode -Version 3.0
         $cmd = 'Get-Process -Id '
         [System.Management.Automation.CommandCompletion]$res = TabExpansion2 -inputScript $cmd  -cursorColumn $cmd.Length
         $res.CompletionMatches[0].CompletionText -match '^\d+$' | Should -BeTrue
@@ -147,18 +146,18 @@ Describe "TabCompletion" -Tags CI {
         $res.CompletionMatches.Count | Should -BeGreaterThan 0
     }
 
-    It 'Should complete keyword' -skip {
+    It 'Should complete keyword' -Skip {
         $res = TabExpansion2 -inputScript 'using nam' -cursorColumn 'using nam'.Length
         $res.CompletionMatches[0].CompletionText | Should -BeExactly 'namespace'
     }
 
-    It 'Should first suggest -Full and then -Functionality when using Get-Help -Fu<tab>' -skip {
+    It 'Should first suggest -Full and then -Functionality when using Get-Help -Fu<tab>' -Skip {
         $res = TabExpansion2 -inputScript 'Get-Help -Fu' -cursorColumn 'Get-Help -Fu'.Length
         $res.CompletionMatches[0].CompletionText | Should -BeExactly '-Full'
         $res.CompletionMatches[1].CompletionText | Should -BeExactly '-Functionality'
     }
 
-    It 'Should first suggest -Full and then -Functionality when using help -Fu<tab>' -skip {
+    It 'Should first suggest -Full and then -Functionality when using help -Fu<tab>' -Skip {
         $res = TabExpansion2 -inputScript 'help -Fu' -cursorColumn 'help -Fu'.Length
         $res.CompletionMatches[0].CompletionText | Should -BeExactly '-Full'
         $res.CompletionMatches[1].CompletionText | Should -BeExactly '-Functionality'
@@ -302,6 +301,111 @@ Describe "TabCompletion" -Tags CI {
         $actual | Should -BeExactly $expected
     }
 
+    Context "Format cmdlet's View paramter completion" {
+        BeforeAll {
+            $viewDefinition = @'
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+  <ViewDefinitions>
+    <View>
+      <Name>R A M</Name>
+      <ViewSelectedBy>
+        <TypeName>System.Diagnostics.Process</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Label>ProcName</Label>
+            <Width>40</Width>
+            <Alignment>Center</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>PagedMem</Label>
+            <Width>40</Width>
+            <Alignment>Center</Alignment>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>PeakWS</Label>
+            <Width>40</Width>
+            <Alignment>Center</Alignment>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem>
+                <Alignment>Center</Alignment>
+                <PropertyName>Name</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <Alignment>Center</Alignment>
+                <PropertyName>PagedMemorySize</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <Alignment>Center</Alignment>
+                <PropertyName>PeakWorkingSet</PropertyName>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+  </ViewDefinitions>
+</Configuration>
+'@
+
+            $tempViewFile = Join-Path -Path $TestDrive -ChildPath 'processViewDefinition.ps1xml'
+            Set-Content -LiteralPath $tempViewFile -Value $viewDefinition -Force
+
+            $ps = [PowerShell]::Create()
+            $null = $ps.AddScript("Update-FormatData -AppendPath $tempViewFile")
+            $ps.Invoke()
+            $ps.HadErrors | Should -BeFalse
+            $ps.Commands.Clear()
+
+            Remove-Item -LiteralPath $tempViewFile -Force -ErrorAction SilentlyContinue
+        }
+
+        It 'Should complete Get-ChildItem | <cmd> -View' -TestCases (
+            @{ cmd = 'Format-Table'; expected = "children childrenWithHardlink$(if (!$IsWindows) { ' childrenWithUnixStat' })" },
+            @{ cmd = 'Format-List'; expected = 'children' },
+            @{ cmd = 'Format-Wide'; expected = 'children' },
+            @{ cmd = 'Format-Custom'; expected = '' }
+        ) {
+            param($cmd, $expected)
+
+            # The completion is based on OutputTypeAttribute() of the cmdlet.
+            $res = TabExpansion2 -inputScript "Get-ChildItem | $cmd -View " -cursorColumn "Get-ChildItem | $cmd -View ".Length
+            $completionText = $res.CompletionMatches.CompletionText | Sort-Object
+            $completionText -join ' ' | Should -BeExactly $expected
+        }
+
+        It 'Should complete $processList = Get-Process; $processList | <cmd>' -TestCases (
+            @{ cmd = 'Format-Table -View '; expected = "'R A M'", "Priority", "process", "ProcessModule", "ProcessWithUserName", "StartTime" },
+            @{ cmd = 'Format-List -View '; expected = '' },
+            @{ cmd = 'Format-Wide -View '; expected = 'process' },
+            @{ cmd = 'Format-Custom -View '; expected = '' },
+            @{ cmd = 'Format-Table -View S'; expected = "StartTime" },
+            @{ cmd = "Format-Table -View 'S"; expected = "'StartTime'" },
+            @{ cmd = "Format-Table -View R"; expected = "'R A M'" }
+        ) {
+            param($cmd, $expected)
+
+            $null = $ps.AddScript({
+                param ($cmd)
+                $processList = Get-Process
+                $res = TabExpansion2 -inputScript "`$processList | $cmd" -cursorColumn "`$processList | $cmd".Length
+                $completionText = $res.CompletionMatches.CompletionText | Sort-Object
+                $completionText
+            }).AddArgument($cmd)
+
+            $result = $ps.Invoke()
+            $ps.Commands.Clear()
+            $expected = ($expected | Sort-Object) -join ' '
+            $result -join ' ' | Should -BeExactly $expected
+        }
+    }
+
     Context NativeCommand {
         BeforeAll {
             $nativeCommand = (Get-Command -CommandType Application -TotalCount 1).Name
@@ -349,7 +453,7 @@ Describe "TabCompletion" -Tags CI {
                 }
             }
             $line = "$nativeCommand --f"
-            $res = TaBexpansion2 -inputScript $line -cursorColumn $line.Length
+            $res = TabExpansion2 -inputScript $line -cursorColumn $line.Length
             $res.CompletionMatches | Should -HaveCount 1
             $res.CompletionMatches.CompletionText | Should -BeExactly "--flag"
         }
@@ -365,7 +469,7 @@ Describe "TabCompletion" -Tags CI {
                 }
             }
             $line = "$nativeCommand -o"
-            $res = TaBexpansion2 -inputScript $line -cursorColumn $line.Length
+            $res = TabExpansion2 -inputScript $line -cursorColumn $line.Length
             $res.CompletionMatches | Should -HaveCount 1
             $res.CompletionMatches.CompletionText | Should -BeExactly "-option"
         }
@@ -380,8 +484,8 @@ Describe "TabCompletion" -Tags CI {
 
     Context "Script name completion" {
         BeforeAll {
-            setup -f 'install-powershell.ps1' -content ""
-            setup -f 'remove-powershell.ps1' -content ""
+            Setup -f 'install-powershell.ps1' -Content ""
+            Setup -f 'remove-powershell.ps1' -Content ""
 
             $scriptWithWildcardCases = @(
                 @{
@@ -415,7 +519,7 @@ Describe "TabCompletion" -Tags CI {
             Pop-Location
         }
 
-        it "Input <name> should successfully complete" -TestCases $scriptWithWildcardCases {
+        It "Input <name> should successfully complete" -TestCases $scriptWithWildcardCases {
             param($command, $expectedCommand)
             $res = TabExpansion2 -inputScript $command -cursorColumn $command.Length
             $res.CompletionMatches.Count | Should -BeGreaterThan 0
@@ -699,7 +803,7 @@ Describe "TabCompletion" -Tags CI {
                 ## if $PSHOME contains a space tabcompletion adds ' around the path
                 @{ inputStr = 'cd $PSHOME\Modu'; expected = if($PSHOME.Contains(' ')) { "'$(Join-Path $PSHOME 'Modules')'" } else { Join-Path $PSHOME 'Modules' }; setup = $null }
                 @{ inputStr = 'cd "$PSHOME\Modu"'; expected = "`"$(Join-Path $PSHOME 'Modules')`""; setup = $null }
-                @{ inputStr = '$PSHOME\System.Management.Au'; expected = if($PSHOME.Contains(' ')) { "`& '$(Join-Path $PSHOME 'System.Management.Automation.dll')'" }  else { Join-Path $PSHOME 'System.Management.Automation.dll'; setup = $null }}
+                @{ inputStr = '$PSHOME\System.Management.Au'; expected = if($PSHOME.Contains(' ')) { "`& '$(Join-Path $PSHOME 'System.Management.Automation.dll')'" }  else { Join-Path $PSHOME 'System.Management.Automation.dll'; Setup = $null }}
                 @{ inputStr = '"$PSHOME\System.Management.Au"'; expected = "`"$(Join-Path $PSHOME 'System.Management.Automation.dll')`""; setup = $null }
                 @{ inputStr = '& "$PSHOME\System.Management.Au"'; expected = "`"$(Join-Path $PSHOME 'System.Management.Automation.dll')`""; setup = $null }
                 ## tab completion AST-based tests
@@ -909,12 +1013,96 @@ Describe "TabCompletion" -Tags CI {
             $res.CompletionMatches[0].CompletionText | Should -BeExactly "Test history completion"
         }
 
+        It "Test #requires parameter completion" {
+            $res = TabExpansion2 -inputScript "#requires -" -cursorColumn 11
+            $res.CompletionMatches.Count | Should -BeGreaterThan 0
+            $res.CompletionMatches[0].CompletionText | Should -BeExactly "Modules"
+        }
+
+        It "Test #requires parameter value completion" {
+            $res = TabExpansion2 -inputScript "#requires -PSEdition " -cursorColumn 21
+            $res.CompletionMatches.Count | Should -BeGreaterThan 0
+            $res.CompletionMatches[0].CompletionText | Should -BeExactly "Core"
+        }
+
+        It "Test no completion after #requires -RunAsAdministrator" {
+            $res = TabExpansion2 -inputScript "#requires -RunAsAdministrator -" -cursorColumn 31
+            $res.CompletionMatches | Should -HaveCount 0
+        }
+
+        It "Test no suggestions for already existing parameters in #requires" {
+            $res = TabExpansion2 -inputScript "#requires -Modules -" -cursorColumn 20
+            $res.CompletionMatches.CompletionText | Should -Not -Contain "Modules"
+        }
+
+        It "Test module completion in #requires without quotes" {
+            $res = TabExpansion2 -inputScript "#requires -Modules P" -cursorColumn 20
+            $res.CompletionMatches.Count | Should -BeGreaterThan 0
+            $res.CompletionMatches.CompletionText | Should -Contain "Pester"
+        }
+
+        It "Test module completion in #requires with quotes" {
+            $res = TabExpansion2 -inputScript '#requires -Modules "' -cursorColumn 20
+            $res.CompletionMatches.Count | Should -BeGreaterThan 0
+            $res.CompletionMatches.CompletionText | Should -Contain "Pester"
+        }
+
+        It "Test module completion in #requires with multiple modules" {
+            $res = TabExpansion2 -inputScript "#requires -Modules Pester," -cursorColumn 26
+            $res.CompletionMatches.Count | Should -BeGreaterThan 0
+            $res.CompletionMatches.CompletionText | Should -Contain "Pester"
+        }
+
+        It "Test hashtable key completion in #requires statement for modules" {
+            $res = TabExpansion2 -inputScript "#requires -Modules @{" -cursorColumn 21
+            $res.CompletionMatches.Count | Should -BeGreaterThan 0
+            $res.CompletionMatches[0].CompletionText | Should -BeExactly "GUID"
+        }
+
+        It "Test no suggestions for already existing hashtable keys in #requires statement for modules" {
+            $res = TabExpansion2 -inputScript '#requires -Modules @{ModuleName="Pester";' -cursorColumn 41
+            $res.CompletionMatches.Count | Should -BeGreaterThan 0
+            $res.CompletionMatches.CompletionText | Should -Not -Contain "ModuleName"
+        }
+
+        It "Test no suggestions for mutually exclusive hashtable keys in #requires statement for modules" {
+            $res = TabExpansion2 -inputScript '#requires -Modules @{ModuleName="Pester";RequiredVersion="1.0";' -cursorColumn 63
+            $res.CompletionMatches.CompletionText | Should -BeExactly "GUID"
+        }
+
+        It "Test no suggestions for RequiredVersion key in #requires statement when ModuleVersion is specified" {
+            $res = TabExpansion2 -inputScript '#requires -Modules @{ModuleName="Pester";ModuleVersion="1.0";' -cursorColumn 61
+            $res.CompletionMatches.Count | Should -BeGreaterThan 0
+            $res.CompletionMatches.CompletionText | Should -Not -Contain "RequiredVersion"
+        }
+
+        It "Test module completion in #requires statement for hashtables" {
+            $res = TabExpansion2 -inputScript '#requires -Modules @{ModuleName="p' -cursorColumn 34
+            $res.CompletionMatches.Count | Should -BeGreaterThan 0
+            $res.CompletionMatches.CompletionText | Should -Contain "Pester"
+        }
+
         It "Test Attribute member completion" {
             $inputStr = "function bar { [parameter(]param() }"
             $res = TabExpansion2 -inputScript $inputStr -cursorColumn ($inputStr.IndexOf('(') + 1)
             $res.CompletionMatches | Should -HaveCount 10
             $entry = $res.CompletionMatches | Where-Object CompletionText -EQ "Position"
             $entry.CompletionText | Should -BeExactly "Position"
+        }
+        It "Test Attribute member completion multiple members" {
+            $inputStr = "function bar { [parameter(Position,]param() }"
+            $res = TabExpansion2 -inputScript $inputStr -cursorColumn ($inputStr.IndexOf(',') + 1)
+            $res.CompletionMatches | Should -HaveCount 10
+            $entry = $res.CompletionMatches | Where-Object CompletionText -EQ "Mandatory"
+            $entry.CompletionText | Should -BeExactly "Mandatory"
+        }
+
+        It "Test Attribute scriptblock completion" {
+            $inputStr = '[ValidateScript({Get-Child})]$Test=ls'
+            $res = TabExpansion2 -inputScript $inputStr -cursorColumn ($inputStr.IndexOf('}'))
+            $res.CompletionMatches | Should -HaveCount 1
+            $entry = $res.CompletionMatches | Where-Object CompletionText -EQ "Get-ChildItem"
+            $entry.CompletionText | Should -BeExactly "Get-ChildItem"
         }
 
         It "Test completion with line continuation" {
@@ -946,6 +1134,34 @@ dir -Recurse `
             $res = TabExpansion2 -inputScript $inputStr -cursorColumn $inputStr.Length
             $res.CompletionMatches | Should -HaveCount 4
             [string]::Join(',', ($res.CompletionMatches.completiontext | Sort-Object)) | Should -BeExactly "-wa,-Wait,-WarningAction,-WarningVariable"
+        }
+
+        It "Test completion with splatted variable" {
+            $inputStr = 'Get-Content @Splat -P'
+            $res = TabExpansion2 -inputScript $inputStr -cursorColumn $inputStr.Length
+            $res.CompletionMatches | Should -HaveCount 4
+            [string]::Join(',', ($res.CompletionMatches.completiontext | Sort-Object)) | Should -BeExactly "-Path,-PipelineVariable,-PSPath,-pv"
+        }
+
+        It "Test completion for HttpVersion parameter name" {
+            $inputStr = 'Invoke-WebRequest -HttpV'
+            $res = TabExpansion2 -inputScript $inputStr -cursorColumn $inputStr.Length
+            $res.CompletionMatches | Should -HaveCount 1
+            $res.CompletionMatches[0].CompletionText | Should -BeExactly "-HttpVersion"
+        }
+
+        It "Test completion for HttpVersion parameter" {
+            $inputStr = 'Invoke-WebRequest -HttpVersion '
+            $res = TabExpansion2 -inputScript $inputStr -cursorColumn $inputStr.Length
+            $res.CompletionMatches | Should -HaveCount 4
+            [string]::Join(',', ($res.CompletionMatches.completiontext | Sort-Object)) | Should -BeExactly "1.0,1.1,2.0,3.0"
+        }
+
+        It "Test completion for HttpVersion parameter with input" {
+            $inputStr = 'Invoke-WebRequest -HttpVersion 1'
+            $res = TabExpansion2 -inputScript $inputStr -cursorColumn $inputStr.Length
+            $res.CompletionMatches | Should -HaveCount 2
+            [string]::Join(',', ($res.CompletionMatches.completiontext | Sort-Object)) | Should -BeExactly "1.0,1.1"
         }
     }
 
@@ -1249,7 +1465,7 @@ dir -Recurse `
 
             $res = TabExpansion2 -inputScript $inputStr -cursorColumn $inputStr.Length
             $res.CompletionMatches.Count | Should -BeGreaterThan 0
-            $res.CompletionMatches[0].CompletionText | Should -BeExactly $expected
+            $res.CompletionMatches[0].CompletionText | Should -Be $expected
         }
     }
 
@@ -1295,6 +1511,201 @@ dir -Recurse `
             $res = TabExpansion2 -inputScript 'get-help about_spla' -cursorColumn 'get-help about_spla'.Length
             $res.CompletionMatches | Should -HaveCount $expectedCompletions
             $res.CompletionMatches[0].CompletionText | Should -BeExactly 'about_Splatting'
+        }
+        It 'Should complete about help topic regardless of culture' {
+            try
+            {
+                ## Save original culture and temporarily set it to da-DK because there's no localized help for da-DK.
+                $OriginalCulture = [cultureinfo]::CurrentCulture
+                [cultureinfo]::CurrentCulture="da-DK"
+
+                $res = TabExpansion2 -inputScript 'get-help about_spla' -cursorColumn 'get-help about_spla'.Length
+                $res.CompletionMatches | Should -HaveCount 1
+                $res.CompletionMatches[0].CompletionText | Should -BeExactly 'about_Splatting'
+            }
+            finally
+            {
+                [cultureinfo]::CurrentCulture = $OriginalCulture
+            }
+        }
+        It '<Intent>' -TestCases @(
+            @{
+                Intent = 'Complete help keywords with minimum input'
+                Expected = @(
+                    'COMPONENT'
+                    'DESCRIPTION'
+                    'EXAMPLE'
+                    'EXTERNALHELP'
+                    'FORWARDHELPCATEGORY'
+                    'FORWARDHELPTARGETNAME'
+                    'FUNCTIONALITY'
+                    'INPUTS'
+                    'LINK'
+                    'NOTES'
+                    'OUTPUTS'
+                    'PARAMETER'
+                    'REMOTEHELPRUNSPACE'
+                    'ROLE'
+                    'SYNOPSIS'
+                )
+                TestString = @'
+<#
+.^
+#>
+'@
+            }
+            @{
+                Intent = 'Complete help keywords without duplicates'
+                Expected = $null
+                TestString = @'
+<#
+.SYNOPSIS
+.S^
+#>
+'@
+            }
+            @{
+                Intent = 'Complete help keywords with allowed duplicates'
+                Expected = 'PARAMETER'
+                TestString = @'
+<#
+.PARAMETER
+.Paramet^
+#>
+'@
+            }
+            @{
+                Intent = 'Complete help keyword FORWARDHELPTARGETNAME argument'
+                Expected = 'Get-ChildItem'
+                TestString = @'
+<#
+.FORWARDHELPTARGETNAME  Get-Child^
+#>
+'@
+            }
+            @{
+                Intent = 'Complete help keyword FORWARDHELPCATEGORY argument'
+                Expected = 'Cmdlet'
+                TestString = @'
+<#
+.FORWARDHELPCATEGORY C^
+#>
+'@
+            }
+            @{
+                Intent = 'Complete help keyword REMOTEHELPRUNSPACE argument'
+                Expected = 'PSEdition'
+                TestString = @'
+<#
+.REMOTEHELPRUNSPACE PSEditi^
+#>
+'@
+            }
+            @{
+                Intent = 'Complete help keyword EXTERNALHELP argument'
+                Expected = Join-Path $PSHOME "pwsh.xml"
+                TestString = @"
+<#
+.EXTERNALHELP $PSHOME\pwsh.^
+#>
+"@
+            }
+            @{
+                Intent = 'Complete help keyword PARAMETER argument for script'
+                Expected = 'Param1'
+                TestString = @'
+<#
+.PARAMETER ^
+#>
+param($Param1)
+'@
+            }
+            @{
+                Intent = 'Complete help keyword PARAMETER argument for function with help inside'
+                Expected = 'param2'
+                TestString = @'
+function MyFunction ($param1, $param2)
+{
+<#
+.PARAMETER param1
+.PARAMETER ^
+#>
+}
+'@
+            }
+            @{
+                Intent = 'Complete help keyword PARAMETER argument for function with help before it'
+                Expected = 'param1','param2'
+                TestString = @'
+<#
+.PARAMETER ^
+#>
+function MyFunction ($param1, $param2)
+{
+}
+'@
+            }
+            @{
+                Intent = 'Complete help keyword PARAMETER argument for advanced function with help inside'
+                Expected = 'Param1'
+                TestString = @'
+function Verb-Noun
+{
+<#
+.PARAMETER ^
+#>
+    [CmdletBinding()]
+    Param
+    (
+        $Param1
+    )
+
+    Begin
+    {
+    }
+    Process
+    {
+    }
+    End
+    {
+    }
+}
+'@
+            }
+            @{
+                Intent = 'Complete help keyword PARAMETER argument for nested function with help before it'
+                Expected = 'param3','param4'
+                TestString = @'
+function MyFunction ($param1, $param2)
+{
+    <#
+    .PARAMETER ^
+    #>
+    function MyFunction2 ($param3, $param4)
+    {
+    }
+}
+'@
+            }
+            @{
+                Intent = 'Not complete help keyword PARAMETER argument if following function is too far away'
+                Expected = $null
+                TestString = @'
+<#
+.PARAMETER ^
+#>
+
+
+function MyFunction ($param1, $param2)
+{
+}
+'@
+            }
+        ){
+            param($Expected, $TestString)
+            $CursorIndex = $TestString.IndexOf('^')
+            $res = TabExpansion2 -cursorColumn $CursorIndex -inputScript $TestString.Remove($CursorIndex, 1)
+            $res.CompletionMatches.CompletionText | Should -BeExactly $Expected
         }
     }
 }

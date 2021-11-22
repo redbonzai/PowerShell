@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 ##
 ## PowerShell Invoke-Command -RemoteDebug Tests
@@ -174,7 +174,7 @@ Describe "Invoke-Command remote debugging tests" -Tags 'Feature','RequireAdminOn
         $ps.Commands.Clear()
         $ps2.Commands.Clear()
 
-        Remove-PSSession $remoteSession -ErrorAction SilentlyContinue
+        if ($null -ne $remoteSession) { Remove-PSSession $remoteSession -ErrorAction SilentlyContinue }
         $remoteSession = $null
     }
 

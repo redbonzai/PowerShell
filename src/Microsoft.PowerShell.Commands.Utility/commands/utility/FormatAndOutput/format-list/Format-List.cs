@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Management.Automation;
@@ -14,7 +14,8 @@ namespace Microsoft.PowerShell.Commands
     public class FormatListCommand : OuterFormatTableAndListBase
     {
         /// <summary>
-        /// Constructor to set the inner command.
+        /// Initializes a new instance of the <see cref="FormatListCommand"/> class
+        /// and sets the inner command.
         /// </summary>
         public FormatListCommand()
         {
@@ -22,4 +23,3 @@ namespace Microsoft.PowerShell.Commands
         }
     }
 }
-

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.IO;
@@ -9,7 +9,7 @@ using Microsoft.PowerShell.Commands;
 
 namespace System.Management.Automation
 {
-    internal class HelpUtils
+    internal static class HelpUtils
     {
         private static string userHomeHelpPath = null;
 

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System.Collections.Concurrent;
@@ -12,6 +12,7 @@ namespace System.Management.Automation.Runspaces
     public sealed partial class TypeTable
     {
         private const int ValueFactoryCacheCount = 6;
+
         private static readonly Func<string, PSMemberInfoInternalCollection<PSMemberInfo>>[] s_valueFactoryCache;
 
         private static Func<string, PSMemberInfoInternalCollection<PSMemberInfo>> GetValueFactoryBasedOnInitCapacity(int capacity)
@@ -36,7 +37,6 @@ namespace System.Management.Automation.Runspaces
             }
 
             return s_valueFactoryCache[cacheIndex];
-
 
             // Local helper function to avoid creating an instance of the generated delegate helper class
             // every time 'GetValueFactoryBasedOnInitCapacity' is invoked.
@@ -639,7 +639,7 @@ namespace System.Management.Automation.Runspaces
             #region System.IO.DirectoryInfo
 
             typeName = @"System.IO.DirectoryInfo";
-            typeMembers = _extendedMembers.GetOrAdd(typeName, key => new PSMemberInfoInternalCollection<PSMemberInfo>(capacity: 9));
+            typeMembers = _extendedMembers.GetOrAdd(typeName, static key => new PSMemberInfoInternalCollection<PSMemberInfo>(capacity: 9));
 
             // Process regular members.
             newMembers.Add(@"Mode");
@@ -680,10 +680,7 @@ namespace System.Management.Automation.Runspaces
             AddMember(
                 errors,
                 typeName,
-                new PSCodeProperty(
-                    @"Target",
-                    GetMethodInfo(typeof(Microsoft.PowerShell.Commands.InternalSymbolicLinkLinkCodeMethods), @"GetTarget"),
-                    setterCodeReference: null),
+                new PSAliasProperty(@"Target", @"LinkTarget", conversionType: null),
                 typeMembers,
                 isOverride: false);
 
@@ -705,7 +702,8 @@ namespace System.Management.Automation.Runspaces
                 new PSCodeProperty(
                     @"NameString",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"NameString"),
-                    setterCodeReference: null) { IsHidden = true },
+                    setterCodeReference: null)
+                { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
@@ -716,7 +714,8 @@ namespace System.Management.Automation.Runspaces
                 new PSCodeProperty(
                     @"LengthString",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"LengthString"),
-                    setterCodeReference: null) { IsHidden = true },
+                    setterCodeReference: null)
+                { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
@@ -727,7 +726,8 @@ namespace System.Management.Automation.Runspaces
                 new PSCodeProperty(
                     @"LastWriteTimeString",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"LastWriteTimeString"),
-                    setterCodeReference: null) { IsHidden = true },
+                    setterCodeReference: null)
+                { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
@@ -752,7 +752,7 @@ namespace System.Management.Automation.Runspaces
             #region System.IO.FileInfo
 
             typeName = @"System.IO.FileInfo";
-            typeMembers = _extendedMembers.GetOrAdd(typeName, key => new PSMemberInfoInternalCollection<PSMemberInfo>(capacity: 10));
+            typeMembers = _extendedMembers.GetOrAdd(typeName, static key => new PSMemberInfoInternalCollection<PSMemberInfo>(capacity: 10));
 
             // Process regular members.
             newMembers.Add(@"Mode");
@@ -805,10 +805,7 @@ namespace System.Management.Automation.Runspaces
             AddMember(
                 errors,
                 typeName,
-                new PSCodeProperty(
-                    @"Target",
-                    GetMethodInfo(typeof(Microsoft.PowerShell.Commands.InternalSymbolicLinkLinkCodeMethods), @"GetTarget"),
-                    setterCodeReference: null),
+                new PSAliasProperty(@"Target", @"LinkTarget", conversionType: null),
                 typeMembers,
                 isOverride: false);
 
@@ -830,7 +827,8 @@ namespace System.Management.Automation.Runspaces
                 new PSCodeProperty(
                     @"NameString",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"NameString"),
-                    setterCodeReference: null) { IsHidden = true },
+                    setterCodeReference: null)
+                { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
@@ -841,7 +839,8 @@ namespace System.Management.Automation.Runspaces
                 new PSCodeProperty(
                     @"LengthString",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"LengthString"),
-                    setterCodeReference: null) { IsHidden = true },
+                    setterCodeReference: null)
+                { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
@@ -852,7 +851,8 @@ namespace System.Management.Automation.Runspaces
                 new PSCodeProperty(
                     @"LastWriteTimeString",
                     GetMethodInfo(typeof(Microsoft.PowerShell.Commands.FileSystemProvider), @"LastWriteTimeString"),
-                    setterCodeReference: null) { IsHidden = true },
+                    setterCodeReference: null)
+                { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
@@ -1041,7 +1041,7 @@ namespace System.Management.Automation.Runspaces
             #region System.Diagnostics.Process
 
             typeName = @"System.Diagnostics.Process";
-            typeMembers = _extendedMembers.GetOrAdd(typeName, key => new PSMemberInfoInternalCollection<PSMemberInfo>(capacity: 19));
+            typeMembers = _extendedMembers.GetOrAdd(typeName, static key => new PSMemberInfoInternalCollection<PSMemberInfo>(capacity: 19));
 
             // Process regular members.
             newMembers.Add(@"PSConfiguration");
@@ -1127,6 +1127,24 @@ namespace System.Management.Automation.Runspaces
                 new PSScriptProperty(
                     @"Path",
                     GetScriptBlock(@"$this.Mainmodule.FileName"),
+                    setterScript: null,
+                    shouldCloneOnAccess: true),
+                typeMembers,
+                isOverride: false);
+
+            newMembers.Add(@"CommandLine");
+            AddMember(
+                errors,
+                typeName,
+                new PSScriptProperty(
+                    @"CommandLine",
+                    GetScriptBlock(@"
+                        if ($IsWindows) {
+                            (Get-CimInstance Win32_Process -Filter ""ProcessId = $($this.Id)"").CommandLine
+                        } elseif ($IsLinux) {
+                            Get-Content -LiteralPath ""/proc/$($this.Id)/cmdline""
+                        }
+                    "),
                     setterScript: null,
                     shouldCloneOnAccess: true),
                 typeMembers,
@@ -4044,7 +4062,7 @@ namespace System.Management.Automation.Runspaces
             #region System.Security.AccessControl.ObjectSecurity
 
             typeName = @"System.Security.AccessControl.ObjectSecurity";
-            typeMembers = _extendedMembers.GetOrAdd(typeName, key => new PSMemberInfoInternalCollection<PSMemberInfo>(capacity: 7));
+            typeMembers = _extendedMembers.GetOrAdd(typeName, static key => new PSMemberInfoInternalCollection<PSMemberInfo>(capacity: 7));
             Type securityDescriptorCommandsBaseType = TypeResolver.ResolveType("Microsoft.PowerShell.Commands.SecurityDescriptorCommandsBase", exception: out _);
 
             // Process regular members.
@@ -5095,7 +5113,8 @@ namespace System.Management.Automation.Runspaces
                 new PSCodeProperty(
                     @"Flags",
                     GetMethodInfo(typeof(Microsoft.PowerShell.DeserializingTypeConverter), @"GetParameterSetMetadataFlags"),
-                    setterCodeReference: null) { IsHidden = true },
+                    setterCodeReference: null)
+                { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
@@ -5256,7 +5275,8 @@ namespace System.Management.Automation.Runspaces
                 new PSCodeProperty(
                     @"InstanceId",
                     GetMethodInfo(typeof(Microsoft.PowerShell.DeserializingTypeConverter), @"GetFormatViewDefinitionInstanceId"),
-                    setterCodeReference: null) { IsHidden = true },
+                    setterCodeReference: null)
+                { IsHidden = true },
                 typeMembers,
                 isOverride: false);
 
@@ -9201,46 +9221,42 @@ namespace System.Management.Automation.Runspaces
 #if UNIX
             #region UnixStat
 
+            typeName = @"System.IO.FileSystemInfo";
+            typeMembers = _extendedMembers.GetOrAdd(typeName, GetValueFactoryBasedOnInitCapacity(capacity: 1));
 
-            if (ExperimentalFeature.IsEnabled("PSUnixFileStat"))
-            {
-                typeName = @"System.IO.FileSystemInfo";
-                typeMembers = _extendedMembers.GetOrAdd(typeName, GetValueFactoryBasedOnInitCapacity(capacity: 1));
+            // Where we have a method to invoke below, first check to be sure that the object is present
+            // to avoid null reference issues
+            newMembers.Add(@"UnixMode");
+            AddMember(
+                errors,
+                typeName,
+                new PSScriptProperty(@"UnixMode", GetScriptBlock(@"if ($this.UnixStat) { $this.UnixStat.GetModeString() }")),
+                typeMembers,
+                isOverride: false);
 
-                // Where we have a method to invoke below, first check to be sure that the object is present
-                // to avoid null reference issues
-                newMembers.Add(@"UnixMode");
-                AddMember(
-                    errors,
-                    typeName,
-                    new PSScriptProperty(@"UnixMode", GetScriptBlock(@"if ($this.UnixStat) { $this.UnixStat.GetModeString() }")),
-                    typeMembers,
-                    isOverride: false);
+            newMembers.Add(@"User");
+            AddMember(
+                errors,
+                typeName,
+                new PSScriptProperty(@"User", GetScriptBlock(@" if ($this.UnixStat) { $this.UnixStat.GetUserName() } ")),
+                typeMembers,
+                isOverride: false);
 
-                newMembers.Add(@"User");
-                AddMember(
-                    errors,
-                    typeName,
-                    new PSScriptProperty(@"User", GetScriptBlock(@" if ($this.UnixStat) { $this.UnixStat.GetUserName() } ")),
-                    typeMembers,
-                    isOverride: false);
+            newMembers.Add(@"Group");
+            AddMember(
+                errors,
+                typeName,
+                new PSScriptProperty(@"Group", GetScriptBlock(@" if ($this.UnixStat) { $this.UnixStat.GetGroupName() } ")),
+                typeMembers,
+                isOverride: false);
 
-                newMembers.Add(@"Group");
-                AddMember(
-                    errors,
-                    typeName,
-                    new PSScriptProperty(@"Group", GetScriptBlock(@" if ($this.UnixStat) { $this.UnixStat.GetGroupName() } ")),
-                    typeMembers,
-                    isOverride: false);
-
-                newMembers.Add(@"Size");
-                AddMember(
-                    errors,
-                    typeName,
-                    new PSScriptProperty(@"Size", GetScriptBlock(@"$this.UnixStat.Size")),
-                    typeMembers,
-                    isOverride: false);
-            }
+            newMembers.Add(@"Size");
+            AddMember(
+                errors,
+                typeName,
+                new PSScriptProperty(@"Size", GetScriptBlock(@"$this.UnixStat.Size")),
+                typeMembers,
+                isOverride: false);
 
             #endregion
 #endif

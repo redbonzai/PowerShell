@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 #
 # Validates Get-Help for cmdlets in Microsoft.PowerShell.Core.
@@ -15,7 +15,8 @@ $script:cmdletsToSkip = @(
     "Enable-PSRemoting",
     "Get-ExperimentalFeature",
     "Enable-ExperimentalFeature",
-    "Disable-ExperimentalFeature"
+    "Disable-ExperimentalFeature",
+    "Get-PSSubsystem"
 )
 
 function UpdateHelpFromLocalContentPath {
@@ -59,8 +60,8 @@ Describe "Validate that the Help function can Run in strict mode" -Tags @('CI') 
 
         $help = & {
             # run in nested scope to keep strict mode from affecting other tests
-            Set-StrictMode -Version Latest
-            Help
+            Set-StrictMode -Version 3.0
+            help
         }
         # the help function renders the help content as text so just verify that there is content
         $help | Should -Not -BeNullOrEmpty
@@ -91,7 +92,7 @@ Describe "Validate that get-help works for CurrentUserScope" -Tags @('CI') {
 
         It "Validate -Description and -Examples sections in help content. Run 'Get-help -name <cmdletName>" -TestCases $testCases {
             param($cmdletName)
-            $help = get-help -name $cmdletName
+            $help = Get-Help -Name $cmdletName
             $help.Description | Out-String | Should -Match $cmdletName
             $help.Examples | Out-String | Should -Match $cmdletName
         }
@@ -135,7 +136,7 @@ Describe "Validate that get-help works for AllUsers Scope" -Tags @('Feature', 'R
 
         It "Validate -Description and -Examples sections in help content. Run 'Get-help -name <cmdletName>" -TestCases $testCases -Skip:(!(Test-CanWriteToPsHome)) {
             param($cmdletName)
-            $help = get-help -name $cmdletName
+            $help = Get-Help -Name $cmdletName
             $help.Description | Out-String | Should -Match $cmdletName
             $help.Examples | Out-String | Should -Match $cmdletName
         }
@@ -574,7 +575,7 @@ Describe "Help failure cases" -Tags Feature {
     ) {
         param($command)
 
-        { & $command foobar -ErrorAction Stop } | Should -Throw -ErrorId "HelpNotFound,Microsoft.PowerShell.Commands.GetHelpCommand"
+        { & $command DoesNotExist -ErrorAction Stop } | Should -Throw -ErrorId "HelpNotFound,Microsoft.PowerShell.Commands.GetHelpCommand"
     }
 }
 

@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+# Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 function Wait-UntilTrue
 {
@@ -42,7 +42,7 @@ function Test-IsElevated
         # on Windows we can determine whether we're executing in an
         # elevated context
         $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-        $windowsPrincipal = new-object 'Security.Principal.WindowsPrincipal' $identity
+        $windowsPrincipal = New-Object 'Security.Principal.WindowsPrincipal' $identity
         if ($windowsPrincipal.IsInRole("Administrators") -eq 1)
         {
             $IsElevated = $true
@@ -209,7 +209,7 @@ function Send-VstsLogFile {
         $Path
     )
 
-    $logFolder = Join-Path -path $PWD -ChildPath 'logfile'
+    $logFolder = Join-Path -Path $PWD -ChildPath 'logfile'
     if(!(Test-Path -Path $logFolder))
     {
         $null = New-Item -Path $logFolder -ItemType Directory
@@ -219,22 +219,21 @@ function Send-VstsLogFile {
         }
     }
 
+    $newName = ([System.Io.Path]::GetRandomFileName() + "-$LogName.txt")
     if($Contents)
     {
-        $logFile = Join-Path -Path $logFolder -ChildPath ([System.Io.Path]::GetRandomFileName() + "-$LogName.txt")
-        $name = Split-Path -leaf -Path $logFile
+        $logFile = Join-Path -Path $logFolder -ChildPath $newName
 
-        $Contents | out-file -path $logFile -Encoding ascii
+        $Contents | Out-File -path $logFile -Encoding ascii
     }
     else
     {
-        $name = Split-Path -leaf -Path $path
-        $logFile = Join-Path -Path $logFolder -ChildPath ([System.Io.Path]::GetRandomFileName() + '-' + $name)
+        $logFile = Join-Path -Path $logFolder -ChildPath $newName
         Copy-Item -Path $Path -Destination $logFile
     }
 
-    Write-Host "##vso[artifact.upload containerfolder=$name;artifactname=$name]$logFile"
-    Write-Verbose "Log file captured as $name" -Verbose
+    Write-Host "##vso[artifact.upload containerfolder=$newName;artifactname=$newName]$logFile"
+    Write-Verbose "Log file captured as $newName" -Verbose
 }
 
 # Tests if the Linux or macOS user is root
@@ -355,7 +354,7 @@ function New-ComplexPassword
     $password = [string]::Empty
     # Windows password complexity rule requires minimum 8 characters and using at least 3 of the
     # buckets above, so we just pick one from each bucket twice.
-    # https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements
+    # https://docs.microsoft.com/windows/security/threat-protection/security-policy-settings/password-must-meet-complexity-requirements
     1..2 | ForEach-Object {
         $Password += $numbers[(Get-Random $numbers.Length)] + $lowercase[(Get-Random $lowercase.Length)] +
             $uppercase[(Get-Random $uppercase.Length)] + $symbols[(Get-Random $symbols.Length)]
@@ -365,18 +364,26 @@ function New-ComplexPassword
 }
 
 # return a specific string with regard to platform information
-function Get-PlatformInfo
-{
+function Get-PlatformInfo {
     if ( $IsWindows ) {
-        return "windows"
+        return @{Platform = "windows"; Version = '' }
     }
     if ( $IsMacOS ) {
-        return "macos"
+        return @{Platform = "macos"; Version = '' }
     }
     if ( $IsLinux ) {
         $osrelease = Get-Content /etc/os-release | ConvertFrom-StringData
         if ( -not [string]::IsNullOrEmpty($osrelease.ID) ) {
-            return $osrelease.ID
+
+            $versionId = if (-not $osrelease.Version_ID ) {
+                ''
+            } else {
+                $osrelease.Version_ID.trim('"')
+            }
+
+            $platform = $osrelease.ID.trim('"')
+
+            return @{Platform = $platform; Version = $versionId }
         }
         return "unknown"
     }

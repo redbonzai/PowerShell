@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -13,8 +13,8 @@ namespace PSTests.Sequential
     // otherwise Invoke will not return any objects
     public class RunspaceTests
     {
-        private static int count = 1;
-        private static string script = string.Format($"get-command get-command");
+        private static readonly int count = 1;
+        private static readonly string script = string.Format($"get-command get-command");
 
         [Fact]
         public void TestRunspaceWithPipeline()

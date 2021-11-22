@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -10,7 +10,7 @@ namespace Microsoft.PowerShell.GlobalTool.Shim
     /// <summary>
     /// Shim layer to chose the appropriate runtime for PowerShell DotNet Global tool.
     /// </summary>
-    public class EntryPoint
+    public static class EntryPoint
     {
         private const string PwshDllName = "pwsh.dll";
 
@@ -36,6 +36,11 @@ namespace Microsoft.PowerShell.GlobalTool.Shim
 
             if (File.Exists(pwshPath))
             {
+                Console.CancelKeyPress += (sender, e) =>
+                {
+                    e.Cancel = true;
+                };
+
                 var process = System.Diagnostics.Process.Start("dotnet", processArgs);
                 process.WaitForExit();
                 return process.ExitCode;

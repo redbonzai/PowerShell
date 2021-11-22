@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
 using System;
@@ -23,7 +23,10 @@ namespace Microsoft.PowerShell.Commands
         [Parameter]
         public SwitchParameter Raw
         {
-            get { return _raw; }
+            get
+            {
+                return _raw;
+            }
 
             set
             {

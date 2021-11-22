@@ -1339,9 +1339,6 @@ All WinRM sessions connected to PowerShell session configurations, such as Micro
   <data name="EnableNetworkAccessWarning" xml:space="preserve">
     <value>PSSession {0} was created using the EnableNetworkAccess parameter and can only be reconnected from the local computer.</value>
   </data>
-  <data name="RemoteHostDoesNotSupportPushRunspace" xml:space="preserve">
-    <value>You are currently in a PowerShell PSSession and cannot use the Enter-PSSession cmdlet to enter another PSSession.</value>
-  </data>
   <data name="CannotStartJobInconsistentLanguageMode" xml:space="preserve">
     <value>Cannot start job. The language mode for this session is incompatible with the system-wide language mode.</value>
   </data>
@@ -1628,6 +1625,13 @@ All WinRM sessions connected to PowerShell session configurations, such as Micro
   <data name="SSHClientEndWithErrorMessage" xml:space="preserve">
     <value>The SSH client session has ended with error message: {0}</value>
   </data>
+  <data name="SSHClientConnectTimeout" xml:space="preserve">
+    <value>SSH connection attempt failed after time out: {0} seconds.</value>
+  </data>
+  <data name="SSHClientConnectProcessTerminated" xml:space="preserve">
+    <value>
+SSH client process terminated before connection could be established.</value>
+  </data>
   <data name="MissingRequiredSSHParameter" xml:space="preserve">
     <value>The provided SSHConnection hashtable is missing the required ComputerName or HostName parameter.</value>
   </data>
@@ -1695,5 +1699,8 @@ All WinRM sessions connected to PowerShell session configurations, such as Micro
   </data>
   <data name="RemoteDebuggerError" xml:space="preserve">
     <value>Remote debugger exception: {0}, error message: {1}</value>
+  </data>
+  <data name="WindowsPowerShellNotPresent" xml:space="preserve">
+    <value>Unable to create Windows PowerShell process because Windows PowerShell could not be found on this machine.</value>
   </data>
 </root>
