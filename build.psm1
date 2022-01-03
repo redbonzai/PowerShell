@@ -439,10 +439,9 @@ Fix steps:
     # Add --self-contained due to "warning NETSDK1179: One of '--self-contained' or '--no-self-contained' options are required when '--runtime' is used."
     if ($Options.Runtime -like 'fxdependent*') {
         $Arguments += "--no-self-contained"
-        # The UseAppHost = false property avoids creating ".exe" for the fxdependent packages.
-        # The ".exe" is not a cross-platform executable, but specific to the platform that it was built on.
-        # We do not need to ship that.
-        $Arguments += "/property:UseAppHost=false"
+        # The UseAppHost = true property creates ".exe" for the fxdependent packages.
+        # We need this in the package as Start-Job needs it.
+        $Arguments += "/property:UseAppHost=true"
     }
     else {
         $Arguments += "--self-contained"
@@ -1855,7 +1854,7 @@ function Install-Dotnet {
         else {
             # dotnet-install.ps1 uses APIs that are not supported in .NET Core, so we run it with Windows PowerShell
             $fullPSPath = Join-Path -Path $env:windir -ChildPath "System32\WindowsPowerShell\v1.0\powershell.exe"
-            $fullDotnetInstallPath = Join-Path -Path $PWD.Path -ChildPath $installScript
+            $fullDotnetInstallPath = Join-Path -Path (Convert-Path -Path $PWD.Path) -ChildPath $installScript
 
             if ($Version) {
                 $psArgs = @('-NoLogo', '-NoProfile', '-File', $fullDotnetInstallPath, '-Version', $Version, '-Quality', $Quality)
@@ -2239,7 +2238,7 @@ function Start-ResGen
 }
 
 function Find-Dotnet() {
-    Write-Verbose -Verbose "In Find-DotNet"
+    Write-Verbose "In Find-DotNet"
 
     $originalPath = $env:PATH
     $dotnetPath = if ($environment.IsWindows) { "$env:LocalAppData\Microsoft\dotnet" } else { "$env:HOME/.dotnet" }
@@ -2259,7 +2258,7 @@ function Find-Dotnet() {
         $dotnetCLIInstalledVersion = Get-LatestInstalledSDK
         Pop-Location
 
-        Write-Verbose -Verbose "dotnetCLIInstalledVersion = $dotnetCLIInstalledVersion`nchosenDotNetVersion = $chosenDotNetVersion"
+        Write-Verbose "dotnetCLIInstalledVersion = $dotnetCLIInstalledVersion; chosenDotNetVersion = $chosenDotNetVersion"
 
         if ($dotnetCLIInstalledVersion -ne $chosenDotNetVersion) {
             Write-Warning "The 'dotnet' in the current path can't find SDK version ${dotnetCLIRequiredVersion}, prepending $dotnetPath to PATH."
