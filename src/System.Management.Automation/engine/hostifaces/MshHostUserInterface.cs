@@ -1090,10 +1090,7 @@ namespace System.Management.Automation.Host
                 // This way, multiple runspaces opened by the same process will share the same transcript.
                 lock (s_systemTranscriptLock)
                 {
-                    if (systemTranscript == null)
-                    {
-                        systemTranscript = PSHostUserInterface.GetTranscriptOptionFromSettings(transcription, currentTranscript);
-                    }
+                    systemTranscript ??= PSHostUserInterface.GetTranscriptOptionFromSettings(transcription, currentTranscript);
                 }
             }
 
@@ -1246,7 +1243,7 @@ namespace System.Management.Automation.Host
         {
             static Encoding GetPathEncoding(string path)
             {
-                using StreamReader reader = new StreamReader(path, Utils.utf8NoBom, detectEncodingFromByteOrderMarks: true);
+                using StreamReader reader = new StreamReader(path, Encoding.Default, detectEncodingFromByteOrderMarks: true);
                 _ = reader.Read();
                 return reader.CurrentEncoding;
             }
@@ -1274,7 +1271,7 @@ namespace System.Management.Automation.Host
                             // file permissions.
                             _contentWriter = new StreamWriter(
                                 new FileStream(this.Path, FileMode.Append, FileAccess.Write, FileShare.Read),
-                                Utils.utf8NoBom);
+                                Encoding.Default);
                         }
 
                         _contentWriter.AutoFlush = true;

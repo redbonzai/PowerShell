@@ -1568,7 +1568,7 @@ namespace Microsoft.PowerShell.Commands
 
                 string[] elts = GetPathElements(path);
 
-                path = string.Join("\\", elts);
+                path = string.Join('\\', elts);
             }
 
             return path;
@@ -2546,10 +2546,7 @@ namespace Microsoft.PowerShell.Commands
                 }
             }
 
-            if (s_storeCache == null)
-            {
-                s_storeCache = new X509NativeStore(storeLocation, storeName);
-            }
+            s_storeCache ??= new X509NativeStore(storeLocation, storeName);
 
             return s_storeCache;
         }

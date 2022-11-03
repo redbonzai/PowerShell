@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-Describe 'Tests for $PSStyle automatic variable' {
+Describe 'Tests for $PSStyle automatic variable' -Tag 'CI' {
     BeforeAll {
         $styleDefaults = @{
             Reset = "`e[0m"
@@ -24,6 +24,7 @@ Describe 'Tests for $PSStyle automatic variable' {
         $formattingDefaults = @{
             FormatAccent = "`e[32;1m"
             TableHeader = "`e[32;1m"
+            CustomTableHeaderLabel = "`e[32;1;3m"
             ErrorAccent = "`e[36;1m"
             Error = "`e[31;1m"
             Debug = "`e[33;1m"
@@ -151,6 +152,22 @@ Describe 'Tests for $PSStyle automatic variable' {
         }
     }
 
+    It '$PSStyle.Formatting.FormatAccent is ignored when it''s set to be an empty string' {
+        $old = $PSStyle.Formatting.FormatAccent
+        $oldRender = $PSStyle.OutputRendering
+
+        try {
+            $PSStyle.OutputRendering = 'Ansi'
+            $PSStyle.Formatting.FormatAccent = ''
+            $out = $PSVersionTable | Format-List | Out-String
+            $out.Contains("`e[") | Should -BeFalse
+        }
+        finally {
+            $PSStyle.OutputRendering = $oldRender
+            $PSStyle.Formatting.FormatAccent = $old
+        }
+    }
+
     It '$PSStyle.Formatting.TableHeader is applied to Format-Table' {
         $old = $PSStyle.Formatting.TableHeader
         $oldRender = $PSStyle.OutputRendering
@@ -164,6 +181,41 @@ Describe 'Tests for $PSStyle automatic variable' {
         finally {
             $PSStyle.OutputRendering = $oldRender
             $PSStyle.Formatting.TableHeader = $old
+        }
+    }
+
+    It '$PSStyle.Formatting.TableHeader is ignored when it''s set to be an empty string' {
+        $old = $PSStyle.Formatting.TableHeader
+        $oldRender = $PSStyle.OutputRendering
+
+        try {
+            $PSStyle.OutputRendering = 'Ansi'
+            $PSStyle.Formatting.TableHeader = ''
+            $out = $PSVersionTable | Format-Table | Out-String
+            $out.Replace($PSStyle.Reset,'').Contains("`e[") | Should -BeFalse
+        }
+        finally {
+            $PSStyle.OutputRendering = $oldRender
+            $PSStyle.Formatting.TableHeader = $old
+        }
+    }
+
+    It '$PSStyle.Formatting.CustomTableHeaderLabel is applied to Format-Table' {
+        $old = $PSStyle.Formatting.CustomTableHeaderLabel
+        $oldRender = $PSStyle.OutputRendering
+
+        try {
+            $PSStyle.OutputRendering = 'Ansi'
+            $PSStyle.Formatting.CustomTableHeaderLabel = $PSStyle.Foreground.Blue + $PSStyle.Background.White + $PSStyle.Bold
+            $out = Get-Process pwsh | Select-Object -First 1 | Format-Table | Out-String
+            $format = $PSStyle.Formatting.CustomTableHeaderLabel.Replace('[',"``[")
+            $header = $PSStyle.Formatting.TableHeader.Replace('[',"``[")
+            $reset = $PSStyle.Reset.Replace('[',"``[")
+            $out | Should -BeLike "*${format}*NPM(K)${reset}*${format}*PM(M)${reset}*${format}*WS(M)${reset}*${format}*CPU(s)${reset}*${header}*Id${reset}*${header}*SI${reset}*${header}*ProcessName${reset}*"
+        }
+        finally {
+            $PSStyle.OutputRendering = $oldRender
+            $PSStyle.Formatting.CustomTableHeaderLabel = $old
         }
     }
 
@@ -183,6 +235,7 @@ Describe 'Tests for $PSStyle automatic variable' {
         @{ Submember = 'Strikethrough' }
         @{ Member = 'Formatting'; Submember = 'FormatAccent' }
         @{ Member = 'Formatting'; Submember = 'TableHeader' }
+        @{ Member = 'Formatting'; Submember = 'CustomTableHeaderLabel' }
         @{ Member = 'Formatting'; Submember = 'ErrorAccent' }
         @{ Member = 'Formatting'; Submember = 'Error' }
         @{ Member = 'Formatting'; Submember = 'Warning' }
@@ -237,9 +290,97 @@ Describe 'Tests for $PSStyle automatic variable' {
             $PSStyle.Progress.MaxWidth = $maxWidth
         }
     }
+
+    It 'Do not use OSC indicator when the stdout is redirected' {
+        $pwsh = Join-Path $PSHOME 'pwsh'
+
+        ## In the case that the stdout is redirected, pwsh should not write the OSC indicator Ansi sequence.
+        $result = & $pwsh -noprofile -Command { $PSStyle.Progress.UseOSCIndicator = $true; 'hello'} | Format-List
+        $result | Out-String -Stream | Should -BeExactly 'hello'
+    }
+
+    It 'Able to handle Hyperlink ansi sequences' {
+        $word = "This is a link"
+        $hyperlink = $PSStyle.FormatHyperlink($word, "some random text as a link")
+        $strDec = [System.Management.Automation.Internal.StringDecorated]::new($hyperlink)
+        $strDec.IsDecorated | Should -BeTrue
+        $strDec.ContentLength | Should -Be $word.Length
+        $strDec.ToString("PlainText") | Should -Be $word
+    }
+
+    It "String intput to Out-String should be intact with OutputRendering='<OutputRendering>'" -TestCases @(
+        @{ OutputRendering = 'Ansi'; ContainsAnsi = $true }
+        @{ OutputRendering = 'Host'; ContainsAnsi = $false }
+        @{ OutputRendering = 'PlainText'; ContainsAnsi = $false }
+    ) {
+        param($OutputRendering, $ContainsAnsi)
+
+        $oldRender = $PSStyle.OutputRendering
+        $testStr = "`e[31mABC`e[0m"
+
+        try {
+            $PSStyle.OutputRendering = $OutputRendering
+            ## For input that actually goes through formatting, Out-String should remove VT sequences
+            ## from the formatting output based on the output rendering option that is in effect.
+            (Get-Verb -Verb Get | Out-String).Contains("`e[") | Should -Be $ContainsAnsi
+            ## For string input, since no formatting is applied, Out-String should keep the string intact.
+            ($testStr | Out-String).Trim() | Should -BeExactly $testStr
+        }
+        finally {
+            $PSStyle.OutputRendering = $oldRender
+        }
+    }
+
+    It "String input to Out-File should be intact with OutputRendering='<OutputRendering>'" -TestCases @(
+        @{ OutputRendering = 'Ansi'; }
+        @{ OutputRendering = 'Host'; }
+        @{ OutputRendering = 'PlainText'; }
+    ) {
+        param($OutputRendering)
+
+        $oldRender = $PSStyle.OutputRendering
+        $content = "Read-Host -Prompt '`e[33mEnter your device code`e[0m'"
+        Set-Content -Path $TestDrive\test.ps1 -Value $content -Encoding utf8NoBOM
+
+        try {
+            $PSStyle.OutputRendering = $OutputRendering
+            Get-Content $TestDrive\test.ps1 > $TestDrive\copy.ps1
+            (Get-Content $TestDrive\copy.ps1 -Raw).Trim() | Should -BeExactly $content
+        }
+        finally {
+            $PSStyle.OutputRendering = $oldRender
+            Remove-Item $TestDrive\test.ps1 -Force
+            Remove-Item $TestDrive\copy.ps1 -Force
+        }
+    }
+
+    It "Comment based help works with `$PSStyle when OutputRendering='<OutputRendering>'" -TestCases @(
+        @{ OutputRendering = 'Ansi'; ContainsAnsi = $true }
+        @{ OutputRendering = 'Host'; ContainsAnsi = $false }
+        @{ OutputRendering = 'PlainText'; ContainsAnsi = $false }
+    ) {
+        param($OutputRendering, $ContainsAnsi)
+
+        $oldRender = $PSStyle.OutputRendering
+
+        function Test-PSStyle {
+            <#
+            .Description
+            Get-Function [31mdisplays[0m the name and syntax of all functions in the session.
+            #>
+        }
+
+        try {
+            $PSStyle.OutputRendering = $OutputRendering
+            (Get-Help Test-PSStyle | Out-String).Contains("`e[31mdisplays`e[0m") | Should -Be $ContainsAnsi
+        }
+        finally {
+            $PSStyle.OutputRendering = $oldRender
+        }
+    }
 }
 
-Describe 'Handle strings with escape sequences in formatting' {
+Describe 'Handle strings with escape sequences in formatting' -Tag 'CI' {
 
     BeforeAll {
         function Get-DemoObjects {
@@ -260,8 +401,8 @@ Describe 'Handle strings with escape sequences in formatting' {
 
     It 'Truncation for strings with no escape sequences' {
         $expected = @"
-`e[32;1mName       Role            YIR`e[0m
-`e[32;1m----       ----            ---`e[0m
+`e[32;1mName      `e[0m`e[32;1m Role           `e[0m`e[32;1m YIR`e[0m
+`e[32;1m----      `e[0m `e[32;1m----           `e[0m `e[32;1m---`e[0m
 Bob Saggat Developer         2
 John Seym… Sw Engineer       6
 Billy Bob… Senior DevOps …  13
@@ -278,8 +419,8 @@ Billy Bob… Senior DevOps …  13
 
     It "Truncation for strings with escape sequences - TableView-1" {
         $expected = @"
-`e[32;1mName       Role            YIR`e[0m
-`e[32;1m----       ----            ---`e[0m
+`e[32;1mName      `e[0m`e[32;1m Role           `e[0m`e[32;1m YIR`e[0m
+`e[32;1m----      `e[0m `e[32;1m----           `e[0m `e[32;1m---`e[0m
 `e[32mBob Saggat`e[39m`e[0m Developer         2
 `e[33mJohn Seym…`e[0m Sw Engineer       6
 `e[31mBilly Bob…`e[0m Senior DevOps …  13
@@ -300,8 +441,8 @@ Billy Bob… Senior DevOps …  13
 
     It "Truncation for strings with escape sequences - TableView-2" {
         $expected = @"
-`e[32;1mName       Role            YIR`e[0m
-`e[32;1m----       ----            ---`e[0m
+`e[32;1mName      `e[0m`e[32;1m Role           `e[0m`e[32;1m YIR`e[0m
+`e[32;1m----      `e[0m `e[32;1m----           `e[0m `e[32;1m---`e[0m
 `e[32mBob Saggat`e[39m`e[0m Developer`e[0m         2
 `e[33mJohn Seym…`e[0m `e[1;33mSw Engineer`e[0m       6
 `e[31mBilly Bob…`e[0m `e[42m`e[1;33mSenior DevOps …`e[0m  13

@@ -248,6 +248,7 @@ namespace System.Management.Automation
             "cmd",
             "cscript",
             "wscript",
+            "find",
         };
 
         #region ctor/native command properties
@@ -421,7 +422,7 @@ namespace System.Management.Automation
             catch (Exception)
             {
                 // Do cleanup in case of exception
-                CleanUp();
+                CleanUp(killBackgroundProcess: true);
                 throw;
             }
         }
@@ -443,7 +444,7 @@ namespace System.Management.Automation
             catch (Exception)
             {
                 // Do cleanup in case of exception
-                CleanUp();
+                CleanUp(killBackgroundProcess: true);
                 throw;
             }
         }
@@ -903,7 +904,7 @@ namespace System.Management.Automation
             finally
             {
                 // Do some cleanup
-                CleanUp();
+                CleanUp(killBackgroundProcess: false);
             }
 
             // An exception was thrown while attempting to run the program
@@ -1160,7 +1161,8 @@ namespace System.Management.Automation
         /// <summary>
         /// Aggressively clean everything up...
         /// </summary>
-        private void CleanUp()
+        /// <param name="killBackgroundProcess">If set, also terminate background process.</param>
+        private void CleanUp(bool killBackgroundProcess)
         {
             // We need to call 'NotifyEndApplication' as appropriate during cleanup
             if (_hasNotifiedBeginApplication)
@@ -1170,23 +1172,23 @@ namespace System.Management.Automation
 
             try
             {
-                if (_nativeProcess != null)
-                {
-                    // on Unix, we need to kill the process to ensure it terminates as Dispose() merely
-                    // closes the redirected streams and the processs does not exit on macOS.  However,
-                    // on Windows, a winexe like notepad should continue running so we don't want to kill it.
+                // on Unix, we need to kill the process (if not running in background) to ensure it terminates,
+                // as Dispose() merely closes the redirected streams and the process does not exit.
+                // However, on Windows, a winexe like notepad should continue running so we don't want to kill it.
 #if UNIX
+                if (killBackgroundProcess || !_isRunningInBackground)
+                {
                     try
                     {
-                        _nativeProcess.Kill();
+                        _nativeProcess?.Kill();
                     }
                     catch
                     {
-                        // Ignore all exception since it is cleanup.
+                        // Ignore all exceptions since it is cleanup.
                     }
-#endif
-                    _nativeProcess.Dispose();
                 }
+#endif
+                _nativeProcess?.Dispose();
             }
             catch (Exception)
             {
@@ -1277,7 +1279,7 @@ namespace System.Management.Automation
         /// <param name="redirectOutput">A boolean that indicates that, when true, output from the process is redirected to a stream, and otherwise is sent to stdout.</param>
         /// <param name="redirectError">A boolean that indicates that, when true, error output from the process is redirected to a stream, and otherwise is sent to stderr.</param>
         /// <param name="redirectInput">A boolean that indicates that, when true, input to the process is taken from a stream, and otherwise is taken from stdin.</param>
-        /// <param name="soloCommand">A boolean that indicates, when true, that the command to be executed is not part of a pipeline, and otherwise indicates that is is.</param>
+        /// <param name="soloCommand">A boolean that indicates, when true, that the command to be executed is not part of a pipeline, and otherwise indicates that it is.</param>
         /// <returns>A ProcessStartInfo object which is the base of the native invocation.</returns>
         private ProcessStartInfo GetProcessStartInfo(
             bool redirectOutput,
@@ -1380,7 +1382,12 @@ namespace System.Management.Automation
             string rawPath =
                 context.EngineSessionState.GetNamespaceCurrentLocation(
                     context.ProviderNames.FileSystem).ProviderPath;
-            startInfo.WorkingDirectory = WildcardPattern.Unescape(rawPath);
+
+            // Only set this if the PowerShell's current working directory still exists.
+            if (Directory.Exists(rawPath))
+            {
+                startInfo.WorkingDirectory = WildcardPattern.Unescape(rawPath);
+            }
 
             return startInfo;
         }
@@ -1569,7 +1576,7 @@ namespace System.Management.Automation
             }
             else
             {
-                extensionList = pathext.Split(Utils.Separators.Semicolon);
+                extensionList = pathext.Split(';');
             }
 
             foreach (string extension in extensionList)
@@ -2054,11 +2061,12 @@ namespace System.Management.Automation
             // Get the encoding for writing to native command. Note we get the Encoding
             // from the current scope so a script or function can use a different encoding
             // than global value.
-            Encoding pipeEncoding = _command.Context.GetVariableValue(SpecialVariables.OutputEncodingVarPath) as System.Text.Encoding ??
-                                    Utils.utf8NoBom;
+            Encoding outputEncoding = _command.Context.GetVariableValue(SpecialVariables.OutputEncodingVarPath) as Encoding;
 
-            _streamWriter = new StreamWriter(process.StandardInput.BaseStream, pipeEncoding);
-            _streamWriter.AutoFlush = true;
+            _streamWriter = new StreamWriter(process.StandardInput.BaseStream, outputEncoding ?? Encoding.Default)
+            {
+                AutoFlush = true
+            };
 
             _inputFormat = inputFormat;
 
@@ -2125,10 +2133,7 @@ namespace System.Management.Automation
         {
             if (_inputFormat == NativeCommandIOFormat.Xml)
             {
-                if (_xmlSerializer != null)
-                {
-                    _xmlSerializer.Done();
-                }
+                _xmlSerializer?.Done();
             }
             else // Text
             {

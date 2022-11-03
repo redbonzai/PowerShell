@@ -21,10 +21,7 @@ namespace System.Management.Automation.Internal
         {
             get
             {
-                if (_plaintextcontent == null)
-                {
-                    _plaintextcontent = ValueStringDecorated.AnsiRegex.Replace(_text, string.Empty);
-                }
+                _plaintextcontent ??= ValueStringDecorated.AnsiRegex.Replace(_text, string.Empty);
 
                 return _plaintextcontent;
             }
@@ -94,10 +91,7 @@ namespace System.Management.Automation.Internal
         {
             get
             {
-                if (_plaintextcontent == null)
-                {
-                    _plaintextcontent = AnsiRegex.Replace(_text, string.Empty);
-                }
+                _plaintextcontent ??= AnsiRegex.Replace(_text, string.Empty);
 
                 return _plaintextcontent;
             }
@@ -109,8 +103,11 @@ namespace System.Management.Automation.Internal
         // CSI escape sequences
         private const string CsiRegex = @"(\x1b\[\?\d+[hl])";
 
+        // Hyperlink escape sequences. Note: '.*?' makes '.*' do non-greedy match.
+        private const string HyperlinkRegex = @"(\x1b\]8;;.*?\x1b\\)";
+
         // replace regex with .NET 6 API once available
-        internal static readonly Regex AnsiRegex = new Regex($"{GraphicsRegex}|{CsiRegex}", RegexOptions.Compiled);
+        internal static readonly Regex AnsiRegex = new Regex($"{GraphicsRegex}|{CsiRegex}|{HyperlinkRegex}", RegexOptions.Compiled);
 
         /// <summary>
         /// Get the ranges of all escape sequences in the text.

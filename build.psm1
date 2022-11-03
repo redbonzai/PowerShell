@@ -8,6 +8,7 @@ param(
 
 . "$PSScriptRoot\tools\buildCommon\startNativeExecution.ps1"
 
+# CI runs with PowerShell 5.0, so don't use features like ?: && ||
 Set-StrictMode -Version 3.0
 
 # On Unix paths is separated by colon
@@ -318,7 +319,7 @@ function Start-PSBuild {
                      "win7-x86")]
         [string]$Runtime,
 
-        [ValidateSet('Debug', 'Release', 'CodeCoverage', '')] # We might need "Checked" as well
+        [ValidateSet('Debug', 'Release', 'CodeCoverage', 'StaticAnalysis', '')] # We might need "Checked" as well
         [string]$Configuration,
 
         [ValidatePattern("^v\d+\.\d+\.\d+(-\w+(\.\d{1,2})?)?$")]
@@ -673,6 +674,8 @@ Fix steps:
         Restore-PSPester -Destination (Join-Path $publishPath "Modules")
     }
 
+    Clear-NativeDependencies -PublishFolder $publishPath
+
     if ($PSOptionsPath) {
         $resolvedPSOptionsPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PSOptionsPath)
         $parent = Split-Path -Path $resolvedPSOptionsPath
@@ -813,7 +816,7 @@ function Compress-TestContent {
 function New-PSOptions {
     [CmdletBinding()]
     param(
-        [ValidateSet("Debug", "Release", "CodeCoverage", '')]
+        [ValidateSet('Debug', 'Release', 'CodeCoverage', 'StaticAnalysis', '')]
         [string]$Configuration,
 
         [ValidateSet("net7.0")]
@@ -861,26 +864,26 @@ function New-PSOptions {
     Write-Verbose "Using framework '$Framework'"
 
     if (-not $Runtime) {
-        if ($environment.IsLinux) {
-            $Runtime = "linux-x64"
-        } elseif ($environment.IsMacOS) {
-            if ($PSVersionTable.OS.Contains('ARM64')) {
-                $Runtime = "osx-arm64"
-            }
-            else {
-                $Runtime = "osx-x64"
-            }
-        } else {
-            $RID = dotnet --info | ForEach-Object {
-                if ($_ -match "RID") {
-                    $_ -split "\s+" | Select-Object -Last 1
-                }
+        $Platform, $Architecture = dotnet --info |
+            Select-String '^\s*OS Platform:\s+(\w+)$', '^\s*Architecture:\s+(\w+)$' |
+            Select-Object -First 2 |
+            ForEach-Object { $_.Matches.Groups[1].Value }
+
+        switch ($Platform) {
+            'Windows' {
+                # For x86 and x64 architectures, we use win7-x64 and win7-x86 RIDs.
+                # For arm and arm64 architectures, we use win-arm and win-arm64 RIDs.
+                $Platform = if ($Architecture[0] -eq 'x') { 'win7' } else { 'win' }
+                $Runtime = "${Platform}-${Architecture}"
             }
 
-            # We plan to release packages targeting win7-x64 and win7-x86 RIDs,
-            # which supports all supported windows platforms.
-            # So we, will change the RID to win7-<arch>
-            $Runtime = $RID -replace "win\d+", "win7"
+            'Linux' {
+                $Runtime = "linux-${Architecture}"
+            }
+
+            'Darwin' {
+                $Runtime = "osx-${Architecture}"
+            }
         }
 
         if (-not $Runtime) {
@@ -1167,6 +1170,7 @@ function Start-PSPester {
     [CmdletBinding(DefaultParameterSetName='default')]
     param(
         [Parameter(Position=0)]
+        [ArgumentCompleter({param($c,$p,$word) Get-ChildItem -Recurse -File -LiteralPath $PSScriptRoot/Test/PowerShell -filter *.tests.ps1 | Where-Object FullName -like "*$word*" })]
         [string[]]$Path = @("$PSScriptRoot/test/powershell"),
         [string]$OutputFormat = "NUnitXml",
         [string]$OutputFile = "pester-tests.xml",
@@ -1560,7 +1564,7 @@ function Publish-TestResults
 
         # If we attempt to upload a result file which has no test cases in it, then vsts will produce a warning
         # so check to be sure we actually have a result file that contains test cases to upload.
-        # If the the "test-case" count is greater than 0, then we have results.
+        # If the "test-case" count is greater than 0, then we have results.
         # Regardless, we want to upload this as an artifact, so this logic doesn't pertain to that.
         if ( @(([xml](Get-Content $Path)).SelectNodes(".//test-case")).Count -gt 0 -or $Type -eq 'XUnit' ) {
             Write-Host "##vso[results.publish type=$Type;mergeResults=true;runTitle=$Title;publishRunAttachments=true;resultFiles=$tempFilePath;failTaskOnFailedTests=true]"
@@ -1600,14 +1604,14 @@ function Show-PSPesterError
         $description = $testFailure.description
         $name = $testFailure.name
         $message = $testFailure.failure.message
-        $StackTrace = $testFailure.failure."stack-trace"
+        $stack_trace = $testFailure.failure."stack-trace"
     }
     elseif ($PSCmdlet.ParameterSetName -eq 'object')
     {
         $description = $testFailureObject.Describe + '/' + $testFailureObject.Context
         $name = $testFailureObject.Name
         $message = $testFailureObject.FailureMessage
-        $StackTrace = $testFailureObject.StackTrace
+        $stack_trace = $testFailureObject.StackTrace
     }
     else
     {
@@ -1619,7 +1623,7 @@ function Show-PSPesterError
     Write-Log -isError -message "message:"
     Write-Log -isError -message $message
     Write-Log -isError -message "stack-trace:"
-    Write-Log -isError -message $StackTrace
+    Write-Log -isError -message $stack_trace
 
 }
 
@@ -1657,14 +1661,14 @@ function Test-XUnitTestResults
         $description = $failure.type
         $name = $failure.method
         $message = $failure.failure.message
-        $StackTrace = $failure.failure.'stack-trace'
+        $stack_trace = $failure.failure.'stack-trace'
 
         Write-Log -isError -message ("Description: " + $description)
         Write-Log -isError -message ("Name:        " + $name)
         Write-Log -isError -message "message:"
         Write-Log -isError -message $message
         Write-Log -isError -message "stack-trace:"
-        Write-Log -isError -message $StackTrace
+        Write-Log -isError -message $stack_trace
         Write-Log -isError -message " "
     }
 
@@ -1759,8 +1763,14 @@ function Start-PSxUnit {
         throw "PowerShell must be built before running tests!"
     }
 
+    $originalDOTNET_ROOT = $env:DOTNET_ROOT
+
     try {
         Push-Location $PSScriptRoot/test/xUnit
+
+        # Add workaround to unblock xUnit testing see issue: https://github.com/dotnet/sdk/issues/26462
+        $dotnetPath = if ($environment.IsWindows) { "$env:LocalAppData\Microsoft\dotnet" } else { "$env:HOME/.dotnet" }
+        $env:DOTNET_ROOT = $dotnetPath
 
         # Path manipulation to obtain test project output directory
 
@@ -1805,6 +1815,7 @@ function Start-PSxUnit {
         Publish-TestResults -Path $xUnitTestResultsFile -Type 'XUnit' -Title 'Xunit Sequential'
     }
     finally {
+        $env:DOTNET_ROOT = $originalDOTNET_ROOT
         Pop-Location
     }
 }
@@ -1867,7 +1878,7 @@ function Install-Dotnet {
             }
 
             if ($Version) {
-                $bashArgs = @("./$installScript", '-v', $Version, '-q', $Quality)
+                $bashArgs = @("./$installScript", '-v', $Version)
             }
             elseif ($Channel) {
                 $bashArgs = @("./$installScript", '-c', $Channel, '-q', $Quality)
@@ -1887,7 +1898,7 @@ function Install-Dotnet {
 
             $bashArgs += @('-skipnonversionedfiles')
 
-            $bashArgs | Out-String | Write-Verbose -Verbose
+            $bashArgs -join ' ' | Write-Verbose -Verbose
 
         Start-NativeExecution {
             bash @bashArgs
@@ -2225,7 +2236,7 @@ function Start-DevPowerShell {
         [string[]]$ArgumentList = @(),
         [switch]$LoadProfile,
         [Parameter(ParameterSetName='ConfigurationParamSet')]
-        [ValidateSet("Debug", "Release", "CodeCoverage", '')] # should match New-PSOptions -Configuration values
+        [ValidateSet('Debug', 'Release', 'CodeCoverage', 'StaticAnalysis', '')] # should match New-PSOptions -Configuration values
         [string]$Configuration,
         [Parameter(ParameterSetName='BinDirParamSet')]
         [string]$BinDir,
@@ -2264,7 +2275,7 @@ function Start-DevPowerShell {
 
         # splatting for the win
         $startProcessArgs = @{
-            FilePath = "$BinDir\pwsh"
+            FilePath = Join-Path $BinDir 'pwsh'
         }
 
         if ($ArgumentList) {
@@ -2837,7 +2848,6 @@ assembly
                 # only create an assembly group if we have tests
                 if ( $tCases.count -eq 0 -and ! $includeEmpty ) { continue }
                 $tGroup = $tCases | Group-Object result
-                $total = $tCases.Count
                 $asm = [testassembly]::new()
                 $asm.environment = $environment
                 $asm."run-date" = $rundate
@@ -3348,4 +3358,70 @@ function Find-AzCopy {
 
     $azCopy = Get-Command -Name azCopy -ErrorAction Stop | Select-Object -First 1
     return $azCopy.Path
+}
+
+function Clear-NativeDependencies
+{
+    param(
+        [Parameter(Mandatory=$true)] [string] $PublishFolder
+    )
+
+    $diasymFileNamePattern = 'microsoft.diasymreader.native.{0}.dll'
+
+    switch -regex ($($script:Options.Runtime)) {
+        '.*-x64' {
+            $diasymFileName = $diasymFileNamePattern -f 'amd64'
+        }
+        '.*-x86' {
+            $diasymFileName = $diasymFileNamePattern -f 'x86'
+        }
+        '.*-arm' {
+            $diasymFileName = $diasymFileNamePattern -f 'arm'
+        }
+        '.*-arm64' {
+            $diasymFileName = $diasymFileNamePattern -f 'arm64'
+        }
+        'fxdependent.*' {
+            Write-Verbose -Message "$($script:Options.Runtime) is a fxdependent runtime, no cleanup needed in pwsh.deps.json" -Verbose
+            return
+        }
+        Default {
+            throw "Unknown runtime $($script:Options.Runtime)"
+        }
+    }
+
+    $filesToDeleteCore = @($diasymFileName)
+
+    ## Currently we do not need to remove any files from WinDesktop runtime.
+    $filesToDeleteWinDesktop = @()
+
+    $deps = Get-Content "$PublishFolder/pwsh.deps.json" -Raw | ConvertFrom-Json -Depth 20
+    $targetRuntime = ".NETCoreApp,Version=v7.0/$($script:Options.Runtime)"
+
+    $runtimePackNetCore = $deps.targets.${targetRuntime}.PSObject.Properties.Name -like 'runtimepack.Microsoft.NETCore.App.Runtime*'
+    $runtimePackWinDesktop = $deps.targets.${targetRuntime}.PSObject.Properties.Name -like 'runtimepack.Microsoft.WindowsDesktop.App.Runtime*'
+
+    if ($runtimePackNetCore)
+    {
+        $filesToDeleteCore | ForEach-Object {
+            Write-Verbose "Removing $_ from pwsh.deps.json" -Verbose
+            $deps.targets.${targetRuntime}.${runtimePackNetCore}.native.PSObject.Properties.Remove($_)
+            if (Test-Path $PublishFolder/$_) {
+                Remove-Item -Path $PublishFolder/$_ -Force -Verbose
+            }
+        }
+    }
+
+    if ($runtimePackWinDesktop)
+    {
+        $filesToDeleteWinDesktop | ForEach-Object {
+            Write-Verbose "Removing $_ from pwsh.deps.json" -Verbose
+            $deps.targets.${targetRuntime}.${runtimePackWinDesktop}.native.PSObject.Properties.Remove($_)
+            if (Test-Path $PublishFolder/$_) {
+                Remove-Item -Path $PublishFolder/$_ -Force -Verbose
+            }
+        }
+    }
+
+    $deps | ConvertTo-Json -Depth 20 | Set-Content "$PublishFolder/pwsh.deps.json" -Force
 }
