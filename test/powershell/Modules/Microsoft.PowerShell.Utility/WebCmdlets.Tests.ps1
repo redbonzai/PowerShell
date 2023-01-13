@@ -584,11 +584,13 @@ Describe "Invoke-WebRequest tests" -Tags "Feature", "RequireAdminOnWindows" {
     # Perform the following operation for Invoke-WebRequest
     # gzip Returns gzip-encoded data.
     # deflate Returns deflate-encoded data.
+    # brotli Returns brotli-encoded data.
     # $dataEncodings = @("Chunked", "Compress", "Deflate", "GZip", "Identity")
     # Note: These are the supported options, but we do not have a web service to test them all.
     It "Invoke-WebRequest supports request that returns <DataEncoding>-encoded data." -TestCases @(
         @{ DataEncoding = "gzip" }
         @{ DataEncoding = "deflate" }
+        @{ DataEncoding = "brotli" }
     ) {
         param($dataEncoding)
         $uri = Get-WebListenerUrl -Test 'Compression' -TestValue $dataEncoding
@@ -2019,6 +2021,7 @@ Describe "Invoke-WebRequest tests" -Tags "Feature", "RequireAdminOnWindows" {
         }
 
         It "Charset Parsing" {
+            Set-ItResult -Pending -Because "We need a better way to test this and .NET has made bad regex's run faster"
             $dosUri = Get-WebListenerUrl -Test 'Dos' -query @{
                 dosType='charset'
                 dosLength='2850'
@@ -2227,11 +2230,13 @@ Describe "Invoke-RestMethod tests" -Tags "Feature", "RequireAdminOnWindows" {
     # Perform the following operation for Invoke-RestMethod
     # gzip Returns gzip-encoded data.
     # deflate Returns deflate-encoded data.
+    # brotli Returns brotli-encoded data.
     # $dataEncodings = @("Chunked", "Compress", "Deflate", "GZip", "Identity")
     # Note: These are the supported options, but we do not have a web service to test them all.
     It "Invoke-RestMethod supports request that returns <DataEncoding>-encoded data." -TestCases @(
         @{ DataEncoding = "gzip" }
         @{ DataEncoding = "deflate" }
+        @{ DataEncoding = "brotli" }
     ) {
         param($dataEncoding)
         $uri = Get-WebListenerUrl -Test 'Compression' -TestValue $dataEncoding
@@ -2435,6 +2440,16 @@ Describe "Invoke-RestMethod tests" -Tags "Feature", "RequireAdminOnWindows" {
         $command = "Invoke-RestMethod -Uri '$uri' -FollowRelLink"
         $result = ExecuteWebCommand -command $command
         1..3 | ForEach-Object { $result.Output[$_ - 1].linknumber | Should -BeExactly $_ }
+    }
+
+    It "Validate Invoke-RestMethod -FollowRelLink correctly manages commas" {
+        $maxLinks = 5
+        $uri = Get-WebListenerUrl -Test 'Link' -Query @{maxlinks = $maxLinks; type = "with,comma"}
+        $command = "Invoke-RestMethod -Uri '$uri' -FollowRelLink"
+        $result = ExecuteWebCommand -command $command
+
+        $result.Output.Count | Should -BeExactly $maxLinks
+        1..$maxLinks | ForEach-Object { $result.Output[$_ - 1].linknumber | Should -BeExactly $_ }
     }
 
     It "Verify Invoke-RestMethod supresses terminating errors with -SkipHttpErrorCheck" {

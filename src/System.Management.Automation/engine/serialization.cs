@@ -5933,10 +5933,7 @@ namespace System.Management.Automation
         public PSPrimitiveDictionary(Hashtable other)
             : base(StringComparer.OrdinalIgnoreCase)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             foreach (DictionaryEntry entry in other)
             {
@@ -6628,7 +6625,6 @@ namespace Microsoft.PowerShell
     ///       - PropertySerializationSet=<empty>
     ///     - TargetTypeForDeserialization=DeserializingTypeConverter
     ///   - Add a field of that type in unit tests / S.M.A.Test.SerializationTest+RehydratedType
-    ///     (testsrc\admintest\monad\DRT\engine\UnitTests\SerializationTest.cs)
     /// -->
     public sealed class DeserializingTypeConverter : PSTypeConverter
     {
