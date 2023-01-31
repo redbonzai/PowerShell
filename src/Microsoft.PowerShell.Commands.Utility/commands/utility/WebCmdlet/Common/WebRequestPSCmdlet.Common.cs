@@ -60,7 +60,7 @@ namespace Microsoft.PowerShell.Commands
         /// <summary>
         /// No SSL protocol will be set and the system defaults will be used.
         /// </summary>
-        Default = 0,
+        Default = SslProtocols.None,
 
         /// <summary>
         /// Specifies the TLS 1.0 is obsolete. Using this value now defaults to TLS 1.2.
@@ -433,13 +433,7 @@ namespace Microsoft.PowerShell.Commands
                 ThrowTerminatingError(error);
             }
 
-            if (!AllowUnencryptedAuthentication && Authentication != WebAuthenticationType.None && Uri.Scheme != "https")
-            {
-                ErrorRecord error = GetValidationError(WebCmdletStrings.AllowUnencryptedAuthenticationRequired, "WebCmdletAllowUnencryptedAuthenticationRequiredException");
-                ThrowTerminatingError(error);
-            }
-
-            if (!AllowUnencryptedAuthentication && (Credential is not null || UseDefaultCredentials) && Uri.Scheme != "https")
+            if (!AllowUnencryptedAuthentication && (Authentication != WebAuthenticationType.None || Credential is not null || UseDefaultCredentials) && Uri.Scheme != "https")
             {
                 ErrorRecord error = GetValidationError(WebCmdletStrings.AllowUnencryptedAuthenticationRequired, "WebCmdletAllowUnencryptedAuthenticationRequiredException");
                 ThrowTerminatingError(error);
@@ -486,12 +480,11 @@ namespace Microsoft.PowerShell.Commands
             // Validate InFile path
             if (InFile is not null)
             {
-                ProviderInfo provider = null;
                 ErrorRecord errorRecord = null;
 
                 try
                 {
-                    Collection<string> providerPaths = GetResolvedProviderPathFromPSPath(InFile, out provider);
+                    Collection<string> providerPaths = GetResolvedProviderPathFromPSPath(InFile, out ProviderInfo provider);
 
                     if (!provider.Name.Equals(FileSystemProvider.ProviderName, StringComparison.OrdinalIgnoreCase))
                     {
@@ -688,10 +681,9 @@ namespace Microsoft.PowerShell.Commands
         {
             uri = CheckProtocol(uri);
 
-            // before creating the web request,
+            // Before creating the web request,
             // preprocess Body if content is a dictionary and method is GET (set as query)
-            IDictionary bodyAsDictionary;
-            LanguagePrimitives.TryConvertTo<IDictionary>(Body, out bodyAsDictionary);
+            LanguagePrimitives.TryConvertTo<IDictionary>(Body, out IDictionary bodyAsDictionary);
             if (bodyAsDictionary is not null && (Method == WebRequestMethod.Default || Method == WebRequestMethod.Get || CustomMethod == "GET"))
             {
                 UriBuilder uriBuilder = new(uri);
@@ -752,7 +744,7 @@ namespace Microsoft.PowerShell.Commands
                     encodedValue = WebUtility.UrlEncode(value.ToString());
                 }
 
-                bodyBuilder.AppendFormat("{0}={1}", encodedKey, encodedValue);
+                bodyBuilder.Append($"{encodedKey}={encodedValue}");
             }
 
             return bodyBuilder.ToString();
@@ -776,14 +768,14 @@ namespace Microsoft.PowerShell.Commands
         private string GetBasicAuthorizationHeader()
         {
             var password = new NetworkCredential(null, Credential.Password).Password;
-            string unencoded = string.Format("{0}:{1}", Credential.UserName, password);
+            string unencoded = string.Create(CultureInfo.InvariantCulture, $"{Credential.UserName}:{password}");
             byte[] bytes = Encoding.UTF8.GetBytes(unencoded);
-            return string.Format("Basic {0}", Convert.ToBase64String(bytes));
+            return string.Create(CultureInfo.InvariantCulture, $"Basic {Convert.ToBase64String(bytes)}");
         }
 
         private string GetBearerAuthorizationHeader()
         {
-            return string.Format("Bearer {0}", new NetworkCredential(string.Empty, Token).Password);
+            return string.Create(CultureInfo.InvariantCulture, $"Bearer {new NetworkCredential(string.Empty, Token).Password}");
         }
 
         private void ProcessAuthentication()
@@ -798,7 +790,7 @@ namespace Microsoft.PowerShell.Commands
             }
             else
             {
-                Diagnostics.Assert(false, string.Format("Unrecognized Authentication value: {0}", Authentication));
+                Diagnostics.Assert(false, string.Create(CultureInfo.InvariantCulture, $"Unrecognized Authentication value: {Authentication}"));
             }
         }
 
@@ -957,36 +949,21 @@ namespace Microsoft.PowerShell.Commands
             }
 
             // This indicates GetResponse will handle redirects.
-            if (handleRedirect || AllowInsecureRedirect)
+            if (handleRedirect || WebSession.MaximumRedirection == 0)
             {
                 handler.AllowAutoRedirect = false;
             }
-            else if (WebSession.MaximumRedirection > -1)
+            else if (WebSession.MaximumRedirection > 0)
             {
-                if (WebSession.MaximumRedirection == 0)
-                {
-                    handler.AllowAutoRedirect = false;
-                }
-                else
-                {
-                    handler.MaxAutomaticRedirections = WebSession.MaximumRedirection;
-                }
+                handler.MaxAutomaticRedirections = WebSession.MaximumRedirection;
             }
 
             handler.SslProtocols = (SslProtocols)SslProtocol;
 
             HttpClient httpClient = new(handler);
 
-            // check timeout setting (in seconds instead of milliseconds as in HttpWebRequest)
-            if (TimeoutSec == 0)
-            {
-                // A zero timeout means infinite
-                httpClient.Timeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
-            }
-            else if (TimeoutSec > 0)
-            {
-                httpClient.Timeout = new TimeSpan(0, 0, TimeoutSec);
-            }
+            // Check timeout setting (in seconds instead of milliseconds as in HttpWebRequest)
+            httpClient.Timeout = TimeoutSec is 0 ? TimeSpan.FromMilliseconds(Timeout.Infinite) : new TimeSpan(0, 0, TimeoutSec);
 
             return httpClient;
         }
@@ -1035,8 +1012,7 @@ namespace Microsoft.PowerShell.Commands
             }
 
             // Set 'User-Agent' if WebSession.Headers doesn't already contain it
-            string userAgent = null;
-            if (WebSession.Headers.TryGetValue(HttpKnownHeaderNames.UserAgent, out userAgent))
+            if (WebSession.Headers.TryGetValue(HttpKnownHeaderNames.UserAgent, out string userAgent))
             {
                 WebSession.UserAgent = userAgent;
             }
@@ -1102,8 +1078,7 @@ namespace Microsoft.PowerShell.Commands
             else if (request.Method == HttpMethod.Post)
             {
                 // Win8:545310 Invoke-WebRequest does not properly set MIME type for POST
-                string contentType = null;
-                WebSession.ContentHeaders.TryGetValue(HttpKnownHeaderNames.ContentType, out contentType);
+                WebSession.ContentHeaders.TryGetValue(HttpKnownHeaderNames.ContentType, out string contentType);
                 if (string.IsNullOrEmpty(contentType))
                 {
                     WebSession.ContentHeaders[HttpKnownHeaderNames.ContentType] = "application/x-www-form-urlencoded";
@@ -1177,10 +1152,7 @@ namespace Microsoft.PowerShell.Commands
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    string msg = string.Format(
-                        CultureInfo.InvariantCulture,
-                        WebCmdletStrings.AccessDenied,
-                        _originalFilePath);
+                    string msg = string.Format(CultureInfo.InvariantCulture, WebCmdletStrings.AccessDenied, _originalFilePath);
 
                     throw new UnauthorizedAccessException(msg);
                 }
@@ -1263,7 +1235,7 @@ namespace Microsoft.PowerShell.Commands
             );
         }
 
-        internal virtual HttpResponseMessage GetResponse(HttpClient client, HttpRequestMessage request, bool keepAuthorization)
+        internal virtual HttpResponseMessage GetResponse(HttpClient client, HttpRequestMessage request, bool handleRedirect)
         {
             ArgumentNullException.ThrowIfNull(client);
 
@@ -1282,12 +1254,15 @@ namespace Microsoft.PowerShell.Commands
                 _cancelToken = new CancellationTokenSource();
                 response = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, _cancelToken.Token).GetAwaiter().GetResult();
 
-                if ((keepAuthorization || (AllowInsecureRedirect && (WebSession.MaximumRedirection > 0 || WebSession.MaximumRedirection == -1))) && IsRedirectCode(response.StatusCode) && response.Headers.Location != null)
+                if (handleRedirect
+                    && WebSession.MaximumRedirection is not 0
+                    && IsRedirectCode(response.StatusCode)
+                    && response.Headers.Location is not null)
                 {
                     _cancelToken.Cancel();
                     _cancelToken = null;
 
-                    // if explicit count was provided, reduce it for this redirection.
+                    // If explicit count was provided, reduce it for this redirection.
                     if (WebSession.MaximumRedirection > 0)
                     {
                         WebSession.MaximumRedirection--;
@@ -1303,10 +1278,10 @@ namespace Microsoft.PowerShell.Commands
 
                     currentUri = new Uri(request.RequestUri, response.Headers.Location);
                     // Continue to handle redirection
-                    using (client = GetHttpClient(handleRedirect: true))
+                    using (client = GetHttpClient(handleRedirect))
                     using (HttpRequestMessage redirectRequest = GetRequest(currentUri))
                     {
-                        response = GetResponse(client, redirectRequest, keepAuthorization);
+                        response = GetResponse(client, redirectRequest, handleRedirect);
                     }
                 }
 
@@ -1344,7 +1319,7 @@ namespace Microsoft.PowerShell.Commands
                         
                         WriteVerbose(reqVerboseMsg);
 
-                        return GetResponse(client, requestWithoutRange, keepAuthorization);
+                        return GetResponse(client, requestWithoutRange, handleRedirect);
                     }
                 }
 
@@ -1418,14 +1393,14 @@ namespace Microsoft.PowerShell.Commands
                 ValidateParameters();
                 PrepareSession();
 
-                // if the request contains an authorization header and PreserveAuthorizationOnRedirect is not set,
+                // If the request contains an authorization header and PreserveAuthorizationOnRedirect is not set,
                 // it needs to be stripped on the first redirect.
-                bool keepAuthorization = WebSession is not null
-                                         && WebSession.Headers is not null
-                                         && PreserveAuthorizationOnRedirect.IsPresent
-                                         && WebSession.Headers.ContainsKey(HttpKnownHeaderNames.Authorization);
+                bool keepAuthorizationOnRedirect = PreserveAuthorizationOnRedirect.IsPresent
+                                                   && WebSession.Headers.ContainsKey(HttpKnownHeaderNames.Authorization);
 
-                using (HttpClient client = GetHttpClient(keepAuthorization))
+                bool handleRedirect = keepAuthorizationOnRedirect || AllowInsecureRedirect;
+
+                using (HttpClient client = GetHttpClient(handleRedirect))
                 {
                     int followedRelLink = 0;
                     Uri uri = Uri;
@@ -1448,7 +1423,9 @@ namespace Microsoft.PowerShell.Commands
                             {
                                 long requestContentLength = 0;
                                 if (request.Content is not null)
+                                {
                                     requestContentLength = request.Content.Headers.ContentLength.Value;
+                                }
 
                                 string reqVerboseMsg = string.Format(
                                     CultureInfo.CurrentCulture,
@@ -1459,7 +1436,7 @@ namespace Microsoft.PowerShell.Commands
 
                                 WriteVerbose(reqVerboseMsg);
 
-                                HttpResponseMessage response = GetResponse(client, request, keepAuthorization);
+                                HttpResponseMessage response = GetResponse(client, request, handleRedirect);
 
                                 string contentType = ContentHelper.GetContentType(response);
                                 string respVerboseMsg = string.Format(
@@ -1648,16 +1625,7 @@ namespace Microsoft.PowerShell.Commands
                         encoding = Encoding.GetEncoding(mediaTypeHeaderValue.CharSet);
                     }
                 }
-                catch (FormatException ex)
-                {
-                    if (!SkipHeaderValidation)
-                    {
-                        var outerEx = new ValidationMetadataException(WebCmdletStrings.ContentTypeException, ex);
-                        ErrorRecord er = new(outerEx, "WebCmdletContentTypeException", ErrorCategory.InvalidArgument, ContentType);
-                        ThrowTerminatingError(er);
-                    }
-                }
-                catch (ArgumentException ex)
+                catch (Exception ex) when (ex is FormatException || ex is ArgumentException)
                 {
                     if (!SkipHeaderValidation)
                     {
@@ -1694,7 +1662,7 @@ namespace Microsoft.PowerShell.Commands
             }
             else
             {
-                bytes = StreamHelper.EncodeToBytes(xmlNode.OuterXml);
+                bytes = StreamHelper.EncodeToBytes(xmlNode.OuterXml, encoding: null);
             }
 
             var byteArrayContent = new ByteArrayContent(bytes);
@@ -1771,8 +1739,7 @@ namespace Microsoft.PowerShell.Commands
             // We only support the URL in angle brackets and `rel`, other attributes are ignored
             // user can still parse it themselves via the Headers property
             const string pattern = "<(?<url>.*?)>;\\s*rel=(?<quoted>\")?(?<rel>(?(quoted).*?|[^,;]*))(?(quoted)\")";
-            IEnumerable<string> links;
-            if (response.Headers.TryGetValues("Link", out links))
+            if (response.Headers.TryGetValues("Link", out IEnumerable<string> links))
             {
                 foreach (string linkHeader in links)
                 {
