@@ -12,8 +12,8 @@ namespace Microsoft.Management.UI.Internal
 {
     /// <summary>
     /// Builds a paragraph based on Text + Bold + Highlight information.
-    /// Bold are the segments of thexct that should be bold, and Highlight are
-    /// the segments of thext that should be highlighted (like search results).
+    /// Bold are the segments of the text that should be bold, and Highlight are
+    /// the segments of the text that should be highlighted (like search results).
     /// </summary>
     internal class ParagraphBuilder : INotifyPropertyChanged
     {
@@ -264,7 +264,7 @@ namespace Microsoft.Management.UI.Internal
             }
 
             // there is no span ending ahead of current position, so
-            // we set the current span to null to prevent unecessary comparisons against the currentSpan
+            // we set the current span to null to prevent unnecessary comparisons against the currentSpan
             currentSpan = null;
         }
 
@@ -276,15 +276,8 @@ namespace Microsoft.Management.UI.Internal
         /// <param name="length">Highlight length.</param>
         private void AddHighlight(int start, int length)
         {
-            if (start < 0)
-            {
-                throw new ArgumentOutOfRangeException("start");
-            }
-
-            if (start + length > this.textBuilder.Length)
-            {
-                throw new ArgumentOutOfRangeException("length");
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(start);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(this.textBuilder.Length, start + length, nameof(length));
 
             this.highlightedSpans.Add(new TextSpan(start, length));
         }
@@ -324,15 +317,8 @@ namespace Microsoft.Management.UI.Internal
             /// <param name="length">Index of the last character in the span.</param>
             internal TextSpan(int start, int length)
             {
-                if (start < 0)
-                {
-                    throw new ArgumentOutOfRangeException("start");
-                }
-
-                if (length < 1)
-                {
-                    throw new ArgumentOutOfRangeException("length");
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(start);
+                ArgumentOutOfRangeException.ThrowIfLessThan(1, length);
 
                 this.start = start;
                 this.end = start + length - 1;
