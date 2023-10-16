@@ -74,6 +74,11 @@ Describe "TabCompletion" -Tags CI {
         $res.CompletionMatches[0].CompletionText | Should -BeExactly 'pscustomobject'
     }
 
+    It 'Should complete foreach variable' {
+        $res = TabExpansion2 -inputScript 'foreach ($CurrentItem in 1..10){$CurrentIt'
+        $res.CompletionMatches[0].CompletionText | Should -BeExactly '$CurrentItem'
+    }
+
     foreach ($Operator in [System.Management.Automation.CompletionCompleters]::CompleteOperator(""))
     {
         It "Should complete $($Operator.CompletionText)" {
@@ -267,6 +272,21 @@ switch ($x)
         $res.CompletionMatches | Should -HaveCount 3
         $completionText = $res.CompletionMatches.CompletionText | Sort-Object
         $completionText -join ' ' | Should -BeExactly 'Ascending Descending Expression'
+    }
+
+    It 'Should complete variable assigned in other scriptblock' {
+        $res = TabExpansion2 -inputScript 'ForEach-Object -Begin {$Test1 = "Hello"} -Process {$Test'
+        $res.CompletionMatches[0].CompletionText | Should -Be '$Test1'
+    }
+
+    It 'Should complete variable assigned in an array of scriptblocks' {
+        $res = TabExpansion2 -inputScript 'ForEach-Object -Process @({"Block1"},{$Test1="Hello"});$Test'
+        $res.CompletionMatches[0].CompletionText | Should -Be '$Test1'
+    }
+
+    It 'Should not complete variable assigned in an ampersand executed scriptblock' {
+        $res = TabExpansion2 -inputScript '& {$AmpeersandVarCompletionTest = "Hello"};$AmpeersandVarCompletionTes'
+        $res.CompletionMatches.Count | Should -Be 0
     }
 
     context TypeConstructionWithHashtable {
@@ -637,6 +657,12 @@ ConstructorTestClass(int i, bool b)
         $res.CompletionMatches[0].CompletionText | Should -BeExactly Cat
     }
 
+    It 'Should complete variable assigned with Data statement' {
+        $TestString = 'data MyDataVar {"Hello"};$MyDatav'
+        $res = TabExpansion2 -inputScript $TestString
+        $res.CompletionMatches[0].CompletionText | Should -BeExactly '$MyDataVar'
+    }
+
     it 'Should complete "Value" parameter value in "Where-Object" for Enum property with no input' {
         $res = TabExpansion2 -inputScript 'Get-Command | where-Object CommandType -eq '
         $res.CompletionMatches[0].CompletionText | Should -BeExactly Alias
@@ -932,6 +958,11 @@ Verb-Noun -Param1 Hello ^
         $res.CompletionMatches[0].CompletionText | Should -Be "Get-ChildItem"
     }
 
+    it 'Should not complete TabExpansion2 variables' {
+        $res = TabExpansion2 -inputScript '$' -cursorColumn 1
+        $res.CompletionMatches.CompletionText | Should -Not -Contain '$positionOfCursor'
+    }
+
     it 'Should prefer the default parameterset when completing positional parameters' {
         $ScriptInput = 'Get-ChildItem | Where-Object '
         $res = TabExpansion2 -inputScript $ScriptInput -cursorColumn $ScriptInput.Length
@@ -959,6 +990,25 @@ class InheritedClassTest : System.Attribute
         $res = TabExpansion2 -inputScript 'Get-ChildItem -prog'
         $res.CompletionMatches.CompletionText | Should -Not -Contain '-proga'
         $res.CompletionMatches.CompletionText | Should -Contain '-ProgressAction'
+    }
+
+    It 'Should complete dynamic parameters with partial input' {
+        # See issue: #19498
+        try
+        {
+            Push-Location function:
+            $res = TabExpansion2 -inputScript 'Get-ChildItem -LiteralPath $PSHOME -Fi'
+            $res.CompletionMatches[1].CompletionText | Should -Be '-File'
+        }
+        finally
+        {
+            Pop-Location
+        }
+    }
+    it 'Should complete enum class members for Enums in script text' {
+        $res = TabExpansion2 -inputScript 'enum Test1 {Val1};([Test1]"").'
+        $res.CompletionMatches.CompletionText[0] | Should -Be 'value__'
+        $res.CompletionMatches.CompletionText | Should -Contain 'HasFlag('
     }
 
     Context "Script name completion" {
@@ -1179,7 +1229,10 @@ class InheritedClassTest : System.Attribute
 
         It "Should keep '~' in completiontext when it's used to refer to home in input" {
             $res = TabExpansion2 -inputScript "~$separator"
-            $res.CompletionMatches[0].CompletionText | Should -BeLike "~$separator*"
+            # select the first answer which does not have a space in the completion (those completions look like & '3D Objects')
+            $observedResult = $res.CompletionMatches.Where({$_.CompletionText.IndexOf("&") -eq -1})[0].CompletionText
+            $completedText = $res.CompletionMatches.CompletionText -join ","
+            $observedResult | Should -BeLike "~$separator*" -Because "$completedText"
         }
 
         It "Should use '~' as relative filter text when not followed by separator" {
@@ -1203,7 +1256,7 @@ class InheritedClassTest : System.Attribute
             $NewPath = Join-Path -Path $TestDrive -ChildPath $LiteralPath
             $null = New-Item -Path $NewPath -Force
             Push-Location $TestDrive
-            
+
             $InputText = "Get-ChildItem -Path {0}.${separator}BacktickTest"
             $InputTextLiteral = "Get-ChildItem -LiteralPath {0}.${separator}BacktickTest"
 
@@ -1221,6 +1274,19 @@ class InheritedClassTest : System.Attribute
 
             Remove-Item -LiteralPath $LiteralPath
         }
+    }
+
+    It 'Should keep custom drive names when completing file paths' {
+        $TempDriveName = "asdf"
+        $null = New-PSDrive -Name $TempDriveName -PSProvider FileSystem -Root $HOME
+
+        $completions = (TabExpansion2 -inputScript "${TempDriveName}:\")
+        # select the first answer which does not have a space in the completion (those completions look like & '3D Objects')
+        $observedResult = $completions.CompletionMatches.Where({$_.CompletionText.IndexOf("&") -eq -1})[0].CompletionText
+        $completedText = $completions.CompletionMatches.CompletionText -join ","
+
+        $observedResult | Should -BeLike "${TempDriveName}:*" -Because "$completionText"
+        Remove-PSDrive -Name $TempDriveName
     }
 
     Context "Cmdlet name completion" {
@@ -2252,6 +2318,7 @@ dir -Recurse `
 
     Context "Tab completion help test" {
         BeforeAll {
+            New-Item -ItemType File (Join-Path ${TESTDRIVE} "pwsh.xml")
             if ($IsWindows) {
                 $userHelpRoot = Join-Path $HOME "Documents/PowerShell/Help/"
             } else {
@@ -2425,10 +2492,10 @@ dir -Recurse `
             }
             @{
                 Intent = 'Complete help keyword EXTERNALHELP argument'
-                Expected = Join-Path $PSHOME "pwsh.xml"
+                Expected = Join-Path $TESTDRIVE "pwsh.xml"
                 TestString = @"
 <#
-.EXTERNALHELP $PSHOME\pwsh.^
+.EXTERNALHELP $TESTDRIVE\pwsh.^
 #>
 "@
             }
@@ -2558,6 +2625,12 @@ function MyFunction ($param1, $param2)
     It 'Should complete module specification keys in using module statement' {
         $res = TabExpansion2 -inputScript 'using module @{'
         $res.CompletionMatches.CompletionText -join ' ' | Should -BeExactly "GUID MaximumVersion ModuleName ModuleVersion RequiredVersion"
+    }
+
+    It 'Should not fallback to file completion when completing typenames' {
+        $Text = '[abcdefghijklmnopqrstuvwxyz]'
+        $res = TabExpansion2 -inputScript $Text -cursorColumn ($Text.Length - 1)
+        $res.CompletionMatches | Should -HaveCount 0
     }
 }
 

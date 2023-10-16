@@ -708,7 +708,18 @@ namespace System.Management.Automation
                     break;
             }
 
-            Diagnostics.Assert(matchedParameterName != null, "we should find matchedParameterName from the BoundArguments");
+            if (matchedParameterName is null)
+            {
+                // The pseudo binder has skipped a parameter
+                // This will happen when completing parameters for commands with dynamic parameters.
+                result = GetParameterCompletionResults(
+                    parameterName,
+                    bindingInfo.ValidParameterSetsFlags,
+                    bindingInfo.UnboundParameters,
+                    withColon);
+                return result;
+            }
+
             MergedCompiledCommandParameter param = bindingInfo.BoundParameters[matchedParameterName];
 
             WildcardPattern pattern = WildcardPattern.Get(parameterName + "*", WildcardOptions.IgnoreCase);
@@ -4618,9 +4629,27 @@ namespace System.Management.Automation
                 string basePath;
                 if (!relativePaths)
                 {
-                    basePath = dirInfo.FullName.EndsWith(provider.ItemSeparator)
-                        ? providerPrefix + dirInfo.FullName
-                        : providerPrefix + dirInfo.FullName + provider.ItemSeparator;
+                    string providerName = $"{provider.ModuleName}\\{provider.Name}::";
+                    if (pathInfo.Path.StartsWith(providerName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        basePath = pathInfo.Path.Substring(providerName.Length);
+                    }
+                    else
+                    {
+                        providerName = $"{provider.Name}::";
+                        if (pathInfo.Path.StartsWith(providerName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            basePath = pathInfo.Path.Substring(providerName.Length);
+                        }
+                        else
+                        {
+                            basePath = pathInfo.Path;
+                        }
+                    }
+
+                    basePath = basePath.EndsWith(provider.ItemSeparator)
+                        ? providerPrefix + basePath
+                        : providerPrefix + basePath + provider.ItemSeparator;
                     basePath = RebuildPathWithVars(basePath, homePath, stringType, literalPaths, out baseQuotesNeeded);
                 }
                 else
@@ -5375,6 +5404,20 @@ namespace System.Management.Automation
             "pv"
         };
 
+        private static readonly HashSet<string> s_localScopeCommandNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Microsoft.PowerShell.Core\\ForEach-Object",
+            "ForEach-Object",
+            "foreach",
+            "%",
+            "Microsoft.PowerShell.Core\\Where-Object",
+            "Where-Object",
+            "where",
+            "?",
+            "BeforeAll",
+            "BeforeEach"
+        };
+
         private sealed class VariableInfo
         {
             internal Type LastDeclaredConstraint;
@@ -5592,6 +5635,17 @@ namespace System.Management.Automation
                 return AstVisitAction.Continue;
             }
 
+            public override AstVisitAction VisitForEachStatement(ForEachStatementAst forEachStatementAst)
+            {
+                if (forEachStatementAst.Extent.StartOffset > StopSearchOffset || forEachStatementAst.Variable == CompletionVariableAst)
+                {
+                    return AstVisitAction.StopVisit;
+                }
+
+                SaveVariableInfo(forEachStatementAst.Variable.VariablePath.UserPath, variableType: null, isConstraint: false);
+                return AstVisitAction.Continue;
+            }
+
             public override AstVisitAction VisitAttribute(AttributeAst attributeAst)
             {
                 // Attributes can't assign values to variables so they aren't interesting.
@@ -5605,12 +5659,46 @@ namespace System.Management.Automation
 
             public override AstVisitAction VisitScriptBlockExpression(ScriptBlockExpressionAst scriptBlockExpressionAst)
             {
-                return scriptBlockExpressionAst != Top ? AstVisitAction.SkipChildren : AstVisitAction.Continue;
+                if (scriptBlockExpressionAst == Top)
+                {
+                    return AstVisitAction.Continue;
+                }
+
+                Ast parent = scriptBlockExpressionAst.Parent;
+                // This loop checks if the scriptblock is used as a command, or an argument for a command, eg: ForEach-Object -Process {$Var1 = "Hello"}, {Var2 = $true}
+                while (true)
+                {
+                    if (parent is CommandAst cmdAst)
+                    {
+                        string cmdName = cmdAst.GetCommandName();
+                        return s_localScopeCommandNames.Contains(cmdName)
+                            || (cmdAst.CommandElements[0] is ScriptBlockExpressionAst && cmdAst.InvocationOperator == TokenKind.Dot)
+                            ? AstVisitAction.Continue
+                            : AstVisitAction.SkipChildren;
+                    }
+
+                    if (parent is not CommandExpressionAst and not PipelineAst and not StatementBlockAst and not ArrayExpressionAst and not ArrayLiteralAst)
+                    {
+                        return AstVisitAction.SkipChildren;
+                    }
+
+                    parent = parent.Parent;
+                }
             }
 
-            public override AstVisitAction VisitScriptBlock(ScriptBlockAst scriptBlockAst)
+            public override AstVisitAction VisitDataStatement(DataStatementAst dataStatementAst)
             {
-                return scriptBlockAst != Top ? AstVisitAction.SkipChildren : AstVisitAction.Continue;
+                if (dataStatementAst.Extent.StartOffset >= StopSearchOffset)
+                {
+                    return AstVisitAction.StopVisit;
+                }
+
+                if (dataStatementAst.Variable is not null)
+                {
+                    SaveVariableInfo(dataStatementAst.Variable, variableType: null, isConstraint: false);
+                }
+
+                return AstVisitAction.SkipChildren;
             }
         }
 
